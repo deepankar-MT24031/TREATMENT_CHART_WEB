@@ -1,0 +1,58 @@
+{
+    "uuid": "da1ac090-4aa6-4275-8eef-bea9e69bfec9",
+    "datetime": "10-05-2025 02:16:36",
+    "date": "10-05-2025",
+    "default_Bed_count": 16,
+    "default_Sex_count": 3,
+    "default_Entries_count": 5,
+    "default_table_rows_count": 5,
+    "each_sex_value_names": {
+        "Sex_1_name": "Male",
+        "Sex_2_name": "Female",
+        "Sex_3_name": "Other"
+    },
+    "Name": "f",
+    "Age_year": "f",
+    "Age_month": "f",
+    "Sex": "Other",
+    "uhid": "fASEDFCasC",
+    "bed_number": "3",
+    "diagnosis": "survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
+    "consultants": "into electronic typesetting, remaining essentially ",
+    "jr": "XC",
+    "sr": "CX",
+    "each_entry_layout": {
+        "entry_1": {
+            "title": "Respiratory support",
+            "subtitles": {
+                "subtitle_1": {
+                    "content": "O2 via NC",
+                    "day": "D3",
+                    "dose": "2L",
+                    "volume": "N/A"
+                }
+            }
+        },
+        "entry_6": {
+            "title": "Other Medications",
+            "subtitles": {
+                "subtitle_3": {
+                    "content": "Med X",
+                    "day": "D3",
+                    "dose": "20mg",
+                    "volume": "3ml"
+                }
+            }
+        }
+    },
+    "each_table_row_layout": {
+        "row_1": {
+            "row_header_name": "row_1",
+            "row_header_description": "{'row_header_name': 'Date', 'row_header_description': 'lol'}"
+        },
+        "row_2": {
+            "row_header_name": "row_2",
+            "row_header_description": "{'row_header_name': 'Weight', 'row_header_description': '12 kg'}"
+        }
+    }
+}

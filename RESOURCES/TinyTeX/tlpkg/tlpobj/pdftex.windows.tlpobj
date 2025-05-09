@@ -1,0 +1,11 @@
+name pdftex.windows
+category TLCore
+revision 74518
+shortdesc windows files of pdftex
+containersize 835348
+containerchecksum a355d6e79aa37557f0b8fa0819b7264a197d7dcad46fbd89eedc795821659c061a0d5d0758ccb53daea5cc276ce3ed811b6a5de832d6906e16d053267f57c3e9
+binfiles arch=windows size=577
+ bin/windows/etex.exe
+ bin/windows/pdfetex.exe
+ bin/windows/pdftex.dll
+ bin/windows/pdftex.exe

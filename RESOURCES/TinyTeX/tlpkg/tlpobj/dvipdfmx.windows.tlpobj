@@ -1,0 +1,11 @@
+name dvipdfmx.windows
+category TLCore
+revision 74684
+shortdesc windows files of dvipdfmx
+containersize 355664
+containerchecksum 34b3af8928e974670fd242e706495750ea89233a36c71de4865a05662f77251cd1ed9bb3e3f38af883abf54e9f107c70df976e29ab06426580f685ff4b7b4efb
+binfiles arch=windows size=298
+ bin/windows/dvipdfm.exe
+ bin/windows/dvipdfmx.dll
+ bin/windows/dvipdfmx.exe
+ bin/windows/xdvipdfmx.exe

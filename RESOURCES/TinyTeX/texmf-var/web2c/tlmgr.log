@@ -1,0 +1,8 @@
+[Wed Apr  2 00:11:21 2025] install: multirow
+[Wed Apr  2 00:11:21 2025] command: mktexlsr
+[Wed Apr  2 00:14:06 2025] install: textpos
+[Wed Apr  2 00:14:06 2025] command: mktexlsr
+[Wed Apr  2 00:16:44 2025] install: grfext
+[Wed Apr  2 00:16:44 2025] command: mktexlsr
+[Wed Apr  2 13:55:22 2025] install: ragged2e
+[Wed Apr  2 13:55:22 2025] command: mktexlsr

@@ -1,0 +1,41 @@
+name hyph-utf8
+category Package
+revision 74316
+shortdesc Hyphenation patterns expressed in UTF-8
+longdesc Modern native UTF-8 engines such as XeTeX and LuaTeX need
+longdesc hyphenation patterns in UTF-8 format, whereas older systems
+longdesc require hyphenation patterns in the 8-bit encoding of the font
+longdesc in use (such encodings are codified in the LaTeX scheme with
+longdesc names like OT1, T2A, TS1, OML, LY1, etc). The present package
+longdesc offers a collection of conversions of existing patterns to
+longdesc UTF-8 format, together with converters for use with 8-bit fonts
+longdesc in older systems. Since hyphenation patterns for Knuthian-style
+longdesc TeX systems are only read at iniTeX time, it is hoped that the
+longdesc UTF-8 patterns, with their converters, will completely supplant
+longdesc the older patterns.
+containersize 15988
+containerchecksum 94073a99f54d61b4b1a2bf2c7dbc23635bf04263c69a6f0252f5a1f113255a4c1ae316b2fda4007851f9c1835293df07cb69263f41580bf9f7c6647d2f9b8a05
+doccontainersize 268396
+doccontainerchecksum b14777c3e1d54188ff183ba4d782911ea45d5fa763cd3b5f2f92e451d67c26a807713ba2ec4c4f9c0d5961fdeb4ec1329c19b0be3ce6dfef24561f0f50ee2947
+srccontainersize 36004
+srccontainerchecksum e7605033ec06368d47d8f5edbf272cf2da4951693640171e80ce0fe813a6aca7ab0731157ce8360771b9b2937c783868e6aa0e80e62eca2c5290ce2a690df463
+runfiles size=25
+ texmf-dist/tex/generic/hyph-utf8/conversions/conv-utf8-ec.tex
+ texmf-dist/tex/generic/hyph-utf8/conversions/conv-utf8-il2.tex
+ texmf-dist/tex/generic/hyph-utf8/conversions/conv-utf8-il3.tex
+ texmf-dist/tex/generic/hyph-utf8/conversions/conv-utf8-l7x.tex
+ texmf-dist/tex/generic/hyph-utf8/conversions/conv-utf8-lmc.tex
+ texmf-dist/tex/generic/hyph-utf8/conversions/conv-utf8-lth.tex
+ texmf-dist/tex/generic/hyph-utf8/conversions/conv-utf8-qx.tex
+ texmf-dist/tex/generic/hyph-utf8/conversions/conv-utf8-t2a.tex
+ texmf-dist/tex/generic/hyph-utf8/conversions/conv-utf8-t8m.tex
+ texmf-dist/tex/luatex/hyph-utf8/etex.src
+ texmf-dist/tex/luatex/hyph-utf8/luatex-hyphen.lua
+catalogue-also dehyph-exptl
+catalogue-contact-bugs https://github.com/hyphenation/tex-hyphen/issues
+catalogue-contact-home http://www.hyphenation.org
+catalogue-contact-repository https://github.com/hyphenation/tex-hyphen
+catalogue-contact-support https://tug.org/mailman/listinfo/tex-hyphen
+catalogue-ctan /language/hyph-utf8
+catalogue-license mit
+catalogue-topics hyphenation

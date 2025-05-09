@@ -1,0 +1,28 @@
+name latex-amsmath-dev
+category Package
+revision 74211
+shortdesc Development pre-release of the LaTeX amsmath bundle
+longdesc This is a pre-release version of the standard LaTeX amsmath
+longdesc bundle. It accompanies the pre-testing kernel code
+longdesc (latex-base-dev), and is intended for testing by knowledgeable
+longdesc users.
+containersize 31112
+containerchecksum 15bad98eb9e4b66e22671fb33de7d97ab1cd89092563ec0a406c06408fb896daf61d288be3ed3d9e1afff60a84f3ad86b20dfff23dc3c107af2c82234117ef02
+doccontainersize 2418132
+doccontainerchecksum 197330cfd097c9aabcaa2fc8a1e2bca92e899f61f8e14a8388a14b7ba2f7f463f0d77253f04b8d43cde4961009b1d026667666773fe399f74a6bbb2860384e54
+srccontainersize 66456
+srccontainerchecksum 075683201a7d6ff757410fd6d134f425674c67b21691846335dfe69161c5126915233403d962bc4013d6b8de966654f151634a9e7d8ca12ffe0d9a009b52817c
+runfiles size=70
+ texmf-dist/tex/latex-dev/amsmath/amsbsy.sty
+ texmf-dist/tex/latex-dev/amsmath/amscd.sty
+ texmf-dist/tex/latex-dev/amsmath/amsgen.sty
+ texmf-dist/tex/latex-dev/amsmath/amsmath-2018-12-01.sty
+ texmf-dist/tex/latex-dev/amsmath/amsmath.sty
+ texmf-dist/tex/latex-dev/amsmath/amsopn.sty
+ texmf-dist/tex/latex-dev/amsmath/amstex.sty
+ texmf-dist/tex/latex-dev/amsmath/amstext.sty
+ texmf-dist/tex/latex-dev/amsmath/amsxtra.sty
+catalogue-ctan /macros/latex-dev/required/amsmath
+catalogue-license lppl1.3c
+catalogue-topics maths latex-devel
+catalogue-version 2025-06-01 pre-release 2

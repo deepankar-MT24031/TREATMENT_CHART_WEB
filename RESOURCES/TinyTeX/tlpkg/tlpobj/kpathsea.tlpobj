@@ -1,0 +1,52 @@
+name kpathsea
+category TLCore
+revision 73918
+shortdesc Path searching library for TeX-related files
+longdesc Kpathsea is a library and utility programs which provide path
+longdesc searching facilities for TeX file types, including the
+longdesc self-locating feature required for movable installations,
+longdesc layered on top of a general search mechanism. It is not
+longdesc distributed separately, but rather is released and maintained
+longdesc as part of the TeX Live sources.
+depend kpathsea.ARCH
+containersize 33116
+containerchecksum d19b3d4c3873b421628d9b614c77d0417737c312e739261afeca6eba9655f95826772a119df75c1fe07a7ca084e99c6fb4448ac3d3b095ae85915089e1de5e09
+doccontainersize 1032940
+doccontainerchecksum 808a3a11aaa6890d76ee5edb22cc9b219c55c85d0396d9631c5f21fab5412636f57606c3d2f690de320e1851d50d694b7da350204f50077da0aecf9b3bcca725
+runfiles size=53
+ texmf-dist/web2c/amiga-pl.tcx
+ texmf-dist/web2c/cp1250cs.tcx
+ texmf-dist/web2c/cp1250pl.tcx
+ texmf-dist/web2c/cp1250t1.tcx
+ texmf-dist/web2c/cp227.tcx
+ texmf-dist/web2c/cp852-cs.tcx
+ texmf-dist/web2c/cp852-pl.tcx
+ texmf-dist/web2c/cp8bit.tcx
+ texmf-dist/web2c/empty.tcx
+ texmf-dist/web2c/fmtutil.cnf
+ texmf-dist/web2c/il1-t1.tcx
+ texmf-dist/web2c/il2-cs.tcx
+ texmf-dist/web2c/il2-pl.tcx
+ texmf-dist/web2c/il2-t1.tcx
+ texmf-dist/web2c/kam-cs.tcx
+ texmf-dist/web2c/kam-t1.tcx
+ texmf-dist/web2c/macce-pl.tcx
+ texmf-dist/web2c/macce-t1.tcx
+ texmf-dist/web2c/maz-pl.tcx
+ texmf-dist/web2c/mktex.cnf
+ texmf-dist/web2c/mktex.opt
+ texmf-dist/web2c/mktexdir
+ texmf-dist/web2c/mktexdir.opt
+ texmf-dist/web2c/mktexnam
+ texmf-dist/web2c/mktexnam.opt
+ texmf-dist/web2c/mktexupd
+ texmf-dist/web2c/natural.tcx
+ texmf-dist/web2c/tcvn-t5.tcx
+ texmf-dist/web2c/texmf.cnf
+ texmf-dist/web2c/viscii-t5.tcx
+catalogue-contact-bugs https://lists.tug.org/tex-k
+catalogue-contact-home https://tug.org/kpathsea
+catalogue-contact-repository https://tug.org/svn/texlive/trunk/Build/source/texk/kpathsea/
+catalogue-contact-support https://lists.tug.org/tex-k
+catalogue-license lgpl2.1
+catalogue-topics sys-supp

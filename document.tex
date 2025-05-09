@@ -1,0 +1,109 @@
+
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage[a4paper, margin=0.3in]{geometry} % Decreased margins
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tabularx} % For dynamic column widths
+\usepackage{calc} % For calculation of lengths
+\usepackage[absolute,overlay]{textpos} % For absolute positioning
+\setlength{\TPHorizModule}{1mm} % Set horizontal unit to mm
+\setlength{\TPVertModule}{1mm} % Set vertical unit to mm
+% Set font size for entire document
+\fontsize{10pt}{12pt}\selectfont
+% Create a special column type for automatic line breaking
+\newcolumntype{Y}{>{\raggedright\arraybackslash\hspace{0pt}\parfillskip=0pt plus 1fil}p}
+\begin{document}\
+% Insert logo at the top-left
+\noindent
+\begin{minipage}{0.2\textwidth} % Adjust width as needed
+    \includegraphics[width=2cm]{RESOURCES/AIIMS_LOGO.png} % Adjust width as needed
+\end{minipage}\
+\vspace{-1cm} % Adjust this value to position the logo at the top
+\hfill
+\fontsize{9pt}{11pt}\selectfont % Header font size
+\begin{center}\
+    \textbf{destroy} \\
+    \textbf{WORLD} \\
+\end{center}
+\fontsize{10pt}{12pt}\selectfont % Restore main font size
+% Keep original upper tables unchanged
+\noindent\begin{tabular}{|p{5cm}|p{4cm}|p{2.5cm}|p{1.5cm}|p{3cm}|}
+    \hline
+    \textbf{Name:} f & \textbf{Age:} 0 years 0 months & \textbf{Gender:} Other & \textbf{Bed:} 3 & \textbf{UHID:} fASEDFCasC \\
+    \hline
+    \multicolumn{5}{|p{19cm}|}{\textbf{Diagnosis:} survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum }\\
+    \hline
+\end{tabular}
+\\
+\\
+\noindent\begin{tabular}{|p{11.3cm}|p{7.3cm}|}
+     \hline
+    \textbf{Consultant:} into electronic typesetting, remaining essentially      & \textbf{JRs:} XC \\
+    \cline{2-2}
+      & \textbf{SRs:} CX \\
+    \hline
+\end{tabular}
+\vspace{0.1cm} % Reduced space
+% Create a two-column layout with fixed positions
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+\vspace{-2.73cm} % Adjust this value to position the content above the image
+
+    
+
+    % Medication table with Day/Dose/Volume
+    \begin{tabular}{|p{7cm}|p{1cm}|p{2cm}|p{2cm}|}
+        \hline
+        \textbf{Respiratory support} & \textbf{Day} & \textbf{Dose} & \textbf{Volume} \\
+        \hline
+       1. O2 via NC & D3 & 2L & N/A \\
+        \hline
+    \end{tabular}
+    \vspace{0.2cm}
+
+    % Medication table with Day/Dose/Volume
+    \begin{tabular}{|p{7cm}|p{1cm}|p{2cm}|p{2cm}|}
+        \hline
+        \textbf{Other Medications} & \textbf{Day} & \textbf{Dose} & \textbf{Volume} \\
+        \hline
+       1. Med X & D3 & 20mg & 3ml \\
+        \hline
+    \end{tabular}
+    \vspace{0.2cm}
+ % Replace with your stacked blocks\
+
+\end{minipage}%
+\hfill%
+\begin{minipage}[t]{0.32\textwidth}
+
+\hspace{1cm} % Negative hspace moves content to the left
+    % Date information table - fixed on right\\
+    \begin{tabular}{|p{1.8cm}|p{2.5cm}|}
+    \hline
+     \begin{minipage}[t]{1.7cm}\textbf{row\_1}\end{minipage} & \begin{minipage}[t]{2.3cm}\raggedright {'row\_header\_nam
+e': 'Date', 'row\_
+header\_descriptio
+n': 'lol'} \end{minipage} \\
+        \hline
+ \begin{minipage}[t]{1.7cm}\textbf{row\_2}\end{minipage} & \begin{minipage}[t]{2.3cm}\raggedright {'row\_header\_nam
+e': 'Weight', 'row
+\_header\_descript
+ion': '12 kg'} \end{minipage} \\
+        \hline
+
+    \end{tabular}
+\end{minipage}
+
+% Add signature lines at fixed positions from bottom left
+% X=150mm from left, Y=30mm from bottom for JR signature
+\begin{textblock}{70}(150, 267)
+    \textbf{JR Signature:}
+\end{textblock}
+
+% X=150mm from left, Y=50mm from bottom for SR signature
+\begin{textblock}{70}(150, 247)
+    \textbf{SR Signature:}
+\end{textblock}
+
+\end{document}

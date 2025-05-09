@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Existing head content remains the same -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contraindicator</title>
+    <style>
+        /* Existing styles remain the same */
+        html, body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            height: 100%;
+            width: 100%;
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .settings {
+            background-color: #e6e6e6;
+            padding: 5px 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: #fff;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            border-right: 1px solid #ccc;
+        }
+
+        .tab.active {
+            background-color: #fff;
+        }
+
+        .tab:not(.active) {
+            background-color: #e6e6e6;
+        }
+
+        .form-section {
+            background-color: #f7f7f7;
+            padding: 8px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .form-row {
+            display: flex;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .form-label {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .form-field {
+            margin-right: 10px;
+            margin-bottom: 8px;
+            flex: 1 1 200px;
+        }
+
+        input, select, textarea {
+            border: 1px solid #aaa;
+            padding: 3px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 60px;
+        }
+
+        .age-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .age-field {
+            width: 60px;
+            margin-right: 5px;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-container {
+            margin-bottom: 10px;
+            position: relative;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            min-width: 500px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f0f0f0;
+            font-size: 0.9em;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .button {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 4px 8px;
+            cursor: pointer;
+            margin-right: 5px;
+            margin-top: 5px;
+        }
+
+        .button:hover {
+            background-color: #e6e6e6;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: #f7f7f7;
+            border-top: 1px solid #ccc;
+            flex-wrap: wrap;
+        }
+
+        .footer-button {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 4px 8px;
+            cursor: pointer;
+            margin: 2px;
+        }
+
+        .two-columns {
+            display: flex;
+            flex-wrap: nowrap; /* Prevent wrapping to maintain resizable behavior */
+            flex: 1;
+            position: relative; /* For absolute positioning of the resizer */
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            height: auto;
+            max-height: 400px;
+        }
+
+        /* Modified column layout for resizing */
+        .column:first-child {
+            flex: 3;
+            min-width: 200px; /* Minimum width */
+            margin-right: 0; /* Remove margin to make room for the resizer */
+            margin-bottom: 10px;
+            overflow: hidden; /* Prevent overflow */
+        }
+
+        .column:last-child {
+            flex: 1;
+            min-width: 150px; /* Minimum width */
+            margin-bottom: 10px;
+            margin-right: 10px;
+            overflow: hidden; /* Prevent overflow */
+        }
+
+        /* Resizer element */
+        .resizer {
+            width: 8px;
+            background-color: #ddd;
+            cursor: col-resize;
+            margin: 0;
+            height: 400px; /* Match max-height of columns */
+            user-select: none; /* Prevent selection during drag */
+            transition: background-color 0.2s;
+        }
+
+        .resizer:hover, .resizing {
+            background-color: #aaa;
+        }
+
+        .cell-number {
+    width: 20px !important;
+    max-width: 20px !important;
+    padding: 1px !important;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 0.9em;
+}
+
+        .cell-description {
+            width: 35%;
+        }
+
+        .cell-day, .cell-dose, .cell-volume {
+            width: 15%;
+        }
+
+        .scrollable-table {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .scrollable-medications {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 5px;
+            max-height: 400px;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow: auto;
+            flex-direction: column;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        .search-content {
+            padding: 20px;
+            background-color: #f7f7f7;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-field {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 200px;
+        }
+
+        .search-results {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+
+        .search-result-row:hover {
+            background-color: #f0f0f0;
+            cursor: pointer;
+        }
+
+        .search-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-button {
+            padding: 5px 15px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background-color: #f0f0f0;
+        }
+
+        .editable {
+            width: 100%;
+            box-sizing: border-box;
+            border: none;
+            background-color: transparent;
+        }
+
+        .editable:focus {
+            background-color: #f0f8ff;
+            border: 1px solid #aad;
+        }
+
+        .header-editable {
+            width: 100%;
+            box-sizing: border-box;
+            border: none;
+            background-color: transparent;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .header-editable:focus {
+            background-color: #e0e8f0;
+            border: 1px solid #aad;
+        }
+
+        /* Add error class for form validation */
+        .input-error {
+            border: 2px solid #ff6b6b !important;
+            background-color: #ffe8e8 !important;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                position: relative;
+                height: auto;
+            }
+
+            .form-field {
+                flex: 1 1 100%;
+            }
+
+            .column {
+                flex: 1 1 100%;
+                margin-right: 0;
+                max-height: 300px;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .footer > div {
+                margin-top: 10px;
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            .two-columns {
+                flex-direction: column;
+            }
+
+            .scrollable-medications, .scrollable-table {
+                max-height: 300px;
+            }
+
+            /* Hide resizer on mobile */
+            .resizer {
+                display: none;
+            }
+        }
+
+        /* Modal and blur styles */
+        .modal-blur {
+            filter: blur(5px);
+            pointer-events: none;
+            user-select: none;
+        }
+        .settings-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(3px);
+        }
+        .settings-modal {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.2);
+            padding: 32px 24px 24px 24px;
+            min-width: 350px;
+            max-width: 95vw;
+            min-height: 300px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        .settings-modal h2 {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        .settings-modal .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+        .settings-modal .category {
+            margin-bottom: 24px;
+        }
+        .settings-modal label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .settings-modal input[type="text"],
+        .settings-modal input[type="number"] {
+            width: 100%;
+            padding: 6px 8px;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .settings-modal input[type="file"] {
+            margin-bottom: 12px;
+        }
+        .settings-modal .category-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .settings-modal .save-btn {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .settings-modal .save-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="settings">
+            <button id="settings-btn" style="background:none;border:none;font-size:1.1em;cursor:pointer;padding:0;color:#333;">⚙️ Settings</button>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="search">Search</div>
+            <div class="tab" data-tab="edit">Edit</div>
+        </div>
+
+        <!-- Search Tab Content -->
+        <div id="search-tab" class="tab-content active">
+            <div class="search-content">
+                <div class="search-form">
+                    <div class="search-field">
+                        <label class="form-label" for="search-name">Name</label>
+                        <input type="text" id="search-name" style="width: 100%;">
+                    </div>
+                    <div class="search-field">
+                        <label class="form-label" for="search-date">Date</label>
+                        <input type="text" id="search-date" style="width: 100%;">
+                    </div>
+                    <div class="search-field">
+                        <label class="form-label" for="search-uuid">UHID</label>
+                        <input type="text" id="search-uuid" style="width: 100%;">
+                    </div>
+                </div>
+
+                <div class="search-buttons">
+                    <button class="search-button">Search</button>
+                    <button class="search-button">Reset</button>
+                </div>
+
+                <div class="search-results">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;"></th>
+                                <th>Name</th>
+                                <th>Date</th>
+                                <th>UHID</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="search-result-row">
+                                <td style="text-align: center;">1</td>
+                                <td>dummy</td>
+                                <td>14-04-2025 04:05:34</td>
+                                <td>123456789</td>
+                                <td></td>
+                            </tr>
+                            <tr class="search-result-row">
+                                <td style="text-align: center;">2</td>
+                                <td>dummy</td>
+                                <td>19-03-2025 00:37:03</td>
+                                <td>321654987</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Tab Content -->
+        <div id="edit-tab" class="tab-content">
+            <div class="main-content">
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-field" style="flex: 3;">
+                            <div class="form-label">Name</div>
+                            <input type="text" id="name-to-be-taken" style="width: 95%;">
+                        </div>
+                        <div class="form-field" style="flex: 2;">
+                            <div class="form-label">Age</div>
+                            <div class="age-container">
+                                <input type="text" id="age-years-to-be-taken" class="age-field">
+                                <span>Years</span>
+                                <input type="text" id="age-months-to-be-taken" class="age-field" style="margin-left: 10px;">
+                                <span>Months</span>
+                            </div>
+                        </div>
+                        <div class="form-field" style="flex: 1;">
+                            <div class="form-label">Sex</div>
+                            <select id="sex-select" style="width: 100%;">
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="form-field" style="flex: 1;">
+                             <div class="form-label">Bed</div>
+                             <select id="bed-select" style="width: 100%;">
+                                <option>none</option>
+                                <option>1</option>
+                                <option>2</option>
+                                <option>3</option>
+                                <option>4</option>
+                                <option>5</option>
+                                <option>6</option>
+                                <option>7</option>
+                                <option>8</option>
+                                <option>9</option>
+                                <option>10</option>
+                                <option>11</option>
+                                <option>12</option>
+                                <option>13</option>
+                                <option>14</option>
+                            </select>
+                        </div>
+                        <div class="form-field" style="flex: 2;">
+                            <div class="form-label">UUID</div>
+                            <input type="text" id="uuid-input" style="width: 95%;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-label">Diagnosis</div>
+                    <textarea id="diagnosis-input"></textarea>
+                </div>
+
+                <div class="form-section">
+                    <div class="two-columns">
+                        <div class="column">
+                            <div class="form-label">Consultants</div>
+                             <input type="text" id="consultants-input" style="width: 95%;">
+                        </div>
+                        <div class="column">
+                            <div class="form-label">JR</div>
+                            <input type="text" id="jr-input" style="width: 95%;">
+                            <div class="form-label">SR</div>
+                            <input type="text" id="sr-input" style="width: 95%;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="two-columns" id="resizable-columns">
+                    <div class="column" id="left-column">
+                        <div class="form-section scrollable-medications" id="medications-container">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="cell-number" style="width: 3px; max-width: 3px;">#</th>
+                                            <th class="cell-description">
+                                                <input type="text" class="header-editable" value="Respiratory support">
+                                            </th>
+                                            <th class="cell-day">Day</th>
+                                            <th class="cell-dose">Dose</th>
+                                            <th class="cell-volume">Volume</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="cell-number" style="width: 3px; max-width: 3px;">1</td>
+                                            <td class="cell-description"><input type="text" class="editable"></td>
+                                            <td class="cell-day"><input type="text" class="editable"></td>
+                                            <td class="cell-dose"><input type="text" class="editable"></td>
+                                            <td class="cell-volume"><input type="text" class="editable"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button class="button add-row">Add Row</button>
+
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="cell-number"></th>
+                                            <th class="cell-description">
+                                                <input type="text" class="header-editable" value="Sedation, analgesia, and neuromuscular blockade">
+                                            </th>
+                                            <th class="cell-day">Day</th>
+                                            <th class="cell-dose">Dose</th>
+                                            <th class="cell-volume">Volume</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="cell-number">1</td>
+                                            <td class="cell-description"><input type="text" class="editable"></td>
+                                            <td class="cell-day"><input type="text" class="editable"></td>
+                                            <td class="cell-dose"><input type="text" class="editable"></td>
+                                            <td class="cell-volume"><input type="text" class="editable"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button class="button add-row">Add Row</button>
+
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="cell-number"></th>
+                                            <th class="cell-description">
+                                                <input type="text" class="header-editable" value="Inotropes and Anti-hypertensives">
+                                            </th>
+                                            <th class="cell-day">Day</th>
+                                            <th class="cell-dose">Dose</th>
+                                            <th class="cell-volume">Volume</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="cell-number">1</td>
+                                            <td class="cell-description"><input type="text" class="editable"></td>
+                                            <td class="cell-day"><input type="text" class="editable"></td>
+                                            <td class="cell-dose"><input type="text" class="editable"></td>
+                                            <td class="cell-volume"><input type="text" class="editable"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button class="button add-row">Add Row</button>
+                        </div>
+                    </div>
+
+                    <!-- Resizer Element -->
+                    <div class="resizer" id="column-resizer"></div>
+
+                    <div class="column" id="right-column">
+                        <div class="form-section scrollable-table">
+                            <table id="parameters-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%;">No</th>
+                                        <th style="width: 20%;">Parameter</th>
+                                        <th style="width: 45%;">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td><input type="text" class="editable" value="Date"></td>
+                                        <td><input type="text" class="editable"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td><input type="text" class="editable" value="Time"></td>
+                                        <td><input type="text" class="editable"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td><input type="text" class="editable" value="Weight"></td>
+                                        <td><input type="text" class="editable"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td><input type="text" class="editable" value="Length"></td>
+                                        <td><input type="text" class="editable"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>5</td>
+                                        <td><input type="text" class="editable" value="BSA"></td>
+                                        <td><input type="text" class="editable"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>6</td>
+                                        <td><input type="text" class="editable" value="TFR"></td>
+                                        <td><input type="text" class="editable"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>7</td>
+                                        <td><input type="text" class="editable" value="TFV"></td>
+                                        <td><input type="text" class="editable"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>8</td>
+                                        <td><input type="text" class="editable" value="IVM"></td>
+                                        <td><input type="text" class="editable"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <button class="button" id="add-parameter">Add Cell</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div>
+                    <button class="footer-button" id="add-box-footer">Add Box</button>
+                </div>
+                <div>
+                    <button class="footer-button" onclick="downloadTextFile()">Print</button>
+                    <button class="footer-button">DDI</button>
+                    <button class="footer-button" id="add-cell-footer">Add Cell</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal (hidden by default) -->
+    <div id="settings-modal-overlay" class="settings-modal-overlay" style="display:none;">
+        <div class="settings-modal">
+            <button class="close-btn" id="close-settings-modal" title="Close">&times;</button>
+            <h2>Settings</h2>
+            <div class="category">
+                <div class="category-title">IP Settings</div>
+                <label for="ip-input">IP Address</label>
+                <input type="text" id="ip-input" placeholder="Enter IP address">
+                <label for="port-input">Port</label>
+                <input type="number" id="port-input" placeholder="Enter Port">
+            </div>
+            <div class="category">
+                <div class="category-title">Logo and Heading</div>
+                <label for="logo-upload">Logo Upload</label>
+                <input type="file" id="logo-upload" accept="image/*">
+                <label for="heading-input">Heading</label>
+                <input type="text" id="heading-input" placeholder="Enter heading">
+                <label for="subheading-input">Subheading</label>
+                <input type="text" id="subheading-input" placeholder="Enter subheading">
+                <label for="font-size-input">Font Size</label>
+                <input type="number" id="font-size-input" placeholder="Font size (e.g. 14)">
+            </div>
+            <button class="save-btn" id="save-settings">Save</button>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+
+                // Update active tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                // Show corresponding content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+
+                document.getElementById(tabId + '-tab').classList.add('active');
+            });
+        });
+
+        // Add row functionality for all tables
+        document.querySelectorAll('.add-row').forEach(button => {
+            button.addEventListener('click', function() {
+                // Find the closest table
+                const tableContainer = this.previousElementSibling;
+                const table = tableContainer.querySelector('tbody');
+                if (table) {
+                    const rowCount = table.querySelectorAll('tr').length + 1;
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td class="cell-number">${rowCount}</td>
+                        <td class="cell-description"><input type="text" class="editable"></td>
+                        <td class="cell-day"><input type="text" class="editable"></td>
+                        <td class="cell-dose"><input type="text" class="editable"></td>
+                        <td class="cell-volume"><input type="text" class="editable"></td>
+                    `;
+                    table.appendChild(newRow);
+                }
+            });
+        });
+
+        // Add new table/box functionality
+        document.getElementById('add-box-footer').addEventListener('click', addNewMedicationBox);
+
+        function addNewMedicationBox() {
+            const container = document.getElementById('medications-container');
+            const tableCount = container.querySelectorAll('.table-container').length + 1;
+
+            const newTableSection = document.createElement('div');
+            newTableSection.className = 'table-container';
+            newTableSection.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="cell-number"></th>
+                            <th class="cell-description">
+                                <input type="text" class="header-editable" value="Medication Box ${tableCount}">
+                            </th>
+                            <th class="cell-day">Day</th>
+                            <th class="cell-dose">Dose</th>
+                            <th class="cell-volume">Volume</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="cell-number">1</td>
+                            <td class="cell-description"><input type="text" class="editable"></td>
+                            <td class="cell-day"><input type="text" class="editable"></td>
+                            <td class="cell-dose"><input type="text" class="editable"></td>
+                            <td class="cell-volume"><input type="text" class="editable"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+
+            const newButtonRow = document.createElement('button');
+            newButtonRow.className = 'button add-row';
+            newButtonRow.textContent = 'Add Row';
+
+            newButtonRow.addEventListener('click', function() {
+                const tableContainer = this.previousElementSibling;
+                const table = tableContainer.querySelector('tbody');
+                if (table) {
+                    const rowCount = table.querySelectorAll('tr').length + 1;
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td class="cell-number">${rowCount}</td>
+                        <td class="cell-description"><input type="text" class="editable"></td>
+                        <td class="cell-day"><input type="text" class="editable"></td>
+                        <td class="cell-dose"><input type="text" class="editable"></td>
+                        <td class="cell-volume"><input type="text" class="editable"></td>
+                    `;
+                    table.appendChild(newRow);
+                }
+            });
+
+            container.appendChild(newTableSection);
+            container.appendChild(newButtonRow);
+        }
+
+        // Add parameter/cell functionality
+        document.getElementById('add-cell-footer').addEventListener('click', addNewParameter);
+        document.getElementById('add-parameter').addEventListener('click', addNewParameter);
+
+        function addNewParameter() {
+            const table = document.getElementById('parameters-table').querySelector('tbody');
+            const rowCount = table.querySelectorAll('tr').length + 1;
+
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${rowCount}</td>
+                <td><input type="text" class="editable" placeholder="Parameter name"></td>
+                <td><input type="text" class="editable"></td>
+            `;
+
+            table.appendChild(newRow);
+        }
+
+        // Add functionality to the search button
+        document.querySelector('.search-button').addEventListener('click', function() {
+            // In a real application, this would fetch results from a server
+            console.log('Search button clicked');
+        });
+
+        // Make search result rows clickable
+        document.querySelectorAll('.search-result-row').forEach(row => {
+            row.addEventListener('click', function() {
+                // In a real application, this would load the selected record
+                console.log('Result row clicked');
+
+                // Simulate switching to edit tab with this record
+                document.querySelector('.tab[data-tab="edit"]').click();
+            });
+        });
+
+        // Column resizing functionality
+        const resizer = document.getElementById('column-resizer');
+        const leftColumn = document.getElementById('left-column');
+        const rightColumn = document.getElementById('right-column');
+        const container = document.getElementById('resizable-columns');
+
+        // Initialize column sizes (you can set default percentages)
+        let leftPercent = 70; // Default left column width percentage
+
+        function setColumnSizes() {
+            leftColumn.style.flex = `0 0 ${leftPercent}%`;
+            rightColumn.style.flex = `0 0 ${100 - leftPercent}%`;
+        }
+
+        // Set initial sizes
+        setColumnSizes();
+
+        // Resizing functionality
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            resizer.classList.add('resizing');
+
+            // Prevent text selection during resize
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+
+            // Initial position
+            const startX = e.clientX;
+            const containerWidth = container.offsetWidth;
+            const initialLeftWidth = leftColumn.offsetWidth;
+
+            // Mouse move handler for resizing
+            const onMouseMove = (e) => {
+                if (!isResizing) return;
+
+                const dx = e.clientX - startX;
+                const newLeftWidth = initialLeftWidth + dx;
+
+                // Calculate the new percentage (with constraints)
+                leftPercent = Math.max(20, Math.min(80, (newLeftWidth / containerWidth) * 100));
+
+                // Apply the new sizes
+                setColumnSizes();
+            };
+
+            // Mouse up handler to stop resizing
+            const onMouseUp = () => {
+                isResizing = false;
+                resizer.classList.remove('resizing');
+
+                document.body.style.userSelect = '';
+                document.body.style.cursor = '';
+
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            // Add temporary event listeners for mousemove and mouseup
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+
+            e.preventDefault(); // Prevent any default behavior
+        });
+
+        // Settings Modal Functionality
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsModalOverlay = document.getElementById('settings-modal-overlay');
+        const closeSettingsModal = document.getElementById('close-settings-modal');
+        const mainContainer = document.querySelector('.container');
+
+        settingsBtn.addEventListener('click', function() {
+            settingsModalOverlay.style.display = 'flex';
+            mainContainer.classList.add('modal-blur');
+        });
+        closeSettingsModal.addEventListener('click', function() {
+            settingsModalOverlay.style.display = 'none';
+            mainContainer.classList.remove('modal-blur');
+        });
+        settingsModalOverlay.addEventListener('click', function(e) {
+            if (e.target === settingsModalOverlay) {
+                settingsModalOverlay.style.display = 'none';
+                mainContainer.classList.remove('modal-blur');
+            }
+        });
+        // Save button (for now, just close modal)
+        document.getElementById('save-settings').addEventListener('click', function() {
+            settingsModalOverlay.style.display = 'none';
+            mainContainer.classList.remove('modal-blur');
+            // You can add logic here to save settings to localStorage or send to backend
+        });
+    </script>
+
+<script>
+
+function downloadTextFile() {
+    // START: Validation for required fields
+    const fieldsToValidate = [
+        { id: "name-to-be-taken", name: "Name", el: document.getElementById("name-to-be-taken") },
+        { id: "age-years-to-be-taken", name: "Age (Years)", el: document.getElementById("age-years-to-be-taken") },
+        { id: "age-months-to-be-taken", name: "Age (Months)", el: document.getElementById("age-months-to-be-taken") },
+        { id: "bed-select", name: "Bed", el: document.getElementById("bed-select"), checkValue: "none" }, // Special check for select if "none" means blank
+        { id: "uuid-input", name: "UUID", el: document.getElementById("uuid-input") }
+    ];
+
+    let missingFieldsMessages = [];
+    let allFieldsValid = true;
+
+    // Clear previous errors and validate each field
+    fieldsToValidate.forEach(fieldInfo => {
+        if (fieldInfo.el) {
+            fieldInfo.el.classList.remove('input-error'); // Reset error class
+            let value = fieldInfo.el.value;
+            let isBlank = false;
+
+            if (fieldInfo.checkValue !== undefined) { // For select elements or similar checks
+                isBlank = (value === fieldInfo.checkValue);
+            } else { // For standard text inputs
+                isBlank = (value.trim() === "");
+            }
+
+            if (isBlank) {
+                missingFieldsMessages.push(fieldInfo.name);
+                fieldInfo.el.classList.add('input-error'); // Apply error class
+                allFieldsValid = false;
+            }
+        } else {
+            // This case should ideally not happen if IDs are correct in HTML and JS
+            console.warn("Validation: Element not found for ID:", fieldInfo.id);
+        }
+    });
+
+    if (!allFieldsValid) {
+        alert("Please fill in all required fields before printing:\n- " + missingFieldsMessages.join("\n- "));
+        return; // Stop the function if validation fails
+    }
+    // END: Validation for required fields
+
+    const data = {
+        name: document.getElementById("name-to-be-taken").value,
+        age_years: document.getElementById("age-years-to-be-taken").value,
+        age_months: document.getElementById("age-months-to-be-taken").value,
+        sex: document.getElementById("sex-select").value,
+        bed: document.getElementById("bed-select").value,
+        uuid: document.getElementById("uuid-input").value,
+        diagnosis: document.getElementById("diagnosis-input").value,
+        consultants: document.getElementById("consultants-input").value,
+        jr: document.getElementById("jr-input").value,
+        sr: document.getElementById("sr-input").value
+    };
+
+    console.log("Collected data:", data);
+
+    fetch('/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Download failed');
+
+        // Try to get filename from Content-Disposition header safely
+        const contentDisposition = response.headers.get('Content-Disposition');
+        // let filename = 'download.pdf'; // fallback
+        let filename = `${data.name}_${data.uuid}_${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`.replace(/\s+/g, '_');
+
+
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename="(.+?)"/);
+            if (match && match[1]) {
+                filename = match[1];
+            }
+        }
+
+        return response.blob().then(blob => ({ blob, filename }));
+    })
+    .then(({ blob, filename }) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(error => {
+        console.error(error);
+        alert("Error: " + error.message);
+    });
+}
+
+
+</script>
+
+</body>
+</html>
