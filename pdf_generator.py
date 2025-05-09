@@ -627,7 +627,7 @@ def from_latex_to_pdf(tex_filename, pdf_address, absolute_path_of_pdflatex_exe):
 
     finally:
         print("--- Exiting from_latex_to_pdf ---")
-
+#SOME COMMENT
 
 # --- Keep the __main__ block for testing ---
 if __name__ == "__main__":
