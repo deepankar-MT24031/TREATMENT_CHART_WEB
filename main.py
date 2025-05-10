@@ -117,7 +117,18 @@ def download():
 
         time.sleep(1)
 
-        generate_picu_treatment_chart('destroy', 'WORLD', json_data, font_size=10)
+        # Load settings from settings.json
+        with open('settings.json', 'r') as f:
+            settings_data = json.load(f)
+
+        # Use heading, subheading, and font_size from settings
+        heading = settings_data.get('heading', 'Treatment Chart')
+        subheading = settings_data.get('subheading', 'Patient Information')
+        font_size = settings_data.get('font_size', 10)
+
+        # Call the generate_picu_treatment_chart function with the new arguments
+        generate_picu_treatment_chart(heading, subheading, json_data, font_size=font_size)
+
         time.sleep(1)
         CURRENT_PDF = f'GENERATED_PDFS/current.pdf'
 
