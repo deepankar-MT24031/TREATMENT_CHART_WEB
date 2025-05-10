@@ -1,7 +1,7 @@
 {
-    "uuid": "a930e3ee-f650-4d31-9c5a-df91820342ff",
-    "datetime": "10-05-2025 17:24:47",
-    "date": "10-05-2025",
+    "uuid": "",
+    "datetime": "",
+    "date": "",
     "default_Bed_count": 16,
     "default_Sex_count": 3,
     "default_Entries_count": 5,
@@ -11,16 +11,16 @@
         "Sex_2_name": "Female",
         "Sex_3_name": "Other"
     },
-    "Name": "D",
-    "Age_year": "4",
-    "Age_month": "4",
+    "Name": "",
+    "Age_year": "",
+    "Age_month": "",
     "Sex": "Male",
-    "uhid": "55555555",
-    "bed_number": "7",
-    "Diagnosis": "",
-    "Consultants": "",
-    "JR": "",
-    "SR": "",
+    "uhid": "",
+    "bed_number": "none",
+    "diagnosis": "",
+    "consultants": "",
+    "jr": "",
+    "sr": "",
     "each_entry_layout": {
         "entry_1": {
             "title": "Respiratory support",
@@ -37,61 +37,23 @@
             "title": "Sedation, analgesia, and neuromuscular blockade",
             "subtitles": {
                 "subtitle_1": {
-                    "content": "SASZXzX",
+                    "content": "",
                     "day": "",
                     "dose": "",
                     "volume": ""
-                },
-                "subtitle_2": {
-                    "content": "asdcadsc",
-                    "day": "",
-                    "dose": "",
-                    "volume": ""
-                },
-                "subtitle_3": {
-                    "content": "New Entry",
-                    "day": "1",
-                    "dose": "0",
-                    "volume": "0"
-                },
-                "subtitle_4": {
-                    "content": "New Entry",
-                    "day": "1",
-                    "dose": "0",
-                    "volume": "0"
                 }
             }
         },
         "entry_3": {
             "title": "Inotropes and Anti-hypertensives",
-            "subtitles": {}
-        },
-        "entry_4": {
-            "title": "New Medication Box",
             "subtitles": {
                 "subtitle_1": {
-                    "content": "New Entr",
-                    "day": "1",
-                    "dose": "0",
-                    "volume": "0"
-                },
-                "subtitle_2": {
-                    "content": "New Entry",
-                    "day": "1",
-                    "dose": "0",
-                    "volume": "0"
-                },
-                "subtitle_3": {
-                    "content": "New Entry",
-                    "day": "1",
-                    "dose": "0",
-                    "volume": "0"
+                    "content": "",
+                    "day": "",
+                    "dose": "",
+                    "volume": ""
                 }
             }
-        },
-        "entry_5": {
-            "title": "New Medication Box",
-            "subtitles": {}
         }
     },
     "each_table_row_layout": {
@@ -126,10 +88,6 @@
         "row_8": {
             "row_header_name": "IVM",
             "row_header_description": " "
-        },
-        "row_9": {
-            "row_header_name": " ",
-            "row_header_description": " "
         }
     }
-}
+} 

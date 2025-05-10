@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, jsonify
 import json
 from datetime import datetime
 import uuid
@@ -8,6 +8,8 @@ from json_generator import create_json_file
 from pdf_generator import generate_picu_treatment_chart
 from io import BytesIO
 from reportlab.pdfgen import canvas
+from database_handler import create_entry, return_database_with_history, search_entries, return_database_with_query_is_uuid  # Import the history function and search_entries
+
 app = Flask(__name__)
 
 # Assuming the create_json_file function is already imported
@@ -15,84 +17,187 @@ app = Flask(__name__)
 
 
 @app.route('/')
-def home():
-    return render_template('index.html')
+def index():
+    try:
+        # Load default format
+        with open('RESOURCES/default_format.json', 'r') as f:
+            default_data = json.load(f)
+        
+        # Get all JSON files in the RESOURCES directory
+        json_files = []
+        for file in os.listdir('RESOURCES'):
+            if file.endswith('.json') and file != 'default_format.json':
+                json_files.append(file)
+
+        # Get database entries for search tab
+        database_entries = return_database_with_history()
+
+        return render_template('index.html', 
+                             json_files=json_files,
+                             default_data=default_data,
+                             current_data=default_data,
+                             database_entries=database_entries)  # Pass entries to template
+    except Exception as e:
+        print(f"Error in index route: {str(e)}")
+        return str(e), 500
 
 
 @app.route('/download', methods=['POST'])
 def download():
-    # Get data from the form
+    try:
+        # Get data from the form
+        data = request.get_json()
+        print("Received data:", data)  # Debug print
+
+        # Validate required fields
+        required_fields = {
+            'Name': data.get('Name', '').strip(),
+            'Age_year': data.get('Age_year', '').strip(),
+            'Age_month': data.get('Age_month', '').strip(),
+            'Sex': data.get('Sex', '').strip(),
+            'uhid': data.get('uhid', '').strip(),
+            'uuid': data.get('uuid', '').strip(),
+            'bed_number': data.get('bed_number', '').strip()
+        }
+
+        # Check for missing or empty fields
+        missing_fields = []
+        for field, value in required_fields.items():
+            if not value:
+                # Convert field names to more readable format
+                readable_field = field.replace('_', ' ').title()
+                if field == 'uhid':
+                    readable_field = 'UHID'
+                missing_fields.append(readable_field)
+
+        if missing_fields:
+            error_message = f"Please fill in the following required fields: {', '.join(missing_fields)}"
+            return jsonify({'error': error_message}), 400
+
+        # If all required fields are present, proceed with the download
+        val1 = {
+            "Name": required_fields['Name'],
+            "Age_year": required_fields['Age_year'],
+            "Age_month": required_fields['Age_month'],
+            "Sex": required_fields['Sex'],
+            "uhid": required_fields['uhid'],
+            "uuid": required_fields['uuid'],
+            "bed_number": required_fields['bed_number'],
+            "Diagnosis": data.get('Diagnosis', '').strip(),
+            "Consultants": data.get('Consultants', '').strip(),
+            "JR": data.get('JR', '').strip(),
+            "SR": data.get('SR', '').strip()
+        }
+
+        # Get entries data from the form
+        val2 = data.get('entries', {})
+
+        # Get parameter values from the form data
+        val3 = data.get('parameters', {})
+
+        print("Processed data:", val1, val2, val3)  # Debug print
+
+        # Call the create_json_file function
+        format_type = "current"
+        create_json_file(val1, val2, val3, format_type)
+
+        # Sleep for 1 second to ensure the file is updated
+        time.sleep(1)
+
+        # Ensure the filename is correct with the .json extension
+        filename = f'RESOURCES/{format_type}_format.json'
+
+        # Read the created JSON file
+        with open(filename, 'r') as file:
+            json_data = json.load(file)
+            print('JSON file loaded successfully')  # Debug print
+
+        # Create database entry using your existing create_entry function
+        create_entry(json_data)
+
+        time.sleep(1)
+
+        generate_picu_treatment_chart('destroy', 'WORLD', json_data, font_size=10)
+        time.sleep(1)
+        CURRENT_PDF = f'GENERATED_PDFS/current.pdf'
+
+        # Check if the file exists before sending
+        if not os.path.exists(filename):
+            return jsonify({'error': 'Generated file not found'}), 404
+
+        return send_file(
+            CURRENT_PDF,
+            as_attachment=True,
+            download_name='current.pdf',
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        print(f"Error in download route: {str(e)}")
+        print(f"Error type: {type(e)}")  # Debug print
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")  # Debug print
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/get_entries')
+def get_entries():
+    try:
+        entries = return_database_with_history()
+        return jsonify(entries)
+    except Exception as e:
+        print(f"Error getting entries: {str(e)}")
+        return jsonify([]), 500
+
+
+@app.route('/search', methods=['POST'])
+def search():
     data = request.get_json()
+    name = data.get('name', '').strip()
+    date = data.get('date', '').strip()
+    uhid = data.get('uhid', '').strip()
+    
+    print(f"Search parameters - Name: '{name}', Date: '{date}', UHID: '{uhid}'")
+    
+    # Get all entries
+    entries = return_database_with_history()
+    print(f"Total entries found: {len(entries)}")
+    
+    # Filter entries based on search criteria
+    filtered_entries = []
+    for entry in entries:
+        entry_name = str(entry[0]).lower() if entry[0] else ''
+        entry_date = str(entry[1]) if entry[1] else ''
+        entry_uhid = str(entry[2]) if entry[2] else ''
+        
+        name_match = not name or name.lower() in entry_name
+        date_match = not date or date in entry_date
+        uhid_match = not uhid or uhid in entry_uhid
+        
+        if name_match and date_match and uhid_match:
+            filtered_entries.append(entry)
+    
+    print(f"Filtered entries found: {len(filtered_entries)}")
+    return jsonify(filtered_entries)
 
-    # Extract form fields
-    val1 = {
-        "name": data.get('name', 'Unknown'),
-        "age_year": data.get('age_years', ''),
-        "age_month": data.get('age_months', ''),
-        "sex": data.get('sex', ''),
-        "uhid": data.get('uuid', ''),
-        "bed_number": data.get('bed', ''),
-        "diagnosis": data.get('diagnosis', ''),
-        "consultants": data.get('consultants', ''),
-        "jr": data.get('jr', ''),
-        "sr": data.get('sr', '')
-    }
 
-    # Dummy data for val2 (entries)
-    val2 = {
-        "entry_1": {
-                "title": "Respiratory support",
-                "subtitles": {"subtitle_1": {"content": "O2 via NC", "day": "D3", "dose": "2L", "volume": "N/A"}}
-            },
-        "entry_6": {"title": "Other Medications",
-                    "subtitles": {"subtitle_3": {"content": "Med X", "day": "D3", "dose": "20mg", "volume": "3ml"}}}
-
-    }
-
-    # Dummy data for val3 (table rows)
-    val3 = {
-        "row_1": {"row_header_name": "Date", "row_header_description": "lol"},
-            "row_2": {"row_header_name": "Weight", "row_header_description": "12 kg"}
-    }
-
-    # Call the create_json_file function
-    format_type = "current"  # You can pass "default" or "current" as needed
-    create_json_file(val1, val2, val3, format_type)
-
-    # Sleep for 1 second to ensure the file is updated
-    time.sleep(1)
-
-    # Ensure the filename is correct with the .json extension
-    filename = f'RESOURCES/{format_type}_format.json'
-
-    with open(filename, 'r') as file:
-        json_data = json.load(file)
-        print('loaded')
-    time.sleep(1)
-
-    generate_picu_treatment_chart('destroy', 'WORLD', json_data, font_size=10)  # Example font size
-    time.sleep(1)
-    CURRENT_PDF = f'GENERATED_PDFS/current.pdf'
-
-    # Check if the file exists before sending
-    if not os.path.exists(filename):
-        return "File not found", 404
-
-    # Return the JSON file as a download with the correct extension
-    # return send_file(filename, as_attachment=True, mimetype='application/json')
-
-    # buffer = BytesIO()
-    # c = canvas.Canvas(buffer)
-    # c.showPage()  # Add a blank page
-    # c.save()
-    # buffer.seek(0)
-    #
-    return send_file(
-        CURRENT_PDF,
-        as_attachment=True,
-        download_name='current.pdf',
-        mimetype='application/pdf'
-    )
+@app.route('/get_entry/<uuid>')
+def get_entry(uuid):
+    try:
+        print(f"Received request for UUID: {uuid}")  # Debug log
+        
+        # Get the entry from the database using return_database_with_query_is_uuid
+        entry = return_database_with_query_is_uuid(param_uuid=uuid)
+        print(f"Search result: {entry}")  # Debug log
+        
+        if not entry:
+            print(f"No entry found for UUID: {uuid}")  # Debug log
+            return jsonify({'error': 'Entry not found'}), 404
+        
+        print(f"Returning entry: {entry}")  # Debug log
+        return jsonify(entry)
+    except Exception as e:
+        print(f"Error getting entry: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

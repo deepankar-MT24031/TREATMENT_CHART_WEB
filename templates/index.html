@@ -210,18 +210,25 @@
             background-color: #aaa;
         }
 
-        .cell-number {
-    width: 20px !important;
-    max-width: 20px !important;
-    padding: 1px !important;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    font-size: 0.9em;
-}
+        .cell-number, th.cell-number, td.cell-number {
+            width: 8px !important;
+            max-width: 8px !important;
+            min-width: 8px !important;
+            padding: 0 !important;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            font-size: 0.7em;
+        }
+
+        #medications-container table colgroup col:first-child {
+            width: 8px !important;
+            max-width: 8px !important;
+            min-width: 8px !important;
+        }
 
         .cell-description {
-            width: 35%;
+            width: 45%;
         }
 
         .cell-day, .cell-dose, .cell-volume {
@@ -455,6 +462,11 @@
         .settings-modal .save-btn:hover {
             background: #0056b3;
         }
+
+        /* Force medication tables to use fixed layout */
+        #medications-container table {
+            table-layout: fixed;
+        }
     </style>
 </head>
 <body>
@@ -503,20 +515,21 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr class="search-result-row">
-                                <td style="text-align: center;">1</td>
-                                <td>dummy</td>
-                                <td>14-04-2025 04:05:34</td>
-                                <td>123456789</td>
-                                <td></td>
-                            </tr>
-                            <tr class="search-result-row">
-                                <td style="text-align: center;">2</td>
-                                <td>dummy</td>
-                                <td>19-03-2025 00:37:03</td>
-                                <td>321654987</td>
-                                <td></td>
-                            </tr>
+                            {% if database_entries %}
+                                {% for entry in database_entries %}
+                                <tr class="search-result-row" data-uuid="{{ entry[3] }}" style="cursor: pointer;">
+                                    <td style="text-align: center;">{{ loop.index }}</td>
+                                    <td>{{ entry[0] }}</td>
+                                    <td>{{ entry[1] }}</td>
+                                    <td>{{ entry[2] }}</td>
+                                    <td style="display: none;">{{ entry[3] }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" style="text-align: center;">No entries found</td>
+                                </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -600,10 +613,17 @@
                     <div class="column" id="left-column">
                         <div class="form-section scrollable-medications" id="medications-container">
                             <div class="table-container">
-                                <table>
+                                <table style="table-layout: fixed; width: auto;">
+                                    <colgroup>
+                                        <col style="width: 8px;">
+                                        <col>
+                                        <col>
+                                        <col>
+                                        <col>
+                                    </colgroup>
                                     <thead>
                                         <tr>
-                                            <th class="cell-number" style="width: 3px; max-width: 3px;">#</th>
+                                            <th class="cell-number"></th>
                                             <th class="cell-description">
                                                 <input type="text" class="header-editable" value="Respiratory support">
                                             </th>
@@ -614,7 +634,7 @@
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td class="cell-number" style="width: 3px; max-width: 3px;">1</td>
+                                            <td class="cell-number">1</td>
                                             <td class="cell-description"><input type="text" class="editable"></td>
                                             <td class="cell-day"><input type="text" class="editable"></td>
                                             <td class="cell-dose"><input type="text" class="editable"></td>
@@ -626,7 +646,14 @@
                             <button class="button add-row">Add Row</button>
 
                             <div class="table-container">
-                                <table>
+                                <table style="table-layout: fixed; width: auto;">
+                                    <colgroup>
+                                        <col style="width: 8px;">
+                                        <col>
+                                        <col>
+                                        <col>
+                                        <col>
+                                    </colgroup>
                                     <thead>
                                         <tr>
                                             <th class="cell-number"></th>
@@ -652,7 +679,14 @@
                             <button class="button add-row">Add Row</button>
 
                             <div class="table-container">
-                                <table>
+                                <table style="table-layout: fixed; width: auto;">
+                                    <colgroup>
+                                        <col style="width: 8px;">
+                                        <col>
+                                        <col>
+                                        <col>
+                                        <col>
+                                    </colgroup>
                                     <thead>
                                         <tr>
                                             <th class="cell-number"></th>
@@ -684,7 +718,7 @@
 
                     <div class="column" id="right-column">
                         <div class="form-section scrollable-table">
-                            <table id="parameters-table">
+                            <table id="parameter-table">
                                 <thead>
                                     <tr>
                                         <th style="width: 5%;">No</th>
@@ -693,46 +727,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td>1</td>
-                                        <td><input type="text" class="editable" value="Date"></td>
-                                        <td><input type="text" class="editable"></td>
-                                    </tr>
-                                    <tr>
-                                        <td>2</td>
-                                        <td><input type="text" class="editable" value="Time"></td>
-                                        <td><input type="text" class="editable"></td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td><input type="text" class="editable" value="Weight"></td>
-                                        <td><input type="text" class="editable"></td>
-                                    </tr>
-                                    <tr>
-                                        <td>4</td>
-                                        <td><input type="text" class="editable" value="Length"></td>
-                                        <td><input type="text" class="editable"></td>
-                                    </tr>
-                                    <tr>
-                                        <td>5</td>
-                                        <td><input type="text" class="editable" value="BSA"></td>
-                                        <td><input type="text" class="editable"></td>
-                                    </tr>
-                                    <tr>
-                                        <td>6</td>
-                                        <td><input type="text" class="editable" value="TFR"></td>
-                                        <td><input type="text" class="editable"></td>
-                                    </tr>
-                                    <tr>
-                                        <td>7</td>
-                                        <td><input type="text" class="editable" value="TFV"></td>
-                                        <td><input type="text" class="editable"></td>
-                                    </tr>
-                                    <tr>
-                                        <td>8</td>
-                                        <td><input type="text" class="editable" value="IVM"></td>
-                                        <td><input type="text" class="editable"></td>
-                                    </tr>
+                                    <!-- Table body will be populated dynamically -->
                                 </tbody>
                             </table>
                             <button class="button" id="add-parameter">Add Cell</button>
@@ -782,6 +777,96 @@
     </div>
 
     <script>
+        // Add functionality to the search button
+        document.querySelector('.search-button').addEventListener('click', function() {
+            const name = document.getElementById('search-name').value;
+            const date = document.getElementById('search-date').value;
+            const uhid = document.getElementById('search-uuid').value;
+
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    date: date,
+                    uhid: uhid
+                })
+            })
+            .then(response => response.json())
+            .then(entries => {
+                const tbody = document.querySelector('.search-results table tbody');
+                tbody.innerHTML = '';
+                
+                if (entries && entries.length > 0) {
+                    entries.forEach((entry, index) => {
+                        const row = document.createElement('tr');
+                        row.className = 'search-result-row';
+                        row.setAttribute('data-uuid', entry[3]);
+                        row.innerHTML = `
+                            <td style="text-align: center;">${index + 1}</td>
+                            <td>${entry[0]}</td>
+                            <td>${entry[1]}</td>
+                            <td>${entry[2]}</td>
+                            <td style="display: none;">${entry[3]}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center;">No entries found</td>
+                        </tr>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error performing search:', error);
+            });
+        });
+
+        // Add functionality to the reset button
+        document.querySelectorAll('.search-button')[1].addEventListener('click', function() {
+            // Clear search inputs
+            document.getElementById('search-name').value = '';
+            document.getElementById('search-date').value = '';
+            document.getElementById('search-uuid').value = '';
+
+            // Fetch all entries
+            fetch('/get_entries')
+                .then(response => response.json())
+                .then(entries => {
+                    const tbody = document.querySelector('.search-results table tbody');
+                    tbody.innerHTML = '';
+                    
+                    if (entries && entries.length > 0) {
+                        entries.forEach((entry, index) => {
+                            const row = document.createElement('tr');
+                            row.className = 'search-result-row';
+                            row.setAttribute('data-uuid', entry[3]);
+                            row.innerHTML = `
+                                <td style="text-align: center;">${index + 1}</td>
+                                <td>${entry[0]}</td>
+                                <td>${entry[1]}</td>
+                                <td>${entry[2]}</td>
+                                <td style="display: none;">${entry[3]}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="5" style="text-align: center;">No entries found</td>
+                            </tr>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching entries:', error);
+                });
+        });
+
         // Tab switching functionality
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', function() {
@@ -797,46 +882,73 @@
                 });
 
                 document.getElementById(tabId + '-tab').classList.add('active');
-            });
-        });
 
-        // Add row functionality for all tables
-        document.querySelectorAll('.add-row').forEach(button => {
-            button.addEventListener('click', function() {
-                // Find the closest table
-                const tableContainer = this.previousElementSibling;
-                const table = tableContainer.querySelector('tbody');
-                if (table) {
-                    const rowCount = table.querySelectorAll('tr').length + 1;
-                    const newRow = document.createElement('tr');
-                    newRow.innerHTML = `
-                        <td class="cell-number">${rowCount}</td>
-                        <td class="cell-description"><input type="text" class="editable"></td>
-                        <td class="cell-day"><input type="text" class="editable"></td>
-                        <td class="cell-dose"><input type="text" class="editable"></td>
-                        <td class="cell-volume"><input type="text" class="editable"></td>
-                    `;
-                    table.appendChild(newRow);
+                // If switching to search tab, refresh the entries
+                if (tabId === 'search') {
+                    // Clear search inputs and fetch all entries
+                    document.getElementById('search-name').value = '';
+                    document.getElementById('search-date').value = '';
+                    document.getElementById('search-uuid').value = '';
+
+                    fetch('/get_entries')
+                        .then(response => response.json())
+                        .then(entries => {
+                            const tbody = document.querySelector('.search-results table tbody');
+                            tbody.innerHTML = '';
+                            
+                            if (entries && entries.length > 0) {
+                                entries.forEach((entry, index) => {
+                                    const row = document.createElement('tr');
+                                    row.className = 'search-result-row';
+                                    row.setAttribute('data-uuid', entry[3]);
+                                    row.innerHTML = `
+                                        <td style="text-align: center;">${index + 1}</td>
+                                        <td>${entry[0]}</td>
+                                        <td>${entry[1]}</td>
+                                        <td>${entry[2]}</td>
+                                        <td style="display: none;">${entry[3]}</td>
+                                    `;
+                                    tbody.appendChild(row);
+                                });
+                            } else {
+                                tbody.innerHTML = `
+                                    <tr>
+                                        <td colspan="5" style="text-align: center;">No entries found</td>
+                                    </tr>
+                                `;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching entries:', error);
+                        });
                 }
             });
         });
 
-        // Add new table/box functionality
-        document.getElementById('add-box-footer').addEventListener('click', addNewMedicationBox);
-
-        function addNewMedicationBox() {
-            const container = document.getElementById('medications-container');
-            const tableCount = container.querySelectorAll('.table-container').length + 1;
-
-            const newTableSection = document.createElement('div');
-            newTableSection.className = 'table-container';
-            newTableSection.innerHTML = `
-                <table>
+        // Add this at the beginning of your script section
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get the default data from the server
+            const defaultData = JSON.parse('{{ default_data|tojson|safe }}');
+            const currentData = JSON.parse('{{ current_data|tojson|safe }}');
+            
+            // Populate medication tables
+            const medicationsContainer = document.getElementById('medications-container');
+            medicationsContainer.innerHTML = ''; // Clear existing content
+            
+            // Create tables from each_entry_layout
+            Object.entries(currentData.each_entry_layout).forEach(([entryKey, entryData]) => {
+                // Create table container
+                const tableContainer = document.createElement('div');
+                tableContainer.className = 'table-container';
+                
+                // Create table
+                const table = document.createElement('table');
+                table.innerHTML = `
                     <thead>
                         <tr>
                             <th class="cell-number"></th>
                             <th class="cell-description">
-                                <input type="text" class="header-editable" value="Medication Box ${tableCount}">
+                                <input type="text" class="header-editable" value="${entryData.title}">
                             </th>
                             <th class="cell-day">Day</th>
                             <th class="cell-dose">Dose</th>
@@ -844,22 +956,162 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td class="cell-number">1</td>
-                            <td class="cell-description"><input type="text" class="editable"></td>
-                            <td class="cell-day"><input type="text" class="editable"></td>
-                            <td class="cell-dose"><input type="text" class="editable"></td>
-                            <td class="cell-volume"><input type="text" class="editable"></td>
-                        </tr>
                     </tbody>
-                </table>
-            `;
+                `;
+                
+                // Add rows from subtitles
+                const tbody = table.querySelector('tbody');
+                Object.entries(entryData.subtitles).forEach(([subtitleKey, subtitleData], index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="cell-number">${index + 1}</td>
+                        <td class="cell-description"><input type="text" class="editable" value="${subtitleData.content}"></td>
+                        <td class="cell-day"><input type="text" class="editable" value="${subtitleData.day}"></td>
+                        <td class="cell-dose"><input type="text" class="editable" value="${subtitleData.dose}"></td>
+                        <td class="cell-volume"><input type="text" class="editable" value="${subtitleData.volume}"></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                // Add table to container
+                tableContainer.appendChild(table);
+                medicationsContainer.appendChild(tableContainer);
+                
+                // Add "Add Row" button
+                const addRowButton = document.createElement('button');
+                addRowButton.className = 'button add-row';
+                addRowButton.textContent = 'Add Row';
+                medicationsContainer.appendChild(addRowButton);
+            });
+            
+            // Populate parameter table
+            const parameterTable = document.getElementById('parameter-table');
+            const tbody = parameterTable.querySelector('tbody');
+            tbody.innerHTML = ''; // Clear existing content
+            
+            Object.entries(currentData.each_table_row_layout).forEach(([rowKey, rowData]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="cell-number">${rowKey.replace('row_', '')}</td>
+                    <td class="cell-description">
+                        <input type="text" class="editable" value="${rowData.row_header_name}">
+                    </td>
+                    <td class="cell-value">
+                        <input type="text" class="editable" value="${rowData.row_header_description}">
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Add event listeners after populating tables
+            addInputListeners();
+            
+            // Add event listeners for add row buttons
+            document.querySelectorAll('.add-row').forEach(button => {
+                button.addEventListener('click', function() {
+                    const tableContainer = this.previousElementSibling;
+                    const table = tableContainer.querySelector('tbody');
+                    if (table) {
+                        const rowCount = table.querySelectorAll('tr').length + 1;
+                        const newRow = document.createElement('tr');
+                        newRow.innerHTML = `
+                            <td class="cell-number">${rowCount}</td>
+                            <td class="cell-description"><input type="text" class="editable" value="New Entry"></td>
+                            <td class="cell-day"><input type="text" class="editable" value="1"></td>
+                            <td class="cell-dose"><input type="text" class="editable" value="0"></td>
+                            <td class="cell-volume"><input type="text" class="editable" value="0"></td>
+                        `;
+                        table.appendChild(newRow);
+                        
+                        // Add listeners to the new inputs
+                        const newInputs = newRow.querySelectorAll('input.editable');
+                        newInputs.forEach(input => {
+                            input.removeEventListener('input', handleInputChange);
+                            input.addEventListener('input', handleInputChange);
+                        });
+                    }
+                });
+            });
+            
+            // Add event listener for add box button in footer
+            document.getElementById('add-box-footer').addEventListener('click', function() {
+                addNewMedicationBox();
+                // Reattach listeners after adding new box
+                setTimeout(reattachListeners, 0);
+            });
+        });
 
-            const newButtonRow = document.createElement('button');
-            newButtonRow.className = 'button add-row';
-            newButtonRow.textContent = 'Add Row';
+        // Add event listeners to all input fields in medication tables
+        function addInputListeners() {
+            console.log('Adding input listeners to all tables');
+            const medicationTables = document.querySelectorAll('#medications-container .table-container');
+            
+            medicationTables.forEach(tableContainer => {
+                const inputs = tableContainer.querySelectorAll('input.editable');
+                inputs.forEach(input => {
+                    // Remove any existing listeners to prevent duplicates
+                    input.removeEventListener('input', handleInputChange);
+                    // Add the listener
+                    input.addEventListener('input', handleInputChange);
+                });
+            });
+        }
 
-            newButtonRow.addEventListener('click', function() {
+        // Debounce function to prevent too many rapid calls
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Handle input changes with debounce
+        const handleInputChange = debounce(function() {
+            console.log('Input changed, checking for empty rows');
+            cleanEmptyRows();
+        }, 300);
+
+        // Add functionality to clean empty rows
+        function cleanEmptyRows() {
+            console.log('Cleaning empty rows');
+            const medicationTables = document.querySelectorAll('#medications-container .table-container');
+            
+            medicationTables.forEach(tableContainer => {
+                const table = tableContainer.querySelector('table');
+                const rows = table.querySelectorAll('tbody tr');
+                
+                rows.forEach((row, index) => {
+                    const content = row.querySelector('td.cell-description input').value.trim();
+                    const day = row.querySelector('td.cell-day input').value.trim();
+                    const dose = row.querySelector('td.cell-dose input').value.trim();
+                    const volume = row.querySelector('td.cell-volume input').value.trim();
+                    
+                    console.log('Row values:', { content, day, dose, volume });
+                    
+                    // If all fields are empty, remove the row
+                    if (!content && !day && !dose && !volume) {
+                        console.log('Removing empty row:', row);
+                        row.remove();
+                    }
+                });
+                
+                // Update row numbers after removing empty rows
+                const remainingRows = table.querySelectorAll('tbody tr');
+                remainingRows.forEach((row, index) => {
+                    row.querySelector('td.cell-number').textContent = index + 1;
+                });
+            });
+        }
+
+        // Modify the add row functionality to include the new listeners
+        document.querySelectorAll('.add-row').forEach(button => {
+            button.addEventListener('click', function() {
+                console.log('Add row button clicked');
                 const tableContainer = this.previousElementSibling;
                 const table = tableContainer.querySelector('tbody');
                 if (table) {
@@ -867,25 +1119,86 @@
                     const newRow = document.createElement('tr');
                     newRow.innerHTML = `
                         <td class="cell-number">${rowCount}</td>
-                        <td class="cell-description"><input type="text" class="editable"></td>
-                        <td class="cell-day"><input type="text" class="editable"></td>
-                        <td class="cell-dose"><input type="text" class="editable"></td>
-                        <td class="cell-volume"><input type="text" class="editable"></td>
+                        <td class="cell-description"><input type="text" class="editable" value="New Entry"></td>
+                        <td class="cell-day"><input type="text" class="editable" value="1"></td>
+                        <td class="cell-dose"><input type="text" class="editable" value="0"></td>
+                        <td class="cell-volume"><input type="text" class="editable" value="0"></td>
                     `;
                     table.appendChild(newRow);
+                    
+                    // Add listeners to the new inputs
+                    const newInputs = newRow.querySelectorAll('input.editable');
+                    newInputs.forEach(input => {
+                        input.removeEventListener('input', handleInputChange);
+                        input.addEventListener('input', handleInputChange);
+                    });
                 }
             });
+        });
 
-            container.appendChild(newTableSection);
-            container.appendChild(newButtonRow);
+        // Add listeners to existing inputs when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded - Adding initial listeners');
+            addInputListeners();
+            
+            // Add initial event listeners for add row buttons
+            document.querySelectorAll('.add-row').forEach(button => {
+                button.addEventListener('click', handleAddRow);
+            });
+            
+            // Add initial event listener for add box button
+            const addBoxButton = document.getElementById('add-box-footer');
+            if (addBoxButton) {
+                // Remove any existing listeners
+                addBoxButton.replaceWith(addBoxButton.cloneNode(true));
+                // Get the fresh reference
+                const freshAddBoxButton = document.getElementById('add-box-footer');
+                // Add the new listener
+                freshAddBoxButton.addEventListener('click', handleAddBox);
+            }
+
+            // Add click handlers to search result rows
+            // Add click handler for existing rows
+            document.querySelectorAll('.search-result-row').forEach(row => {
+                row.addEventListener('click', function() {
+                    const uuid = this.getAttribute('data-uuid');
+                    if (uuid) {
+                        loadEntryData(uuid);
+                    }
+                });
+            });
+
+            // Add click handler for dynamically added rows
+            document.querySelector('.search-results').addEventListener('click', function(e) {
+                const row = e.target.closest('.search-result-row');
+                if (row) {
+                    const uuid = row.getAttribute('data-uuid');
+                    if (uuid) {
+                        loadEntryData(uuid);
+                    }
+                }
+            });
+        });
+
+        // Add event listeners after any dynamic content changes
+        function reattachListeners() {
+            console.log('Reattaching listeners after content change');
+            addInputListeners();
         }
+
+        // Add event listener for the add box button
+        document.getElementById('add-box-footer').addEventListener('click', function() {
+            addNewMedicationBox();
+            // Reattach listeners after adding new box
+            setTimeout(reattachListeners, 0);
+        });
 
         // Add parameter/cell functionality
         document.getElementById('add-cell-footer').addEventListener('click', addNewParameter);
         document.getElementById('add-parameter').addEventListener('click', addNewParameter);
 
         function addNewParameter() {
-            const table = document.getElementById('parameters-table').querySelector('tbody');
+            const table = document.getElementById('parameter-table').querySelector('tbody');
             const rowCount = table.querySelectorAll('tr').length + 1;
 
             const newRow = document.createElement('tr');
@@ -898,22 +1211,229 @@
             table.appendChild(newRow);
         }
 
-        // Add functionality to the search button
-        document.querySelector('.search-button').addEventListener('click', function() {
-            // In a real application, this would fetch results from a server
-            console.log('Search button clicked');
-        });
+        // Add this function to handle row clicks
+        function loadEntryData(uuid) {
+            console.log('Loading entry with UUID:', uuid); // Debug log
+            fetch(`/get_entry/${uuid}`)
+                .then(response => {
+                    console.log('Response status:', response.status); // Debug log
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Received data:', data); // Debug log
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
 
-        // Make search result rows clickable
-        document.querySelectorAll('.search-result-row').forEach(row => {
-            row.addEventListener('click', function() {
-                // In a real application, this would load the selected record
-                console.log('Result row clicked');
+                    // Switch to edit tab
+                    document.querySelector('.tab[data-tab="edit"]').click();
 
-                // Simulate switching to edit tab with this record
-                document.querySelector('.tab[data-tab="edit"]').click();
+                    // Fill form fields with capitalized field names
+                    document.getElementById('name-to-be-taken').value = data.Name || '';
+                    document.getElementById('age-years-to-be-taken').value = data.Age_year || '';
+                    document.getElementById('age-months-to-be-taken').value = data.Age_month || '';
+                    document.getElementById('sex-select').value = data.Sex || '';
+                    document.getElementById('bed-select').value = data.bed_number || '';
+                    document.getElementById('uuid-input').value = data.uhid || ''; // This is the UHID
+                    document.getElementById('diagnosis-input').value = data.Diagnosis || '';
+                    document.getElementById('consultants-input').value = data.Consultants || '';
+                    document.getElementById('jr-input').value = data.JR || '';
+                    document.getElementById('sr-input').value = data.SR || '';
+
+                    // Clear existing medication tables
+                    const medicationsContainer = document.getElementById('medications-container');
+                    medicationsContainer.innerHTML = '';
+
+                    // Create medication tables from entries
+                    Object.entries(data.each_entry_layout || {}).forEach(([entryKey, entryData]) => {
+                        // Create table container
+                        const tableContainer = document.createElement('div');
+                        tableContainer.className = 'table-container';
+                        
+                        // Create table
+                        const table = document.createElement('table');
+                        table.innerHTML = `
+                            <thead>
+                                <tr>
+                                    <th class="cell-number"></th>
+                                    <th class="cell-description">
+                                        <input type="text" class="header-editable" value="${entryData.title || ''}">
+                                    </th>
+                                    <th class="cell-day">Day</th>
+                                    <th class="cell-dose">Dose</th>
+                                    <th class="cell-volume">Volume</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        `;
+                        
+                        // Add rows from subtitles
+                        const tbody = table.querySelector('tbody');
+                        Object.entries(entryData.subtitles || {}).forEach(([subtitleKey, subtitleData], index) => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td class="cell-number">${index + 1}</td>
+                                <td class="cell-description"><input type="text" class="editable" value="${subtitleData.content || ''}"></td>
+                                <td class="cell-day"><input type="text" class="editable" value="${subtitleData.day || ''}"></td>
+                                <td class="cell-dose"><input type="text" class="editable" value="${subtitleData.dose || ''}"></td>
+                                <td class="cell-volume"><input type="text" class="editable" value="${subtitleData.volume || ''}"></td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                        
+                        // Add table to container
+                        tableContainer.appendChild(table);
+                        medicationsContainer.appendChild(tableContainer);
+                        
+                        // Add "Add Row" button
+                        const addRowButton = document.createElement('button');
+                        addRowButton.className = 'button add-row';
+                        addRowButton.textContent = 'Add Row';
+                        medicationsContainer.appendChild(addRowButton);
+                    });
+
+                    // Populate parameter table
+                    const parameterTable = document.getElementById('parameter-table');
+                    const tbody = parameterTable.querySelector('tbody');
+                    tbody.innerHTML = ''; // Clear existing content
+                    
+                    Object.entries(data.each_table_row_layout || {}).forEach(([rowKey, rowData]) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="cell-number">${rowKey.replace('row_', '')}</td>
+                            <td class="cell-description">
+                                <input type="text" class="editable" value="${rowData.row_header_name || ''}">
+                            </td>
+                            <td class="cell-value">
+                                <input type="text" class="editable" value="${rowData.row_header_description || ''}">
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+
+                    // Reattach all event listeners after loading data
+                    setTimeout(() => {
+                        // Reattach input listeners
+                        addInputListeners();
+                        
+                        // Reattach add row button listeners
+                        document.querySelectorAll('.add-row').forEach(button => {
+                            button.removeEventListener('click', handleAddRow);
+                            button.addEventListener('click', handleAddRow);
+                        });
+                        
+                        // Reattach add box button listener
+                        const addBoxButton = document.getElementById('add-box-footer');
+                        if (addBoxButton) {
+                            addBoxButton.removeEventListener('click', handleAddBox);
+                            addBoxButton.addEventListener('click', handleAddBox);
+                        }
+                    }, 0);
+                })
+                .catch(error => {
+                    console.error('Error loading entry:', error);
+                    alert('Error loading entry data');
+                });
+        }
+
+        // Handle add row button click
+        function handleAddRow() {
+            console.log('Add row button clicked');
+            const tableContainer = this.previousElementSibling;
+            const table = tableContainer.querySelector('tbody');
+            if (table) {
+                const rowCount = table.querySelectorAll('tr').length + 1;
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td class="cell-number">${rowCount}</td>
+                    <td class="cell-description"><input type="text" class="editable" value="New Entry"></td>
+                    <td class="cell-day"><input type="text" class="editable" value="1"></td>
+                    <td class="cell-dose"><input type="text" class="editable" value="0"></td>
+                    <td class="cell-volume"><input type="text" class="editable" value="0"></td>
+                `;
+                table.appendChild(newRow);
+                
+                // Add listeners to the new inputs
+                const newInputs = newRow.querySelectorAll('input.editable');
+                newInputs.forEach(input => {
+                    input.removeEventListener('input', handleInputChange);
+                    input.addEventListener('input', handleInputChange);
+                });
+            }
+        }
+
+        // Handle add box button click
+        function handleAddBox() {
+            console.log('Add box button clicked');
+            addNewMedicationBox();
+            // No need to call reattachListeners here as we're handling listeners in addNewMedicationBox
+        }
+
+        // Function to add a new medication box
+        function addNewMedicationBox() {
+            console.log('Adding new medication box');
+            const medicationsContainer = document.getElementById('medications-container');
+            
+            // Create table container
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'table-container';
+            
+            // Create table
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <colgroup>
+                    <col style="width: 8px;">
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th class="cell-number"></th>
+                        <th class="cell-description">
+                            <input type="text" class="header-editable" value="New Medication Box">
+                        </th>
+                        <th class="cell-day">Day</th>
+                        <th class="cell-dose">Dose</th>
+                        <th class="cell-volume">Volume</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="cell-number">1</td>
+                        <td class="cell-description"><input type="text" class="editable"></td>
+                        <td class="cell-day"><input type="text" class="editable"></td>
+                        <td class="cell-dose"><input type="text" class="editable"></td>
+                        <td class="cell-volume"><input type="text" class="editable"></td>
+                    </tr>
+                </tbody>
+            `;
+            
+            // Add table to container
+            tableContainer.appendChild(table);
+            medicationsContainer.appendChild(tableContainer);
+            
+            // Add "Add Row" button
+            const addRowButton = document.createElement('button');
+            addRowButton.className = 'button add-row';
+            addRowButton.textContent = 'Add Row';
+            medicationsContainer.appendChild(addRowButton);
+
+            // Add event listener to the new add row button
+            addRowButton.addEventListener('click', handleAddRow);
+
+            // Add input listeners to the new inputs
+            const newInputs = tableContainer.querySelectorAll('input.editable');
+            newInputs.forEach(input => {
+                input.removeEventListener('input', handleInputChange);
+                input.addEventListener('input', handleInputChange);
             });
-        });
+
+            console.log('New medication box added');
+        }
 
         // Column resizing functionality
         const resizer = document.getElementById('column-resizer');
@@ -1010,105 +1530,112 @@
     </script>
 
 <script>
-
 function downloadTextFile() {
-    // START: Validation for required fields
-    const fieldsToValidate = [
-        { id: "name-to-be-taken", name: "Name", el: document.getElementById("name-to-be-taken") },
-        { id: "age-years-to-be-taken", name: "Age (Years)", el: document.getElementById("age-years-to-be-taken") },
-        { id: "age-months-to-be-taken", name: "Age (Months)", el: document.getElementById("age-months-to-be-taken") },
-        { id: "bed-select", name: "Bed", el: document.getElementById("bed-select"), checkValue: "none" }, // Special check for select if "none" means blank
-        { id: "uuid-input", name: "UUID", el: document.getElementById("uuid-input") }
-    ];
+    // Clean empty rows before collecting data (as a final check)
+    cleanEmptyRows();
 
-    let missingFieldsMessages = [];
-    let allFieldsValid = true;
+    // Generate a new UUID for this entry
+    const newUuid = crypto.randomUUID();
 
-    // Clear previous errors and validate each field
-    fieldsToValidate.forEach(fieldInfo => {
-        if (fieldInfo.el) {
-            fieldInfo.el.classList.remove('input-error'); // Reset error class
-            let value = fieldInfo.el.value;
-            let isBlank = false;
+    // Collect all form data with capitalized field names
+    const formData = {
+        Name: document.getElementById('name-to-be-taken').value.trim(),
+        Age_year: document.getElementById('age-years-to-be-taken').value.trim(),
+        Age_month: document.getElementById('age-months-to-be-taken').value.trim(),
+        Sex: document.getElementById('sex-select').value.trim(),
+        uhid: document.getElementById('uuid-input').value.trim(), // This is the UHID
+        uuid: newUuid, // Generate new UUID for this entry
+        bed_number: document.getElementById('bed-select').value.trim(),
+        Diagnosis: document.getElementById('diagnosis-input').value.trim(),
+        Consultants: document.getElementById('consultants-input').value.trim(),
+        JR: document.getElementById('jr-input').value.trim(),
+        SR: document.getElementById('sr-input').value.trim()
+    };
 
-            if (fieldInfo.checkValue !== undefined) { // For select elements or similar checks
-                isBlank = (value === fieldInfo.checkValue);
-            } else { // For standard text inputs
-                isBlank = (value.trim() === "");
+    // Collect ALL parameters from the table, regardless of whether they have values
+    const parametersTable = document.getElementById('parameter-table');
+    const parameterRows = parametersTable.querySelectorAll('tbody tr');
+    const parameters = {};
+    
+    parameterRows.forEach((row, index) => {
+        const parameterName = row.querySelector('td:nth-child(2) input').value.trim();
+        const parameterValue = row.querySelector('td:nth-child(3) input').value.trim();
+        // Store every parameter, using empty string if no value
+        parameters[`row_${index + 1}`] = {
+            row_header_name: parameterName || ' ',  // Use space if no name
+            row_header_description: parameterValue || ' '  // Use space if no value
+        };
+    });
+
+    // Collect all medication tables data
+    const medicationTables = document.querySelectorAll('#medications-container .table-container');
+    const entries = {};
+    
+    medicationTables.forEach((tableContainer, tableIndex) => {
+        const table = tableContainer.querySelector('table');
+        const title = table.querySelector('th.cell-description input').value.trim();
+        const rows = table.querySelectorAll('tbody tr');
+        const subtitles = {};
+        
+        rows.forEach((row, rowIndex) => {
+            const content = row.querySelector('td.cell-description input').value.trim();
+            const day = row.querySelector('td.cell-day input').value.trim();
+            const dose = row.querySelector('td.cell-dose input').value.trim();
+            const volume = row.querySelector('td.cell-volume input').value.trim();
+            
+            if (content || day || dose || volume) {
+                subtitles[`subtitle_${rowIndex + 1}`] = {
+                    content: content,
+                    day: day,
+                    dose: dose,
+                    volume: volume
+                };
             }
-
-            if (isBlank) {
-                missingFieldsMessages.push(fieldInfo.name);
-                fieldInfo.el.classList.add('input-error'); // Apply error class
-                allFieldsValid = false;
-            }
-        } else {
-            // This case should ideally not happen if IDs are correct in HTML and JS
-            console.warn("Validation: Element not found for ID:", fieldInfo.id);
+        });
+        
+        if (title || Object.keys(subtitles).length > 0) {
+            entries[`entry_${tableIndex + 1}`] = {
+                title: title,
+                subtitles: subtitles
+            };
         }
     });
 
-    if (!allFieldsValid) {
-        alert("Please fill in all required fields before printing:\n- " + missingFieldsMessages.join("\n- "));
-        return; // Stop the function if validation fails
-    }
-    // END: Validation for required fields
+    // Add parameters and entries to form data
+    formData.parameters = parameters;
+    formData.entries = entries;
 
-    const data = {
-        name: document.getElementById("name-to-be-taken").value,
-        age_years: document.getElementById("age-years-to-be-taken").value,
-        age_months: document.getElementById("age-months-to-be-taken").value,
-        sex: document.getElementById("sex-select").value,
-        bed: document.getElementById("bed-select").value,
-        uuid: document.getElementById("uuid-input").value,
-        diagnosis: document.getElementById("diagnosis-input").value,
-        consultants: document.getElementById("consultants-input").value,
-        jr: document.getElementById("jr-input").value,
-        sr: document.getElementById("sr-input").value
-    };
-
-    console.log("Collected data:", data);
-
+    // Send data to server
     fetch('/download', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
     })
     .then(response => {
-        if (!response.ok) throw new Error('Download failed');
-
-        // Try to get filename from Content-Disposition header safely
-        const contentDisposition = response.headers.get('Content-Disposition');
-        // let filename = 'download.pdf'; // fallback
-        let filename = `${data.name}_${data.uuid}_${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`.replace(/\s+/g, '_');
-
-
-        if (contentDisposition) {
-            const match = contentDisposition.match(/filename="(.+?)"/);
-            if (match && match[1]) {
-                filename = match[1];
-            }
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || 'Error downloading file');
+            });
         }
-
-        return response.blob().then(blob => ({ blob, filename }));
+        return response.blob();
     })
-    .then(({ blob, filename }) => {
+    .then(blob => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = filename;
+        a.download = 'current.pdf';
         document.body.appendChild(a);
         a.click();
-        a.remove();
         window.URL.revokeObjectURL(url);
+        a.remove();
     })
     .catch(error => {
-        console.error(error);
-        alert("Error: " + error.message);
+        console.error('Error:', error);
+        alert(error.message);
     });
 }
-
-
 </script>
 
 </body>

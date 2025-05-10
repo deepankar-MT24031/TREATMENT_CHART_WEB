@@ -29,10 +29,10 @@ def create_json_file(val1,val2,val3,format ):
         "Sex":"",
         "uhid":" ",
         "bed_number": "1",
-        "diagnosis": "",
-        "consultants": "",
-        "jr": "",
-        "sr": "",
+        "Diagnosis": "",
+        "Consultants": "",
+        "JR": "",
+        "SR": "",
 
         "each_sex_value_names": {"Sex_1_name": "Male", "Sex_2_name": "Female", "Sex_3_name": "Other"},
 
@@ -60,13 +60,10 @@ def create_json_file(val1,val2,val3,format ):
     for index, (key, value) in enumerate(val3.items(), start=1):
         # Create row number based on the index
         row_key = f"row_{index}"
-        # Format the row description (you can modify this as needed)
-        row_description = f"{value}"
-
         # Add to the new dictionary
         each_table_row_layout[row_key] = {
-            "row_header_name": key,
-            "row_header_description": row_description
+            "row_header_name": value["row_header_name"],
+            "row_header_description": value["row_header_description"]
         }
 
     # Create a new dictionary for the desired format
@@ -87,25 +84,28 @@ def create_json_file(val1,val2,val3,format ):
     #         "title_Description": title_description
     #     }
 
-    current_format = {"uuid": f"{uuid.uuid4()}",
-                      "datetime": f"{datetime.today().strftime('%d-%m-%Y %H:%M:%S')}",
-                      "date": f"{datetime.today().strftime('%d-%m-%Y')}",
-                      "default_Bed_count": 16,
-                      "default_Sex_count": 3,
-                      "default_Entries_count": 5,
-                      "default_table_rows_count": 5,
-                      "each_sex_value_names": {"Sex_1_name": "Male", "Sex_2_name": "Female", "Sex_3_name": "Other"},
-                      "Name": val1["name"],
-                      "Age_year": val1["age_year"],
-                      "Age_month": val1["age_month"],
-                      "Sex":val1["sex"],
-                      "uhid":val1["uhid"],
-                      "bed_number": val1["bed_number"],
-                      "diagnosis": val1["diagnosis"],
-                      "consultants": val1["consultants"], "jr": val1["jr"], "sr": val1["sr"],
-                      "each_entry_layout": each_entry_layout,
-                      "each_table_row_layout": each_table_row_layout
-                      }
+    current_format = {
+        "uuid": f"{uuid.uuid4()}",
+        "datetime": f"{datetime.today().strftime('%d-%m-%Y %H:%M:%S')}",
+        "date": f"{datetime.today().strftime('%d-%m-%Y')}",
+        "default_Bed_count": 16,
+        "default_Sex_count": 3,
+        "default_Entries_count": 5,
+        "default_table_rows_count": 5,
+        "each_sex_value_names": {"Sex_1_name": "Male", "Sex_2_name": "Female", "Sex_3_name": "Other"},
+        "Name": val1["Name"],
+        "Age_year": val1["Age_year"],
+        "Age_month": val1["Age_month"],
+        "Sex": val1["Sex"],
+        "uhid": val1["uhid"],
+        "bed_number": val1["bed_number"],
+        "Diagnosis": val1.get("Diagnosis", ""),
+        "Consultants": val1.get("Consultants", ""),
+        "JR": val1.get("JR", ""),
+        "SR": val1.get("SR", ""),
+        "each_entry_layout": each_entry_layout,
+        "each_table_row_layout": each_table_row_layout
+    }
 
     if format=="default":
         data = default_format
