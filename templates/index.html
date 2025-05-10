@@ -467,6 +467,32 @@
         #medications-container table {
             table-layout: fixed;
         }
+
+        /* Add loading state styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -740,10 +766,12 @@
                 <div>
                     <button class="footer-button" id="add-box-footer">Add Box</button>
                 </div>
-                <div>
+                <div style="display: flex; justify-content: center; flex: 1;">
                     <button class="footer-button" onclick="downloadTextFile()">Print</button>
                     <button class="footer-button">DDI</button>
-                    <button class="footer-button" id="add-cell-footer">Add Cell</button>
+                </div>
+                <div>
+                    
                 </div>
             </div>
         </div>
@@ -785,6 +813,7 @@
             <button class="close-btn" id="close-ddi-modal" title="Close">&times;</button>
             <h2>Drug-Drug Interactions</h2>
             <div id="ddi-results">
+                <div id="ddi-error" style="color: #ff0000; margin: 10px 0; display: none;"></div>
                 <table id="ddi-table" style="width:100%; border-collapse: collapse; margin-top: 10px;">
                     <thead>
                         <tr>
@@ -1133,54 +1162,86 @@
             });
         }
 
-        // Modify the add row functionality to include the new listeners
-        document.querySelectorAll('.add-row').forEach(button => {
-            button.addEventListener('click', function() {
-                console.log('Add row button clicked');
-                const tableContainer = this.previousElementSibling;
-                const table = tableContainer.querySelector('tbody');
-                if (table) {
-                    const rowCount = table.querySelectorAll('tr').length + 1;
-                    const newRow = document.createElement('tr');
-                    newRow.innerHTML = `
-                        <td class="cell-number">${rowCount}</td>
-                        <td class="cell-description"><input type="text" class="editable" value="New Entry"></td>
-                        <td class="cell-day"><input type="text" class="editable" value="1"></td>
-                        <td class="cell-dose"><input type="text" class="editable" value="0"></td>
-                        <td class="cell-volume"><input type="text" class="editable" value="0"></td>
-                    `;
-                    table.appendChild(newRow);
-                    
-                    // Add listeners to the new inputs
-                    const newInputs = newRow.querySelectorAll('input.editable');
-                    newInputs.forEach(input => {
-                        input.removeEventListener('input', handleInputChange);
-                        input.addEventListener('input', handleInputChange);
-                    });
-                }
-            });
-        });
+        // Function to handle add row button click
+        function handleAddRow() {
+            console.log('Add row button clicked');
+            const tableContainer = this.previousElementSibling;
+            const table = tableContainer.querySelector('tbody');
+            if (table) {
+                const rowCount = table.querySelectorAll('tr').length + 1;
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td class="cell-number">${rowCount}</td>
+                    <td class="cell-description"><input type="text" class="editable" value="New Entry"></td>
+                    <td class="cell-day"><input type="text" class="editable" value="1"></td>
+                    <td class="cell-dose"><input type="text" class="editable" value="0"></td>
+                    <td class="cell-volume"><input type="text" class="editable" value="0"></td>
+                `;
+                table.appendChild(newRow);
+                
+                // Add listeners to the new inputs
+                const newInputs = newRow.querySelectorAll('input.editable');
+                newInputs.forEach(input => {
+                    input.addEventListener('input', handleInputChange);
+                });
+            }
+        }
 
-        // Add listeners to existing inputs when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM Content Loaded - Adding initial listeners');
-            addInputListeners();
-            
-            // Add initial event listeners for add row buttons
+        // Function to add event listeners to add row buttons
+        function addRowButtonListeners() {
+            // Remove all existing listeners first
+            document.querySelectorAll('.add-row').forEach(button => {
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+            });
+
+            // Add new listeners
             document.querySelectorAll('.add-row').forEach(button => {
                 button.addEventListener('click', handleAddRow);
             });
-            
-            // Add initial event listener for add box button
+        }
+
+        // Update the DOMContentLoaded event listener
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial setup of add row button listeners
+            addRowButtonListeners();
+
+            // Add box button functionality - remove any existing listeners first
             const addBoxButton = document.getElementById('add-box-footer');
             if (addBoxButton) {
-                // Remove any existing listeners
-                addBoxButton.replaceWith(addBoxButton.cloneNode(true));
-                // Get the fresh reference
-                const freshAddBoxButton = document.getElementById('add-box-footer');
+                // Remove any existing listeners by cloning the button
+                const newAddBoxButton = addBoxButton.cloneNode(true);
+                addBoxButton.parentNode.replaceChild(newAddBoxButton, addBoxButton);
+                
                 // Add the new listener
-                freshAddBoxButton.addEventListener('click', handleAddBox);
+                newAddBoxButton.addEventListener('click', function() {
+                    addNewMedicationBox();
+                    // Reattach listeners after adding new box
+                    addRowButtonListeners();
+                });
             }
+
+            // Add parameter/cell functionality
+            document.getElementById('add-parameter').addEventListener('click', addNewParameter);
+
+            // DDI button functionality
+            const ddiButton = document.querySelector('.footer-button:nth-child(2)');
+            const ddiModalOverlay = document.getElementById('ddi-modal-overlay');
+            const closeDdiModal = document.getElementById('close-ddi-modal');
+
+            ddiButton.addEventListener('click', handleDDIClick);
+
+            // Add close button functionality
+            closeDdiModal.addEventListener('click', function() {
+                ddiModalOverlay.style.display = 'none';
+            });
+
+            // Add overlay click functionality
+            ddiModalOverlay.addEventListener('click', function(e) {
+                if (e.target === ddiModalOverlay) {
+                    ddiModalOverlay.style.display = 'none';
+                }
+            });
 
             // Add click handlers to search result rows
             // Add click handler for existing rows
@@ -1205,35 +1266,225 @@
             });
         });
 
-        // Add event listeners after any dynamic content changes
-        function reattachListeners() {
-            console.log('Reattaching listeners after content change');
-            addInputListeners();
+        // Update the addNewMedicationBox function
+        function addNewMedicationBox() {
+            console.log('Adding new medication box');
+            const medicationsContainer = document.getElementById('medications-container');
+            
+            // Create table container
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'table-container';
+            
+            // Create table
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <colgroup>
+                    <col style="width: 8px;">
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th class="cell-number"></th>
+                        <th class="cell-description">
+                            <input type="text" class="header-editable" value="New Medication Box">
+                        </th>
+                        <th class="cell-day">Day</th>
+                        <th class="cell-dose">Dose</th>
+                        <th class="cell-volume">Volume</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="cell-number">1</td>
+                        <td class="cell-description"><input type="text" class="editable"></td>
+                        <td class="cell-day"><input type="text" class="editable"></td>
+                        <td class="cell-dose"><input type="text" class="editable"></td>
+                        <td class="cell-volume"><input type="text" class="editable"></td>
+                    </tr>
+                </tbody>
+            `;
+            
+            // Add table to container
+            tableContainer.appendChild(table);
+            medicationsContainer.appendChild(tableContainer);
+            
+            // Add "Add Row" button
+            const addRowButton = document.createElement('button');
+            addRowButton.className = 'button add-row';
+            addRowButton.textContent = 'Add Row';
+            medicationsContainer.appendChild(addRowButton);
+
+            // Add input listeners to the new inputs
+            const newInputs = tableContainer.querySelectorAll('input.editable');
+            newInputs.forEach(input => {
+                input.addEventListener('input', handleInputChange);
+            });
         }
 
-        // Add event listener for the add box button
-        document.getElementById('add-box-footer').addEventListener('click', function() {
-            addNewMedicationBox();
-            // Reattach listeners after adding new box
-            setTimeout(reattachListeners, 0);
-        });
+        // Update the handleDDIClick function
+        function handleDDIClick() {
+            // Show loading overlay
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
+            document.body.appendChild(loadingOverlay);
 
-        // Add parameter/cell functionality
-        document.getElementById('add-cell-footer').addEventListener('click', addNewParameter);
-        document.getElementById('add-parameter').addEventListener('click', addNewParameter);
+            // Clean empty rows before collecting data
+            cleanEmptyRows();
 
-        function addNewParameter() {
-            const table = document.getElementById('parameter-table').querySelector('tbody');
-            const rowCount = table.querySelectorAll('tr').length + 1;
+            // Generate a new UUID for this entry
+            const newUuid = crypto.randomUUID();
 
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td>${rowCount}</td>
-                <td><input type="text" class="editable" placeholder="Parameter name"></td>
-                <td><input type="text" class="editable"></td>
-            `;
+            // Collect all form data with capitalized field names
+            const formData = {
+                Name: document.getElementById('name-to-be-taken').value.trim(),
+                Age_year: document.getElementById('age-years-to-be-taken').value.trim(),
+                Age_month: document.getElementById('age-months-to-be-taken').value.trim(),
+                Sex: document.getElementById('sex-select').value.trim(),
+                uhid: document.getElementById('uuid-input').value.trim(),
+                uuid: newUuid,
+                bed_number: document.getElementById('bed-select').value.trim(),
+                Diagnosis: document.getElementById('diagnosis-input').value.trim(),
+                Consultants: document.getElementById('consultants-input').value.trim(),
+                JR: document.getElementById('jr-input').value.trim(),
+                SR: document.getElementById('sr-input').value.trim()
+            };
 
-            table.appendChild(newRow);
+            // Collect parameters from the table
+            const parametersTable = document.getElementById('parameter-table');
+            const parameterRows = parametersTable.querySelectorAll('tbody tr');
+            const parameters = {};
+            
+            parameterRows.forEach((row, index) => {
+                const parameterName = row.querySelector('td:nth-child(2) input').value.trim();
+                const parameterValue = row.querySelector('td:nth-child(3) input').value.trim();
+                parameters[`row_${index + 1}`] = {
+                    row_header_name: parameterName || ' ',
+                    row_header_description: parameterValue || ' '
+                };
+            });
+
+            // Collect all medication tables data
+            const medicationTables = document.querySelectorAll('#medications-container .table-container');
+            const entries = {};
+            
+            medicationTables.forEach((tableContainer, tableIndex) => {
+                const table = tableContainer.querySelector('table');
+                const title = table.querySelector('th.cell-description input').value.trim();
+                const rows = table.querySelectorAll('tbody tr');
+                const subtitles = {};
+                
+                rows.forEach((row, rowIndex) => {
+                    const content = row.querySelector('td.cell-description input').value.trim();
+                    const day = row.querySelector('td.cell-day input').value.trim();
+                    const dose = row.querySelector('td.cell-dose input').value.trim();
+                    const volume = row.querySelector('td.cell-volume input').value.trim();
+                    
+                    if (content || day || dose || volume) {
+                        subtitles[`subtitle_${rowIndex + 1}`] = {
+                            content: content,
+                            day: day,
+                            dose: dose,
+                            volume: volume
+                        };
+                    }
+                });
+                
+                if (title || Object.keys(subtitles).length > 0) {
+                    entries[`entry_${tableIndex + 1}`] = {
+                        title: title,
+                        subtitles: subtitles
+                    };
+                }
+            });
+
+            // Add parameters and entries to form data
+            formData.parameters = parameters;
+            formData.entries = entries;
+
+            // Send data to server for DDI processing
+            fetch('/ddi', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Error processing drug interactions');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Remove loading overlay
+                loadingOverlay.remove();
+
+                const tbody = document.querySelector('#ddi-table tbody');
+                tbody.innerHTML = '';
+
+                if (data.error) {
+                    // Show error in table format
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td colspan="3" style="background-color: #FFC8C8; text-align: center; font-weight: bold;">${data.error}</td>
+                    `;
+                    tbody.appendChild(tr);
+                } else if (data.table && data.table.length > 0) {
+                    data.table.forEach(row => {
+                        const tr = document.createElement('tr');
+                        const color = getInteractionColor(row['Interaction']);
+                        tr.innerHTML = `
+                            <td>${row['Drug 1']}</td>
+                            <td>${row['Drug 2']}</td>
+                            <td style="background-color: ${color};">${row['Interaction']}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td colspan="3" style="background-color: #FFC8C8; text-align: center; font-weight: bold;">No drug interactions found</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+                document.getElementById('ddi-modal-overlay').style.display = 'flex';
+            })
+            .catch(error => {
+                // Remove loading overlay
+                loadingOverlay.remove();
+                
+                console.error('Error:', error);
+                const tbody = document.querySelector('#ddi-table tbody');
+                
+                // Show error in table format
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="background-color: #FFC8C8; text-align: center; font-weight: bold;">${error.message}</td>
+                    </tr>
+                `;
+                
+                document.getElementById('ddi-modal-overlay').style.display = 'flex';
+            });
+        }
+
+        // Add this function to determine the color based on interaction severity
+        function getInteractionColor(interaction) {
+            const lowerInteraction = interaction.toLowerCase();
+            if (lowerInteraction.includes('major') || lowerInteraction.includes('high') || lowerInteraction.includes('severe')) {
+                return '#FFC8C8';  // Light red
+            } else if (lowerInteraction.includes('moderate') || lowerInteraction.includes('medium')) {
+                return '#FFFFC8';  // Light yellow
+            } else if (lowerInteraction.includes('minor') || lowerInteraction.includes('low') || lowerInteraction.includes('mild')) {
+                return '#C8FFC8';  // Light green
+            } else {
+                return '#F0F0F0';  // Light gray for unknown
+            }
         }
 
         // Add this function to handle row clicks
@@ -1339,23 +1590,8 @@
                     });
 
                     // Reattach all event listeners after loading data
-                    setTimeout(() => {
-                        // Reattach input listeners
-                        addInputListeners();
-                        
-                        // Reattach add row button listeners
-                        document.querySelectorAll('.add-row').forEach(button => {
-                            button.removeEventListener('click', handleAddRow);
-                            button.addEventListener('click', handleAddRow);
-                        });
-                        
-                        // Reattach add box button listener
-                        const addBoxButton = document.getElementById('add-box-footer');
-                        if (addBoxButton) {
-                            addBoxButton.removeEventListener('click', handleAddBox);
-                            addBoxButton.addEventListener('click', handleAddBox);
-                        }
-                    }, 0);
+                    addRowButtonListeners();
+                    addInputListeners();
                 })
                 .catch(error => {
                     console.error('Error loading entry:', error);
@@ -1363,251 +1599,26 @@
                 });
         }
 
-        // Handle add row button click
-        function handleAddRow() {
-            console.log('Add row button clicked');
-            const tableContainer = this.previousElementSibling;
-            const table = tableContainer.querySelector('tbody');
-            if (table) {
-                const rowCount = table.querySelectorAll('tr').length + 1;
-                const newRow = document.createElement('tr');
-                newRow.innerHTML = `
-                    <td class="cell-number">${rowCount}</td>
-                    <td class="cell-description"><input type="text" class="editable" value="New Entry"></td>
-                    <td class="cell-day"><input type="text" class="editable" value="1"></td>
-                    <td class="cell-dose"><input type="text" class="editable" value="0"></td>
-                    <td class="cell-volume"><input type="text" class="editable" value="0"></td>
-                `;
-                table.appendChild(newRow);
-                
-                // Add listeners to the new inputs
-                const newInputs = newRow.querySelectorAll('input.editable');
-                newInputs.forEach(input => {
-                    input.removeEventListener('input', handleInputChange);
-                    input.addEventListener('input', handleInputChange);
-                });
-            }
-        }
+        // Function to add new parameter row
+        function addNewParameter() {
+            const table = document.getElementById('parameter-table').querySelector('tbody');
+            const rowCount = table.querySelectorAll('tr').length + 1;
 
-        // Handle add box button click
-        function handleAddBox() {
-            console.log('Add box button clicked');
-            addNewMedicationBox();
-            // No need to call reattachListeners here as we're handling listeners in addNewMedicationBox
-        }
-
-        // Function to add a new medication box
-        function addNewMedicationBox() {
-            console.log('Adding new medication box');
-            const medicationsContainer = document.getElementById('medications-container');
-            
-            // Create table container
-            const tableContainer = document.createElement('div');
-            tableContainer.className = 'table-container';
-            
-            // Create table
-            const table = document.createElement('table');
-            table.innerHTML = `
-                <colgroup>
-                    <col style="width: 8px;">
-                    <col>
-                    <col>
-                    <col>
-                    <col>
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th class="cell-number"></th>
-                        <th class="cell-description">
-                            <input type="text" class="header-editable" value="New Medication Box">
-                        </th>
-                        <th class="cell-day">Day</th>
-                        <th class="cell-dose">Dose</th>
-                        <th class="cell-volume">Volume</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="cell-number">1</td>
-                        <td class="cell-description"><input type="text" class="editable"></td>
-                        <td class="cell-day"><input type="text" class="editable"></td>
-                        <td class="cell-dose"><input type="text" class="editable"></td>
-                        <td class="cell-volume"><input type="text" class="editable"></td>
-                    </tr>
-                </tbody>
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${rowCount}</td>
+                <td><input type="text" class="editable" placeholder="Parameter name"></td>
+                <td><input type="text" class="editable"></td>
             `;
-            
-            // Add table to container
-            tableContainer.appendChild(table);
-            medicationsContainer.appendChild(tableContainer);
-            
-            // Add "Add Row" button
-            const addRowButton = document.createElement('button');
-            addRowButton.className = 'button add-row';
-            addRowButton.textContent = 'Add Row';
-            medicationsContainer.appendChild(addRowButton);
 
-            // Add event listener to the new add row button
-            addRowButton.addEventListener('click', handleAddRow);
+            table.appendChild(newRow);
 
             // Add input listeners to the new inputs
-            const newInputs = tableContainer.querySelectorAll('input.editable');
+            const newInputs = newRow.querySelectorAll('input.editable');
             newInputs.forEach(input => {
-                input.removeEventListener('input', handleInputChange);
                 input.addEventListener('input', handleInputChange);
             });
-
-            console.log('New medication box added');
         }
-
-        // Column resizing functionality
-        const resizer = document.getElementById('column-resizer');
-        const leftColumn = document.getElementById('left-column');
-        const rightColumn = document.getElementById('right-column');
-        const container = document.getElementById('resizable-columns');
-
-        // Initialize column sizes (you can set default percentages)
-        let leftPercent = 70; // Default left column width percentage
-
-        function setColumnSizes() {
-            leftColumn.style.flex = `0 0 ${leftPercent}%`;
-            rightColumn.style.flex = `0 0 ${100 - leftPercent}%`;
-        }
-
-        // Set initial sizes
-        setColumnSizes();
-
-        // Resizing functionality
-        let isResizing = false;
-
-        resizer.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            resizer.classList.add('resizing');
-
-            // Prevent text selection during resize
-            document.body.style.userSelect = 'none';
-            document.body.style.cursor = 'col-resize';
-
-            // Initial position
-            const startX = e.clientX;
-            const containerWidth = container.offsetWidth;
-            const initialLeftWidth = leftColumn.offsetWidth;
-
-            // Mouse move handler for resizing
-            const onMouseMove = (e) => {
-                if (!isResizing) return;
-
-                const dx = e.clientX - startX;
-                const newLeftWidth = initialLeftWidth + dx;
-
-                // Calculate the new percentage (with constraints)
-                leftPercent = Math.max(20, Math.min(80, (newLeftWidth / containerWidth) * 100));
-
-                // Apply the new sizes
-                setColumnSizes();
-            };
-
-            // Mouse up handler to stop resizing
-            const onMouseUp = () => {
-                isResizing = false;
-                resizer.classList.remove('resizing');
-
-                document.body.style.userSelect = '';
-                document.body.style.cursor = '';
-
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-            };
-
-            // Add temporary event listeners for mousemove and mouseup
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-
-            e.preventDefault(); // Prevent any default behavior
-        });
-
-        // Settings Modal Functionality
-        const settingsBtn = document.getElementById('settings-btn');
-        const settingsModalOverlay = document.getElementById('settings-modal-overlay');
-        const closeSettingsModal = document.getElementById('close-settings-modal');
-        const mainContainer = document.querySelector('.container');
-
-        settingsBtn.addEventListener('click', function() {
-            fetch('/settings')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('ip-input').value = data.ip_settings.host;
-                    document.getElementById('port-input').value = data.ip_settings.port;
-                    document.getElementById('current-logo-path').textContent = data.logo_upload.path;
-                    document.getElementById('current-logo-img').src = data.logo_upload.path;
-                    document.getElementById('heading-input').value = data.heading;
-                    document.getElementById('subheading-input').value = data.subheading;
-                    document.getElementById('font-size-input').value = data.font_size;
-                    settingsModalOverlay.style.display = 'flex';
-                })
-                .catch(error => console.error('Error fetching settings:', error));
-        });
-        closeSettingsModal.addEventListener('click', function() {
-            settingsModalOverlay.style.display = 'none';
-            mainContainer.classList.remove('modal-blur');
-        });
-        settingsModalOverlay.addEventListener('click', function(e) {
-            if (e.target === settingsModalOverlay) {
-                settingsModalOverlay.style.display = 'none';
-                mainContainer.classList.remove('modal-blur');
-            }
-        });
-        // Save button (for now, just close modal)
-        document.getElementById('save-settings').addEventListener('click', function() {
-            settingsModalOverlay.style.display = 'none';
-            mainContainer.classList.remove('modal-blur');
-            // You can add logic here to save settings to localStorage or send to backend
-        });
-
-        // Add this to your existing script
-        document.addEventListener('DOMContentLoaded', function() {
-            const ddiButton = document.querySelector('.footer-button:nth-child(2)'); // Assuming DDI button is the second button
-            const ddiModalOverlay = document.getElementById('ddi-modal-overlay');
-            const closeDdiModal = document.getElementById('close-ddi-modal');
-
-            ddiButton.addEventListener('click', function() {
-                // Fetch DDI results
-                fetch('/ddi', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({}) // Send empty object for now, replace with actual JSON data if needed
-                })
-                .then(response => response.json())
-                .then(data => {
-                    const tbody = document.querySelector('#ddi-table tbody');
-                    tbody.innerHTML = '';
-                    data.table.forEach(row => {
-                        const tr = document.createElement('tr');
-                        const color = getInteractionColor(row['Interaction']);
-                        tr.innerHTML = `
-                            <td>${row['Drug 1']}</td>
-                            <td>${row['Drug 2']}</td>
-                            <td style="background-color: ${color};">${row['Interaction']}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                    ddiModalOverlay.style.display = 'flex';
-                })
-                .catch(error => console.error('Error fetching DDI results:', error));
-            });
-
-            closeDdiModal.addEventListener('click', function() {
-                ddiModalOverlay.style.display = 'none';
-            });
-
-            ddiModalOverlay.addEventListener('click', function(e) {
-                if (e.target === ddiModalOverlay) {
-                    ddiModalOverlay.style.display = 'none';
-                }
-            });
-        });
     </script>
 
 <script>
@@ -1733,7 +1744,7 @@ function downloadTextFile() {
                     document.getElementById('ip-input').value = data.ip_settings.host;
                     document.getElementById('port-input').value = data.ip_settings.port;
                     document.getElementById('current-logo-path').textContent = data.logo_upload.path;
-                    document.getElementById('current-logo-img').src = data.logo_upload.path;
+                    document.getElementById('current-logo-img').src = data.logo_upload.url || data.logo_upload.path;
                     document.getElementById('heading-input').value = data.heading;
                     document.getElementById('subheading-input').value = data.subheading;
                     document.getElementById('font-size-input').value = data.font_size;
@@ -1749,7 +1760,8 @@ function downloadTextFile() {
                     port: parseInt(document.getElementById('port-input').value)
                 },
                 logo_upload: {
-                    path: document.getElementById('current-logo-path').textContent
+                    path: document.getElementById('current-logo-path').textContent,
+                    url: document.getElementById('current-logo-img').src
                 },
                 heading: document.getElementById('heading-input').value,
                 subheading: document.getElementById('subheading-input').value,
@@ -1778,50 +1790,6 @@ function downloadTextFile() {
         closeSettingsButton.addEventListener('click', function() {
             settingsModalOverlay.style.display = 'none';
         });
-    });
-</script>
-
-<script>
-    // Add this function to determine the color based on interaction severity
-    function getInteractionColor(interaction) {
-        const lowerInteraction = interaction.toLowerCase();
-        if (lowerInteraction.includes('high') || lowerInteraction.includes('severe')) {
-            return 'red';
-        } else if (lowerInteraction.includes('medium') || lowerInteraction.includes('moderate')) {
-            return 'yellow';
-        } else if (lowerInteraction.includes('low') || lowerInteraction.includes('mild')) {
-            return 'green';
-        } else {
-            return 'grey';
-        }
-    }
-
-    // Update the DDI button click handler to color-code the interactions
-    ddiButton.addEventListener('click', function() {
-        fetch('/ddi', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({}) // Send empty object for now, replace with actual JSON data if needed
-        })
-        .then(response => response.json())
-        .then(data => {
-            const tbody = document.querySelector('#ddi-table tbody');
-            tbody.innerHTML = '';
-            data.table.forEach(row => {
-                const tr = document.createElement('tr');
-                const color = getInteractionColor(row['Interaction']);
-                tr.innerHTML = `
-                    <td>${row['Drug 1']}</td>
-                    <td>${row['Drug 2']}</td>
-                    <td style="background-color: ${color};">${row['Interaction']}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-            ddiModalOverlay.style.display = 'flex';
-        })
-        .catch(error => console.error('Error fetching DDI results:', error));
     });
 </script>
 

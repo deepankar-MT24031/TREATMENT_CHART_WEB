@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, jsonify
+from flask import Flask, render_template, request, send_file, jsonify, send_from_directory
 import json
 from datetime import datetime
 import uuid
@@ -9,8 +9,9 @@ from pdf_generator import generate_picu_treatment_chart
 from io import BytesIO
 from reportlab.pdfgen import canvas
 from database_handler import create_entry, return_database_with_history, search_entries, return_database_with_query_is_uuid  # Import the history function and search_entries
+import requests
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='RESOURCES', static_url_path='/resources')
 
 # Assuming the create_json_file function is already imported
 # from your_module import create_json_file
@@ -217,6 +218,12 @@ def settings():
         try:
             with open('settings.json', 'r') as f:
                 settings_data = json.load(f)
+            # Convert the logo path to a URL path
+            if 'logo_upload' in settings_data and 'path' in settings_data['logo_upload']:
+                logo_path = settings_data['logo_upload']['path']
+                # Convert the file path to a URL path
+                logo_filename = os.path.basename(logo_path)
+                settings_data['logo_upload']['url'] = f'/resources/{logo_filename}'
             return jsonify(settings_data)
         except Exception as e:
             print(f"Error reading settings: {str(e)}")
@@ -235,21 +242,47 @@ def settings():
 @app.route('/ddi', methods=['POST'])
 def ddi():
     try:
-        data = request.get_json()
-        # Simulate converting current JSON to a document
-        # Return interactions with explicit severity labels
-        results = {
-            "table": [
-                {"Drug 1": "Aspirin", "Drug 2": "Warfarin", "Interaction": "High"},
-                {"Drug 1": "Lisinopril", "Drug 2": "Potassium", "Interaction": "Medium"},
-                {"Drug 1": "Metformin", "Drug 2": "Contrast Dye", "Interaction": "Low"},
-                {"Drug 1": "Unknown Drug", "Drug 2": "Unknown Drug", "Interaction": "Unknown"}
-            ]
-        }
-        return jsonify(results)
+        # Get the JSON data from the request
+        json_data = request.get_json()
+        
+        # Save the current data to current_format.json
+        with open('RESOURCES/current_format.json', 'w') as f:
+            json.dump(json_data, f, indent=2)
+        
+        # Wait for file to be written
+        time.sleep(1)
+        
+        # Use our fetch_ddi_data function
+        from ddiwindowmodified import fetch_ddi_data
+        try:
+            results = fetch_ddi_data(json_data)
+            if not results or 'table' not in results:
+                return jsonify({'error': 'No results returned from DDI server'}), 503
+            return jsonify(results)
+        except ConnectionRefusedError as e:
+            return jsonify({'error': str(e)}), 503
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 503
+        except ConnectionError as e:
+            return jsonify({'error': str(e)}), 503
+        except requests.exceptions.RequestException as e:
+            if 'No host supplied' in str(e):
+                return jsonify({'error': 'IP address is missing. Please check your IP settings in the Settings menu.'}), 503
+            elif 'Failed to connect' in str(e):
+                return jsonify({'error': 'Failed to connect to DDI server. Please check your IP and Port settings.'}), 503
+            else:
+                return jsonify({'error': f'Connection error: {str(e)}'}), 503
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+            
     except Exception as e:
         print(f"Error in DDI route: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/resources/<path:filename>')
+def serve_resource(filename):
+    return send_from_directory('RESOURCES', filename)
 
 
 if __name__ == '__main__':
