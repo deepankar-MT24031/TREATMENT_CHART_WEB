@@ -232,6 +232,26 @@ def settings():
             return jsonify({'error': str(e)}), 500
 
 
+@app.route('/ddi', methods=['POST'])
+def ddi():
+    try:
+        data = request.get_json()
+        # Simulate converting current JSON to a document
+        # Return interactions with explicit severity labels
+        results = {
+            "table": [
+                {"Drug 1": "Aspirin", "Drug 2": "Warfarin", "Interaction": "High"},
+                {"Drug 1": "Lisinopril", "Drug 2": "Potassium", "Interaction": "Medium"},
+                {"Drug 1": "Metformin", "Drug 2": "Contrast Dye", "Interaction": "Low"},
+                {"Drug 1": "Unknown Drug", "Drug 2": "Unknown Drug", "Interaction": "Unknown"}
+            ]
+        }
+        return jsonify(results)
+    except Exception as e:
+        print(f"Error in DDI route: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     # Ensure the folder exists
     if not os.path.exists('RESOURCES'):
