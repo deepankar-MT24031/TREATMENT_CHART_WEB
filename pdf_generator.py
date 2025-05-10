@@ -152,8 +152,8 @@ def extract_patient_info(json_data):
         # REMOVED .replace() calls here:
         "diagnosis": json_data.get("diagnosis", "").strip(),
         "consultant_names": json_data.get("consultants", "").strip(), # Added strip
-        "jr_names": json_data.get("jr", "").strip(),                 # Added strip
-        "sr_names": json_data.get("sr", "").strip()                  # Added strip
+        "jr_names": json_data.get("JR", "").strip(),                 # Added strip
+        "sr_names": json_data.get("SR", "").strip()                  # Added strip
     }
 
     # Now, apply escaping using the dedicated function to all string fields

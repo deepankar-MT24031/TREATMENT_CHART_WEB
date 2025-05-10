@@ -1,0 +1,12 @@
+{
+  "ip_settings": {
+    "host": "localhost",
+    "port": 5000
+  },
+  "logo_upload": {
+    "path": "RESOURCES/default_AIIMS_LOGO.png"
+  },
+  "heading": "DDD",
+  "subheading": "Patient Information",
+  "font_size": 10
+}

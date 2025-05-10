@@ -763,7 +763,10 @@
             </div>
             <div class="category">
                 <div class="category-title">Logo and Heading</div>
-                <label for="logo-upload">Logo Upload</label>
+                <div>
+                    Current Logo: <span id="current-logo-path"></span><br>
+                    <img id="current-logo-img" src="" alt="Current Logo" style="max-width:100px;max-height:100px;">
+                </div>
                 <input type="file" id="logo-upload" accept="image/*">
                 <label for="heading-input">Heading</label>
                 <input type="text" id="heading-input" placeholder="Enter heading">
@@ -1508,8 +1511,19 @@
         const mainContainer = document.querySelector('.container');
 
         settingsBtn.addEventListener('click', function() {
-            settingsModalOverlay.style.display = 'flex';
-            mainContainer.classList.add('modal-blur');
+            fetch('/settings')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('ip-input').value = data.ip_settings.host;
+                    document.getElementById('port-input').value = data.ip_settings.port;
+                    document.getElementById('current-logo-path').textContent = data.logo_upload.path;
+                    document.getElementById('current-logo-img').src = data.logo_upload.path;
+                    document.getElementById('heading-input').value = data.heading;
+                    document.getElementById('subheading-input').value = data.subheading;
+                    document.getElementById('font-size-input').value = data.font_size;
+                    settingsModalOverlay.style.display = 'flex';
+                })
+                .catch(error => console.error('Error fetching settings:', error));
         });
         closeSettingsModal.addEventListener('click', function() {
             settingsModalOverlay.style.display = 'none';
@@ -1636,6 +1650,68 @@ function downloadTextFile() {
         alert(error.message);
     });
 }
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const settingsButton = document.getElementById('settings-btn');
+        const settingsModalOverlay = document.getElementById('settings-modal-overlay');
+        const saveSettingsButton = document.getElementById('save-settings');
+        const closeSettingsButton = document.getElementById('close-settings-modal');
+
+        settingsButton.addEventListener('click', function() {
+            fetch('/settings')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('ip-input').value = data.ip_settings.host;
+                    document.getElementById('port-input').value = data.ip_settings.port;
+                    document.getElementById('current-logo-path').textContent = data.logo_upload.path;
+                    document.getElementById('current-logo-img').src = data.logo_upload.path;
+                    document.getElementById('heading-input').value = data.heading;
+                    document.getElementById('subheading-input').value = data.subheading;
+                    document.getElementById('font-size-input').value = data.font_size;
+                    settingsModalOverlay.style.display = 'flex';
+                })
+                .catch(error => console.error('Error fetching settings:', error));
+        });
+
+        saveSettingsButton.addEventListener('click', function() {
+            const newSettings = {
+                ip_settings: {
+                    host: document.getElementById('ip-input').value,
+                    port: parseInt(document.getElementById('port-input').value)
+                },
+                logo_upload: {
+                    path: document.getElementById('current-logo-path').textContent
+                },
+                heading: document.getElementById('heading-input').value,
+                subheading: document.getElementById('subheading-input').value,
+                font_size: parseInt(document.getElementById('font-size-input').value)
+            };
+
+            fetch('/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newSettings)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert('Settings saved successfully!');
+                    settingsModalOverlay.style.display = 'none';
+                } else {
+                    alert('Error saving settings: ' + data.error);
+                }
+            })
+            .catch(error => console.error('Error saving settings:', error));
+        });
+
+        closeSettingsButton.addEventListener('click', function() {
+            settingsModalOverlay.style.display = 'none';
+        });
+    });
 </script>
 
 </body>

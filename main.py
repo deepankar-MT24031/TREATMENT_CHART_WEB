@@ -200,6 +200,27 @@ def get_entry(uuid):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+    if request.method == 'GET':
+        try:
+            with open('settings.json', 'r') as f:
+                settings_data = json.load(f)
+            return jsonify(settings_data)
+        except Exception as e:
+            print(f"Error reading settings: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+    elif request.method == 'POST':
+        try:
+            new_settings = request.get_json()
+            with open('settings.json', 'w') as f:
+                json.dump(new_settings, f, indent=2)
+            return jsonify({'message': 'Settings updated successfully'})
+        except Exception as e:
+            print(f"Error updating settings: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     # Ensure the folder exists
     if not os.path.exists('RESOURCES'):

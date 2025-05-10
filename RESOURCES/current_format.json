@@ -1,6 +1,6 @@
 {
-    "uuid": "a930e3ee-f650-4d31-9c5a-df91820342ff",
-    "datetime": "10-05-2025 17:24:47",
+    "uuid": "e1e4157e-78ec-46e4-acf7-eb9d6871140f",
+    "datetime": "10-05-2025 18:36:54",
     "date": "10-05-2025",
     "default_Bed_count": 16,
     "default_Sex_count": 3,
@@ -19,8 +19,8 @@
     "bed_number": "7",
     "Diagnosis": "",
     "Consultants": "",
-    "JR": "",
-    "SR": "",
+    "JR": "SOME JR",
+    "SR": "SOME SR",
     "each_entry_layout": {
         "entry_1": {
             "title": "Respiratory support",
@@ -82,6 +82,12 @@
                     "volume": "0"
                 },
                 "subtitle_3": {
+                    "content": "New Entry",
+                    "day": "1",
+                    "dose": "0",
+                    "volume": "0"
+                },
+                "subtitle_4": {
                     "content": "New Entry",
                     "day": "1",
                     "dose": "0",
