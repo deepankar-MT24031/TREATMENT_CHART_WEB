@@ -286,7 +286,6 @@ def serve_resource(filename):
 
 
 if __name__ == '__main__':
-    # Ensure the folder exists
-    if not os.path.exists('RESOURCES'):
-        os.makedirs('RESOURCES')
-    app.run(debug=True)
+    host = os.getenv('FLASK_HOST', '0.0.0.0')
+    port = int(os.getenv('FLASK_PORT', 5000))
+    app.run(host=host, port=port, debug=False)

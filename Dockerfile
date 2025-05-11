@@ -28,6 +28,8 @@ EXPOSE 5000
 # Set environment variables
 ENV FLASK_APP=main.py
 ENV FLASK_ENV=production
+ENV FLASK_HOST=0.0.0.0
+ENV FLASK_PORT=5000
 
 # Command to run the application
-CMD ["python", "main.py"] 
+CMD ["python", "main.py", "--host=0.0.0.0", "--port=5000"] 
