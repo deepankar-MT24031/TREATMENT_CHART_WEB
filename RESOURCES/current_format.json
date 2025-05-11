@@ -1,6 +1,6 @@
 {
-    "uuid": "b90ffc1f-b0b9-49c9-8d17-b401ee7ed809",
-    "datetime": "11-05-2025 10:06:09",
+    "uuid": "2a483bde-65bf-48b1-8a21-b151c7b9e5e5",
+    "datetime": "11-05-2025 10:54:50",
     "date": "11-05-2025",
     "default_Bed_count": 16,
     "default_Sex_count": 3,
@@ -11,12 +11,12 @@
         "Sex_2_name": "Female",
         "Sex_3_name": "Other"
     },
-    "Name": "sada",
-    "Age_year": "2",
-    "Age_month": "4",
-    "Sex": "Male",
-    "uhid": "456789123",
-    "bed_number": "10",
+    "Name": "duma",
+    "Age_year": "4",
+    "Age_month": "5",
+    "Sex": "Other",
+    "uhid": "123456789",
+    "bed_number": "12",
     "Diagnosis": "",
     "Consultants": "",
     "JR": "",
@@ -35,25 +35,11 @@
         },
         "entry_2": {
             "title": "Sedation, analgesia, and neuromuscular blockade",
-            "subtitles": {
-                "subtitle_1": {
-                    "content": "fcdsfsa",
-                    "day": "",
-                    "dose": "",
-                    "volume": ""
-                }
-            }
+            "subtitles": {}
         },
         "entry_3": {
             "title": "Inotropes and Anti-hypertensives",
-            "subtitles": {
-                "subtitle_1": {
-                    "content": "New Esdfsdfntry",
-                    "day": "1",
-                    "dose": "0",
-                    "volume": "0"
-                }
-            }
+            "subtitles": {}
         }
     },
     "each_table_row_layout": {

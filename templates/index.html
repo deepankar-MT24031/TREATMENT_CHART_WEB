@@ -1136,6 +1136,39 @@
 
         // Initialize event listeners when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
+            // Load initial search data
+            fetch('/get_entries')
+                .then(response => response.json())
+                .then(entries => {
+                    const tbody = document.querySelector('.search-results table tbody');
+                    tbody.innerHTML = '';
+                    
+                    if (entries && entries.length > 0) {
+                        entries.forEach((entry, index) => {
+                            const row = document.createElement('tr');
+                            row.className = 'search-result-row';
+                            row.setAttribute('data-uuid', entry[3]);
+                            row.innerHTML = `
+                                <td style="text-align: center;">${index + 1}</td>
+                                <td>${entry[0]}</td>
+                                <td>${entry[1]}</td>
+                                <td>${entry[2]}</td>
+                                <td style="display: none;">${entry[3]}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="5" style="text-align: center;">No entries found</td>
+                            </tr>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching entries:', error);
+                });
+
             // Add event listener for form submission
             document.getElementById('print-button').addEventListener('click', function(event) {
                 event.preventDefault(); // Prevent default action
