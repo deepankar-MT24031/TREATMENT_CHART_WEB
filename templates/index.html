@@ -804,7 +804,7 @@
                     Current Logo: <span id="current-logo-path"></span><br>
                     <img id="current-logo-img" src="" alt="Current Logo" style="max-width:100px;max-height:100px;">
                 </div>
-                <input type="file" id="logo-upload" accept="image/*">
+                <input type="file" id="logo-upload" accept=".png">
                 <label for="heading-input">Heading</label>
                 <input type="text" id="heading-input" placeholder="Enter heading">
                 <label for="subheading-input">Subheading</label>
@@ -909,6 +909,53 @@
 
             return true;
         }
+
+        // Add logo upload validation
+        document.getElementById('logo-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.type !== 'image/png') {
+                    showAlert('Only PNG files are allowed for the logo.');
+                    e.target.value = ''; // Clear the file input
+                    return;
+                }
+
+                // Create FormData and append the file
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // Show loading overlay
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.className = 'loading-overlay';
+                loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
+                document.body.appendChild(loadingOverlay);
+
+                // Upload the file
+                fetch('/upload_logo', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showAlert(data.error);
+                    } else {
+                        // Update the current logo display
+                        document.getElementById('current-logo-path').textContent = 'RESOURCES/websitelogo.png';
+                        document.getElementById('current-logo-img').src = '/resources/websitelogo.png?' + new Date().getTime(); // Add timestamp to prevent caching
+                        showAlert('Logo uploaded successfully!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Error uploading logo');
+                })
+                .finally(() => {
+                    loadingOverlay.remove();
+                    e.target.value = ''; // Clear the file input
+                });
+            }
+        });
 
         function downloadTextFile() {
             if (!validateForm()) {
@@ -1876,8 +1923,10 @@
                     .then(data => {
                         document.getElementById('ip-input').value = data.ip_settings.host;
                         document.getElementById('port-input').value = data.ip_settings.port;
-                        document.getElementById('current-logo-path').textContent = data.logo_upload.path;
-                        document.getElementById('current-logo-img').src = data.logo_upload.url || data.logo_upload.path;
+                        // Update logo path and image source
+                        const logoPath = 'RESOURCES/website_logo.png';
+                        document.getElementById('current-logo-path').textContent = logoPath;
+                        document.getElementById('current-logo-img').src = '/resources/website_logo.png?' + new Date().getTime();
                         document.getElementById('heading-input').value = data.heading;
                         document.getElementById('subheading-input').value = data.subheading;
                         document.getElementById('font-size-input').value = data.font_size;

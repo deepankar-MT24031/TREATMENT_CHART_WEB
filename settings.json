@@ -4,8 +4,8 @@
     "port": 5005
   },
   "logo_upload": {
-    "path": "RESOURCES/default_AIIMS_LOGO.png",
-    "url": "http://127.0.0.1:5000/resources/default_AIIMS_LOGO.png"
+    "path": "RESOURCES/website_logo.png",
+    "url": "/resources/website_logo.png"
   },
   "heading": "CUSTOM HEDING",
   "subheading": "MB 5 PCIU",

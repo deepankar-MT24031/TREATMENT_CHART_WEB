@@ -359,7 +359,16 @@ def generate_pdf_from_latex(heading,subheading,patient_info, stacked_blocks, tab
     # --- Generate LaTeX Code ---
     line_height = int(font_size * 1.2)
     header_font_size = font_size - 1
-    adjusted_vspace = max(1.5, (font_size / 11) * 1.0)  # Increased spacing multiplier from 3.0 to 3.5
+    adjusted_vspace = max(1.5, (font_size / 11) * 1.0)
+
+    # Check for logo files and determine which one to use
+    website_logo_path = os.path.join(current_dir, "RESOURCES", "website_logo.png")
+    default_logo_path = os.path.join(current_dir, "RESOURCES", "default_AIIMS_LOGO.png")
+    
+    if os.path.exists(website_logo_path):
+        logo_path = "RESOURCES/website_logo.png"
+    else:
+        logo_path = "RESOURCES/default_AIIMS_LOGO.png"
 
     latex_code = rf"""
 \documentclass{{article}}
@@ -380,7 +389,7 @@ def generate_pdf_from_latex(heading,subheading,patient_info, stacked_blocks, tab
 % Insert logo at the top-left
 \noindent
 \begin{{minipage}}{{0.2\textwidth}} % Adjust width as needed
-    \includegraphics[width=2cm]{{RESOURCES/AIIMS_LOGO.png}} % Adjust width as needed
+    \includegraphics[width=2cm]{{{logo_path}}} % Adjust width as needed
 \end{{minipage}}\
 \vspace{{-1cm}} % Adjust this value to position the logo at the top
 \hfill

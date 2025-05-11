@@ -239,6 +239,41 @@ def settings():
             return jsonify({'error': str(e)}), 500
 
 
+@app.route('/upload_logo', methods=['POST'])
+def upload_logo():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+        
+        if file and file.filename.lower().endswith('.png'):
+            # Save the file as website_logo.png
+            file.save('RESOURCES/website_logo.png')
+            
+            # Update settings.json with the new logo path
+            with open('settings.json', 'r') as f:
+                settings_data = json.load(f)
+            
+            settings_data['logo_upload'] = {
+                'path': 'RESOURCES/website_logo.png',
+                'url': '/resources/website_logo.png'
+            }
+            
+            with open('settings.json', 'w') as f:
+                json.dump(settings_data, f, indent=2)
+            
+            return jsonify({'message': 'Logo uploaded successfully'})
+        else:
+            return jsonify({'error': 'Only PNG files are allowed'}), 400
+            
+    except Exception as e:
+        print(f"Error uploading logo: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/ddi', methods=['POST'])
 def ddi():
     try:
