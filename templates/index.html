@@ -609,7 +609,7 @@
                             </select>
                         </div>
                         <div class="form-field" style="flex: 2;">
-                            <div class="form-label">UUID</div>
+                            <div class="form-label">UHID</div>
                             <input type="text" id="uuid-input" style="width: 95%;">
                         </div>
                     </div>
@@ -776,7 +776,7 @@
                     <button class="footer-button" id="add-box-footer">Add Box</button>
                 </div>
                 <div style="display: flex; justify-content: center; flex: 1;">
-                    <button class="footer-button" onclick="downloadTextFile()">Print</button>
+                    <button class="footer-button" id="print-button">Print</button>
                     <button class="footer-button">DDI</button>
                 </div>
                 <div>
@@ -838,6 +838,223 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Global validation functions
+        function showAlert(message) {
+            alert(message);
+        }
+
+        function validateField(field, value, isEmpty, isValid, errorMessage) {
+            if (isEmpty(value)) {
+                showAlert(`${field} cannot be empty.`);
+                return false;
+            }
+            if (!isValid(value)) {
+                showAlert(errorMessage);
+                return false;
+            }
+            return true;
+        }
+
+        function validateName(name) {
+            return /^[a-zA-Z\s.]+$/.test(name);
+        }
+
+        function validateAge(age) {
+            return /^\d+$/.test(age) && parseInt(age) >= 0;
+        }
+
+        function validateUHID(uhid) {
+            return /^\d{9}$/.test(uhid);
+        }
+
+        function validateBed(bed) {
+            return bed !== 'none';
+        }
+
+        function validateForm() {
+            const nameInput = document.getElementById('name-to-be-taken');
+            const ageYearsInput = document.getElementById('age-years-to-be-taken');
+            const ageMonthsInput = document.getElementById('age-months-to-be-taken');
+            const uhidInput = document.getElementById('uuid-input');
+            const bedSelect = document.getElementById('bed-select');
+
+            const name = nameInput.value.trim();
+            const ageYears = ageYearsInput.value.trim();
+            const ageMonths = ageMonthsInput.value.trim();
+            const uhid = uhidInput.value.trim();
+            const bed = bedSelect.value;
+
+            if (!validateField('Name', name, (val) => !val, validateName, 'Name can only include letters, spaces, and dots. Numbers and other special characters are not allowed.')) {
+                return false;
+            }
+
+            if (!validateField('Age in years', ageYears, (val) => !val, validateAge, 'Age must be a non-negative number.')) {
+                return false;
+            }
+
+            if (!validateField('Age in months', ageMonths, (val) => !val, validateAge, 'Age must be a non-negative number.')) {
+                return false;
+            }
+
+            if (!validateField('UHID', uhid, (val) => !val, validateUHID, 'UHID must be exactly 9 digits.')) {
+                return false;
+            }
+
+            if (!validateBed(bed)) {
+                showAlert('Bed cannot be none.');
+                return false;
+            }
+
+            return true;
+        }
+
+        function downloadTextFile() {
+            if (!validateForm()) {
+                return; // Exit if validation fails
+            }
+            // Show loading overlay
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
+            document.body.appendChild(loadingOverlay);
+
+            // Clean empty rows before collecting data (as a final check)
+            cleanEmptyRows();
+
+            // Generate a new UUID for this entry
+            const newUuid = crypto.randomUUID();
+
+            // Get current datetime in a formatted string
+            const now = new Date();
+            const datetime = now.toISOString()
+                .replace(/[:.]/g, '-')  // Replace colons and periods with hyphens
+                .replace('T', '_')      // Replace T with underscore
+                .slice(0, 19);          // Remove milliseconds and timezone
+
+            // Get name and UHID for filename
+            const name = document.getElementById('name-to-be-taken').value.trim().replace(/\s+/g, '_');
+            const uhid = document.getElementById('uuid-input').value.trim();
+
+            // Create filename
+            const filename = `${name}_${uhid}_${datetime}.pdf`;
+
+            // Collect all form data with capitalized field names
+            const formData = {
+                Name: document.getElementById('name-to-be-taken').value.trim(),
+                Age_year: document.getElementById('age-years-to-be-taken').value.trim(),
+                Age_month: document.getElementById('age-months-to-be-taken').value.trim(),
+                Sex: document.getElementById('sex-select').value.trim(),
+                uhid: document.getElementById('uuid-input').value.trim(),
+                uuid: newUuid,
+                bed_number: document.getElementById('bed-select').value.trim(),
+                Diagnosis: document.getElementById('diagnosis-input').value.trim(),
+                Consultants: document.getElementById('consultants-input').value.trim(),
+                JR: document.getElementById('jr-input').value.trim(),
+                SR: document.getElementById('sr-input').value.trim()
+            };
+
+            // Collect parameters from the table
+            const parametersTable = document.getElementById('parameter-table');
+            const parameterRows = parametersTable.querySelectorAll('tbody tr');
+            const parameters = {};
+            
+            parameterRows.forEach((row, index) => {
+                const parameterName = row.querySelector('td:nth-child(2) input').value.trim();
+                const parameterValue = row.querySelector('td:nth-child(3) input').value.trim();
+                parameters[`row_${index + 1}`] = {
+                    row_header_name: parameterName || ' ',
+                    row_header_description: parameterValue || ' '
+                };
+            });
+
+            // Collect all medication tables data
+            const medicationTables = document.querySelectorAll('#medications-container .table-container');
+            const entries = {};
+            
+            medicationTables.forEach((tableContainer, tableIndex) => {
+                const table = tableContainer.querySelector('table');
+                const title = table.querySelector('th.cell-description input').value.trim();
+                const rows = table.querySelectorAll('tbody tr');
+                const subtitles = {};
+                
+                rows.forEach((row, rowIndex) => {
+                    const content = row.querySelector('td.cell-description input').value.trim();
+                    const day = row.querySelector('td.cell-day input').value.trim();
+                    const dose = row.querySelector('td.cell-dose input').value.trim();
+                    const volume = row.querySelector('td.cell-volume input').value.trim();
+                    
+                    if (content || day || dose || volume) {
+                        subtitles[`subtitle_${rowIndex + 1}`] = {
+                            content: content,
+                            day: day,
+                            dose: dose,
+                            volume: volume
+                        };
+                    }
+                });
+                
+                if (title || Object.keys(subtitles).length > 0) {
+                    entries[`entry_${tableIndex + 1}`] = {
+                        title: title,
+                        subtitles: subtitles
+                    };
+                }
+            });
+
+            // Add parameters and entries to form data
+            formData.parameters = parameters;
+            formData.entries = entries;
+
+            // Send data to server
+            fetch('/download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Error downloading file');
+                    });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                
+                // Remove loading overlay after download starts
+                loadingOverlay.remove();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error.message);
+                // Remove loading overlay on error
+                loadingOverlay.remove();
+            });
+        }
+
+        // Initialize event listeners when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listener for form submission
+            document.getElementById('print-button').addEventListener('click', function(event) {
+                event.preventDefault(); // Prevent default action
+                if (validateForm()) {
+                    downloadTextFile();
+                }
+            });
+        });
+    </script>
 
     <script>
         // Add functionality to the search button
@@ -1644,217 +1861,84 @@
         }
     </script>
 
-<script>
-function downloadTextFile() {
-    // Show loading overlay
-    const loadingOverlay = document.createElement('div');
-    loadingOverlay.className = 'loading-overlay';
-    loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
-    document.body.appendChild(loadingOverlay);
+    <script>
+        let previousFontSize = 13; // Default fallback
+        document.addEventListener('DOMContentLoaded', function() {
+            const settingsButton = document.getElementById('settings-btn');
+            const settingsModalOverlay = document.getElementById('settings-modal-overlay');
+            const saveSettingsButton = document.getElementById('save-settings');
+            const closeSettingsButton = document.getElementById('close-settings-modal');
+            const fontSizeInput = document.getElementById('font-size-input');
 
-    // Clean empty rows before collecting data (as a final check)
-    cleanEmptyRows();
-
-    // Generate a new UUID for this entry
-    const newUuid = crypto.randomUUID();
-
-    // Get current datetime in a formatted string
-    const now = new Date();
-    const datetime = now.toISOString()
-        .replace(/[:.]/g, '-')  // Replace colons and periods with hyphens
-        .replace('T', '_')      // Replace T with underscore
-        .slice(0, 19);          // Remove milliseconds and timezone
-
-    // Get name and UHID for filename
-    const name = document.getElementById('name-to-be-taken').value.trim().replace(/\s+/g, '_');
-    const uhid = document.getElementById('uuid-input').value.trim();
-
-    // Create filename
-    const filename = `${name}_${uhid}_${datetime}.pdf`;
-
-    // Collect all form data with capitalized field names
-    const formData = {
-        Name: document.getElementById('name-to-be-taken').value.trim(),
-        Age_year: document.getElementById('age-years-to-be-taken').value.trim(),
-        Age_month: document.getElementById('age-months-to-be-taken').value.trim(),
-        Sex: document.getElementById('sex-select').value.trim(),
-        uhid: document.getElementById('uuid-input').value.trim(),
-        uuid: newUuid,
-        bed_number: document.getElementById('bed-select').value.trim(),
-        Diagnosis: document.getElementById('diagnosis-input').value.trim(),
-        Consultants: document.getElementById('consultants-input').value.trim(),
-        JR: document.getElementById('jr-input').value.trim(),
-        SR: document.getElementById('sr-input').value.trim()
-    };
-
-    // Collect parameters from the table
-    const parametersTable = document.getElementById('parameter-table');
-    const parameterRows = parametersTable.querySelectorAll('tbody tr');
-    const parameters = {};
-    
-    parameterRows.forEach((row, index) => {
-        const parameterName = row.querySelector('td:nth-child(2) input').value.trim();
-        const parameterValue = row.querySelector('td:nth-child(3) input').value.trim();
-        parameters[`row_${index + 1}`] = {
-            row_header_name: parameterName || ' ',
-            row_header_description: parameterValue || ' '
-        };
-    });
-
-    // Collect all medication tables data
-    const medicationTables = document.querySelectorAll('#medications-container .table-container');
-    const entries = {};
-    
-    medicationTables.forEach((tableContainer, tableIndex) => {
-        const table = tableContainer.querySelector('table');
-        const title = table.querySelector('th.cell-description input').value.trim();
-        const rows = table.querySelectorAll('tbody tr');
-        const subtitles = {};
-        
-        rows.forEach((row, rowIndex) => {
-            const content = row.querySelector('td.cell-description input').value.trim();
-            const day = row.querySelector('td.cell-day input').value.trim();
-            const dose = row.querySelector('td.cell-dose input').value.trim();
-            const volume = row.querySelector('td.cell-volume input').value.trim();
-            
-            if (content || day || dose || volume) {
-                subtitles[`subtitle_${rowIndex + 1}`] = {
-                    content: content,
-                    day: day,
-                    dose: dose,
-                    volume: volume
-                };
-            }
-        });
-        
-        if (title || Object.keys(subtitles).length > 0) {
-            entries[`entry_${tableIndex + 1}`] = {
-                title: title,
-                subtitles: subtitles
-            };
-        }
-    });
-
-    // Add parameters and entries to form data
-    formData.parameters = parameters;
-    formData.entries = entries;
-
-    // Send data to server
-    fetch('/download', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(data => {
-                throw new Error(data.error || 'Error downloading file');
+            settingsButton.addEventListener('click', function() {
+                fetch('/settings')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('ip-input').value = data.ip_settings.host;
+                        document.getElementById('port-input').value = data.ip_settings.port;
+                        document.getElementById('current-logo-path').textContent = data.logo_upload.path;
+                        document.getElementById('current-logo-img').src = data.logo_upload.url || data.logo_upload.path;
+                        document.getElementById('heading-input').value = data.heading;
+                        document.getElementById('subheading-input').value = data.subheading;
+                        document.getElementById('font-size-input').value = data.font_size;
+                        previousFontSize = data.font_size || 13;
+                        settingsModalOverlay.style.display = 'flex';
+                    })
+                    .catch(error => console.error('Error fetching settings:', error));
             });
-        }
-        return response.blob();
-    })
-    .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        a.remove();
-        
-        // Remove loading overlay after download starts
-        loadingOverlay.remove();
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert(error.message);
-        // Remove loading overlay on error
-        loadingOverlay.remove();
-    });
-}
-</script>
 
-<script>
-    let previousFontSize = 13; // Default fallback
-    document.addEventListener('DOMContentLoaded', function() {
-        const settingsButton = document.getElementById('settings-btn');
-        const settingsModalOverlay = document.getElementById('settings-modal-overlay');
-        const saveSettingsButton = document.getElementById('save-settings');
-        const closeSettingsButton = document.getElementById('close-settings-modal');
-        const fontSizeInput = document.getElementById('font-size-input');
+            saveSettingsButton.addEventListener('click', function() {
+                const fontSize = parseInt(fontSizeInput.value);
+                if (fontSize > 13) {
+                    alert('Font size cannot be above 13.');
+                    fontSizeInput.value = previousFontSize;
+                    fontSizeInput.focus();
+                    return;
+                }
+                if (fontSize < 1) {
+                    alert('Font size cannot be smaller than 1.');
+                    fontSizeInput.value = previousFontSize;
+                    fontSizeInput.focus();
+                    return;
+                }
+                const newSettings = {
+                    ip_settings: {
+                        host: document.getElementById('ip-input').value,
+                        port: parseInt(document.getElementById('port-input').value)
+                    },
+                    logo_upload: {
+                        path: document.getElementById('current-logo-path').textContent,
+                        url: document.getElementById('current-logo-img').src
+                    },
+                    heading: document.getElementById('heading-input').value,
+                    subheading: document.getElementById('subheading-input').value,
+                    font_size: fontSize
+                };
 
-        settingsButton.addEventListener('click', function() {
-            fetch('/settings')
+                fetch('/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(newSettings)
+                })
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('ip-input').value = data.ip_settings.host;
-                    document.getElementById('port-input').value = data.ip_settings.port;
-                    document.getElementById('current-logo-path').textContent = data.logo_upload.path;
-                    document.getElementById('current-logo-img').src = data.logo_upload.url || data.logo_upload.path;
-                    document.getElementById('heading-input').value = data.heading;
-                    document.getElementById('subheading-input').value = data.subheading;
-                    document.getElementById('font-size-input').value = data.font_size;
-                    previousFontSize = data.font_size || 13;
-                    settingsModalOverlay.style.display = 'flex';
+                    if (data.message) {
+                        alert('Settings saved successfully!');
+                        settingsModalOverlay.style.display = 'none';
+                    } else {
+                        alert('Error saving settings: ' + data.error);
+                    }
                 })
-                .catch(error => console.error('Error fetching settings:', error));
-        });
+                .catch(error => console.error('Error saving settings:', error));
+            });
 
-        saveSettingsButton.addEventListener('click', function() {
-            const fontSize = parseInt(fontSizeInput.value);
-            if (fontSize > 13) {
-                alert('Font size cannot be above 13.');
-                fontSizeInput.value = previousFontSize;
-                fontSizeInput.focus();
-                return;
-            }
-            if (fontSize < 1) {
-                alert('Font size cannot be smaller than 1.');
-                fontSizeInput.value = previousFontSize;
-                fontSizeInput.focus();
-                return;
-            }
-            const newSettings = {
-                ip_settings: {
-                    host: document.getElementById('ip-input').value,
-                    port: parseInt(document.getElementById('port-input').value)
-                },
-                logo_upload: {
-                    path: document.getElementById('current-logo-path').textContent,
-                    url: document.getElementById('current-logo-img').src
-                },
-                heading: document.getElementById('heading-input').value,
-                subheading: document.getElementById('subheading-input').value,
-                font_size: fontSize
-            };
-
-            fetch('/settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(newSettings)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    alert('Settings saved successfully!');
-                    settingsModalOverlay.style.display = 'none';
-                } else {
-                    alert('Error saving settings: ' + data.error);
-                }
-            })
-            .catch(error => console.error('Error saving settings:', error));
+            closeSettingsButton.addEventListener('click', function() {
+                settingsModalOverlay.style.display = 'none';
+            });
         });
-
-        closeSettingsButton.addEventListener('click', function() {
-            settingsModalOverlay.style.display = 'none';
-        });
-    });
-</script>
+    </script>
 
 </body>
 </html>

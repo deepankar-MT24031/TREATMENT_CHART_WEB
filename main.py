@@ -72,8 +72,8 @@ def download():
                 missing_fields.append(readable_field)
 
         if missing_fields:
-            error_message = f"Please fill in the following required fields: {', '.join(missing_fields)}"
-            return jsonify({'error': error_message}), 400
+            # Removed the alert message
+            return jsonify({'error': ''}), 400
 
         # If all required fields are present, proceed with the download
         val1 = {
