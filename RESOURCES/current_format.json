@@ -4,7 +4,7 @@
   "Age_month": "45",
   "Sex": "Female",
   "uhid": "42341234",
-  "uuid": "d2751759-55ee-406e-b478-574a3e409239",
+  "uuid": "41a6fd0f-e069-4cd4-a097-658ad3219415",
   "bed_number": "4",
   "Diagnosis": "{\n  \"table\": [\n    {\n      \"Drug 1\": \"Ibuprofen\",\n      \"Drug 2\": \"Amoxicillin\",\n      \"Interaction\": \"Unknown\"\n    },\n    {\n      \"Drug 1\": \"Azithromycin\",\n      \"Drug 2\": \"Amoxicillin\",\n      \"Interaction\": \"Minor\"\n    }\n  ]\n}",
   "Consultants": "",

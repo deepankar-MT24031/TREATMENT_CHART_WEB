@@ -622,15 +622,19 @@
 
                 <div class="form-section">
                     <div class="two-columns">
-                        <div class="column">
+                        <div class="column" style="flex: 2; margin-right: 20px;">
                             <div class="form-label">Consultants</div>
-                             <input type="text" id="consultants-input" style="width: 95%;">
+                            <textarea id="consultants-input" style="height: 80px; width: 100%; border: 1px solid #ccc; padding: 5px; resize: none;"></textarea>
                         </div>
-                        <div class="column">
-                            <div class="form-label">JR</div>
-                            <input type="text" id="jr-input" style="width: 95%;">
-                            <div class="form-label">SR</div>
-                            <input type="text" id="sr-input" style="width: 95%;">
+                        <div class="column" style="flex: 1; display: flex; flex-direction: row; gap: 20px;">
+                            <div style="flex: 1;">
+                                <div class="form-label">JR</div>
+                                <textarea id="jr-input" style="width: 100%; height: 80px; border: 1px solid #ccc; padding: 5px; resize: none;"></textarea>
+                            </div>
+                            <div style="flex: 1;">
+                                <div class="form-label">SR</div>
+                                <textarea id="sr-input" style="width: 100%; height: 80px; border: 1px solid #ccc; padding: 5px; resize: none;"></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -642,10 +646,10 @@
                                 <table style="table-layout: fixed; width: auto;">
                                     <colgroup>
                                         <col style="width: 8px;">
-                                        <col>
-                                        <col>
-                                        <col>
-                                        <col>
+                                        <col style="width: 200px;">
+                                        <col style="width: 80px;">
+                                        <col style="width: 80px;">
+                                        <col style="width: 80px;">
                                     </colgroup>
                                     <thead>
                                         <tr>
@@ -675,10 +679,10 @@
                                 <table style="table-layout: fixed; width: auto;">
                                     <colgroup>
                                         <col style="width: 8px;">
-                                        <col>
-                                        <col>
-                                        <col>
-                                        <col>
+                                        <col style="width: 200px;">
+                                        <col style="width: 80px;">
+                                        <col style="width: 80px;">
+                                        <col style="width: 80px;">
                                     </colgroup>
                                     <thead>
                                         <tr>
@@ -708,10 +712,10 @@
                                 <table style="table-layout: fixed; width: auto;">
                                     <colgroup>
                                         <col style="width: 8px;">
-                                        <col>
-                                        <col>
-                                        <col>
-                                        <col>
+                                        <col style="width: 200px;">
+                                        <col style="width: 80px;">
+                                        <col style="width: 80px;">
+                                        <col style="width: 80px;">
                                     </colgroup>
                                     <thead>
                                         <tr>
@@ -744,12 +748,17 @@
 
                     <div class="column" id="right-column">
                         <div class="form-section scrollable-table">
-                            <table id="parameter-table">
+                            <table id="parameter-table" style="table-layout: fixed;">
+                                <colgroup>
+                                    <col style="width: 40px;">
+                                    <col style="width: 100px;">
+                                    <col>
+                                </colgroup>
                                 <thead>
                                     <tr>
-                                        <th style="width: 5%;">No</th>
-                                        <th style="width: 20%;">Parameter</th>
-                                        <th style="width: 45%;">Value</th>
+                                        <th>No</th>
+                                        <th>Parameter</th>
+                                        <th>Value</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -998,11 +1007,18 @@
                 // Create table
                 const table = document.createElement('table');
                 table.innerHTML = `
+                    <colgroup>
+                        <col style="width: 15px;">
+                        <col style="width: 245px;">
+                        <col style="width: 40px;">
+                        <col style="width: 80px;">
+                        <col style="width: 80px;">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th class="cell-number"></th>
                             <th class="cell-description">
-                                <input type="text" class="header-editable" value="${entryData.title}">
+                                <input type="text" class="header-editable" value="${entryData.title || ''}">
                             </th>
                             <th class="cell-day">Day</th>
                             <th class="cell-dose">Dose</th>
@@ -1280,10 +1296,10 @@
             table.innerHTML = `
                 <colgroup>
                     <col style="width: 8px;">
-                    <col>
-                    <col>
-                    <col>
-                    <col>
+                    <col style="width: 200px;">
+                    <col style="width: 80px;">
+                    <col style="width: 80px;">
+                    <col style="width: 80px;">
                 </colgroup>
                 <thead>
                     <tr>
@@ -1530,6 +1546,13 @@
                         // Create table
                         const table = document.createElement('table');
                         table.innerHTML = `
+                            <colgroup>
+                                <col style="width: 8px;">
+                                <col style="width: 200px;">
+                                <col style="width: 80px;">
+                                <col style="width: 80px;">
+                                <col style="width: 80px;">
+                            </colgroup>
                             <thead>
                                 <tr>
                                     <th class="cell-number"></th>
@@ -1623,11 +1646,31 @@
 
 <script>
 function downloadTextFile() {
+    // Show loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'loading-overlay';
+    loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
+    document.body.appendChild(loadingOverlay);
+
     // Clean empty rows before collecting data (as a final check)
     cleanEmptyRows();
 
     // Generate a new UUID for this entry
     const newUuid = crypto.randomUUID();
+
+    // Get current datetime in a formatted string
+    const now = new Date();
+    const datetime = now.toISOString()
+        .replace(/[:.]/g, '-')  // Replace colons and periods with hyphens
+        .replace('T', '_')      // Replace T with underscore
+        .slice(0, 19);          // Remove milliseconds and timezone
+
+    // Get name and UHID for filename
+    const name = document.getElementById('name-to-be-taken').value.trim().replace(/\s+/g, '_');
+    const uhid = document.getElementById('uuid-input').value.trim();
+
+    // Create filename
+    const filename = `${name}_${uhid}_${datetime}.pdf`;
 
     // Collect all form data with capitalized field names
     const formData = {
@@ -1635,8 +1678,8 @@ function downloadTextFile() {
         Age_year: document.getElementById('age-years-to-be-taken').value.trim(),
         Age_month: document.getElementById('age-months-to-be-taken').value.trim(),
         Sex: document.getElementById('sex-select').value.trim(),
-        uhid: document.getElementById('uuid-input').value.trim(), // This is the UHID
-        uuid: newUuid, // Generate new UUID for this entry
+        uhid: document.getElementById('uuid-input').value.trim(),
+        uuid: newUuid,
         bed_number: document.getElementById('bed-select').value.trim(),
         Diagnosis: document.getElementById('diagnosis-input').value.trim(),
         Consultants: document.getElementById('consultants-input').value.trim(),
@@ -1644,7 +1687,7 @@ function downloadTextFile() {
         SR: document.getElementById('sr-input').value.trim()
     };
 
-    // Collect ALL parameters from the table, regardless of whether they have values
+    // Collect parameters from the table
     const parametersTable = document.getElementById('parameter-table');
     const parameterRows = parametersTable.querySelectorAll('tbody tr');
     const parameters = {};
@@ -1652,10 +1695,9 @@ function downloadTextFile() {
     parameterRows.forEach((row, index) => {
         const parameterName = row.querySelector('td:nth-child(2) input').value.trim();
         const parameterValue = row.querySelector('td:nth-child(3) input').value.trim();
-        // Store every parameter, using empty string if no value
         parameters[`row_${index + 1}`] = {
-            row_header_name: parameterName || ' ',  // Use space if no name
-            row_header_description: parameterValue || ' '  // Use space if no value
+            row_header_name: parameterName || ' ',
+            row_header_description: parameterValue || ' '
         };
     });
 
@@ -1717,15 +1759,20 @@ function downloadTextFile() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'current.pdf';
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         a.remove();
+        
+        // Remove loading overlay after download starts
+        loadingOverlay.remove();
     })
     .catch(error => {
         console.error('Error:', error);
         alert(error.message);
+        // Remove loading overlay on error
+        loadingOverlay.remove();
     });
 }
 </script>
