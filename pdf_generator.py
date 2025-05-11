@@ -335,7 +335,6 @@ def generate_pdf_from_latex(heading,subheading,patient_info, stacked_blocks, tab
         table_data (str): LaTeX code for the table data
         font_size (int): Base font size in pt for the document
     """
-
     current_dir = os.getcwd()
     output_dir_name = "GENERATED_PDFS"
     output_dir_path = os.path.join(current_dir, output_dir_name)
@@ -360,7 +359,7 @@ def generate_pdf_from_latex(heading,subheading,patient_info, stacked_blocks, tab
     # --- Generate LaTeX Code ---
     line_height = int(font_size * 1.2)
     header_font_size = font_size - 1
-    adjusted_vspace = max(1.5, (font_size / 11) * 3.0)
+    adjusted_vspace = max(1.5, (font_size / 11) * 1.0)  # Increased spacing multiplier from 3.0 to 3.5
 
     latex_code = rf"""
 \documentclass{{article}}
@@ -412,7 +411,7 @@ def generate_pdf_from_latex(heading,subheading,patient_info, stacked_blocks, tab
 % Create a two-column layout with fixed positions
 \noindent
 \begin{{minipage}}[t]{{0.45\textwidth}}
-\vspace{{-{adjusted_vspace:.2f}cm}} % Adjust this value to position the content above the image
+\vspace{{-{adjusted_vspace:.2f}cm}} % Dynamic spacing based on font size
 
     {stacked_blocks} % Replace with your stacked blocks\
 
