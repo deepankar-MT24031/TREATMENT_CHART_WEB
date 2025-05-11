@@ -1092,23 +1092,38 @@
             .then(response => {
                 if (!response.ok) {
                     return response.json().then(data => {
-                        throw new Error(data.error || 'Error downloading file');
+                        throw new Error(data.error || 'Error generating PDF');
                     });
                 }
                 return response.blob();
             })
             .then(blob => {
+                // Create object URL from blob
                 const url = window.URL.createObjectURL(blob);
+                
+                // First download the file
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = filename;
                 document.body.appendChild(a);
                 a.click();
-                window.URL.revokeObjectURL(url);
                 a.remove();
                 
-                // Remove loading overlay after download starts
+                // Then open in new tab
+                const newWindow = window.open(url, '_blank');
+                
+                if (!newWindow) {
+                    // If popup is blocked, show error
+                    alert('Please allow popups for this website to view the PDF');
+                }
+                
+                // Remove loading overlay
                 loadingOverlay.remove();
+                
+                // Clean up object URL after a delay
+                setTimeout(() => {
+                    window.URL.revokeObjectURL(url);
+                }, 1000);
             })
             .catch(error => {
                 console.error('Error:', error);
