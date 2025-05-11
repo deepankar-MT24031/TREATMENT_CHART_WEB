@@ -226,20 +226,20 @@
         }
 
         .cell-number, th.cell-number, td.cell-number {
-            width: 8px !important;
-            max-width: 8px !important;
-            min-width: 8px !important;
+            width: 25px !important;
+            max-width: 25px !important;
+            min-width: 25px !important;
             padding: 0 !important;
             text-align: center;
             white-space: nowrap;
             overflow: hidden;
-            font-size: 0.7em;
+            font-size: 0.9em;
         }
 
         #medications-container table colgroup col:first-child {
-            width: 8px !important;
-            max-width: 8px !important;
-            min-width: 8px !important;
+            width: 25px !important;
+            max-width: 25px !important;
+            min-width: 25px !important;
         }
 
         .cell-description {
@@ -770,13 +770,13 @@
                         <div class="form-section scrollable-table">
                             <table id="parameter-table" style="table-layout: fixed;">
                                 <colgroup>
-                                    <col style="width: 40px;">
+                                    <col style="width: 25px;">
                                     <col style="width: 100px;">
                                     <col>
                                 </colgroup>
                                 <thead>
                                     <tr>
-                                        <th>No</th>
+                                        <th class="cell-number">No</th>
                                         <th>Parameter</th>
                                         <th>Value</th>
                                     </tr>
@@ -1931,7 +1931,7 @@
 
             const newRow = document.createElement('tr');
             newRow.innerHTML = `
-                <td>${rowCount}</td>
+                <td class="cell-number">${rowCount}</td>
                 <td><input type="text" class="editable" placeholder="Parameter name"></td>
                 <td><input type="text" class="editable"></td>
             `;
