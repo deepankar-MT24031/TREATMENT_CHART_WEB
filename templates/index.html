@@ -89,14 +89,29 @@
             height: 60px;
         }
 
+        .age-field {
+            width: 80px;
+            margin-right: 5px;
+            padding: 3px;
+            border: 1px solid #aaa;
+            border-radius: 3px;
+            background-color: white;
+        }
+
+        .age-field:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 3px rgba(74, 144, 226, 0.3);
+        }
+
         .age-container {
             display: flex;
             align-items: center;
+            gap: 5px;
         }
 
-        .age-field {
-            width: 60px;
-            margin-right: 5px;
+        .age-container span {
+            white-space: nowrap;
         }
 
         .main-content {
@@ -530,33 +545,22 @@
                 </div>
 
                 <div class="search-results">
-                    <table>
+                    <table id="search-results-table">
+                        <colgroup>
+                            <col style="width: 40px;">
+                            <col style="width: 200px;">
+                            <col style="width: 150px;">
+                            <col style="width: 150px;">
+                        </colgroup>
                         <thead>
                             <tr>
-                                <th style="width: 40px;"></th>
+                                <th></th>
                                 <th>Name</th>
                                 <th>Date</th>
                                 <th>UHID</th>
-                                <th></th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {% if database_entries %}
-                                {% for entry in database_entries %}
-                                <tr class="search-result-row" data-uuid="{{ entry[3] }}" style="cursor: pointer;">
-                                    <td style="text-align: center;">{{ loop.index }}</td>
-                                    <td>{{ entry[0] }}</td>
-                                    <td>{{ entry[1] }}</td>
-                                    <td>{{ entry[2] }}</td>
-                                    <td style="display: none;">{{ entry[3] }}</td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="5" style="text-align: center;">No entries found</td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -574,9 +578,23 @@
                         <div class="form-field" style="flex: 2;">
                             <div class="form-label">Age</div>
                             <div class="age-container">
-                                <input type="text" id="age-years-to-be-taken" class="age-field">
+                                <select id="age-years-to-be-taken" class="age-field">
+                                    <option value="">Select Years</option>
+                                    <script>
+                                        for(let i = 0; i <= 30; i++) {
+                                            document.write(`<option value="${i}">${i}</option>`);
+                                        }
+                                    </script>
+                                </select>
                                 <span>Years</span>
-                                <input type="text" id="age-months-to-be-taken" class="age-field" style="margin-left: 10px;">
+                                <select id="age-months-to-be-taken" class="age-field" style="margin-left: 10px;">
+                                    <option value="">Select Months</option>
+                                    <script>
+                                        for(let i = 0; i <= 12; i++) {
+                                            document.write(`<option value="${i}">${i}</option>`);
+                                        }
+                                    </script>
+                                </select>
                                 <span>Months</span>
                             </div>
                         </div>
@@ -606,6 +624,8 @@
                                 <option>12</option>
                                 <option>13</option>
                                 <option>14</option>
+                                <option>15</option>
+                                <option>16</option>
                             </select>
                         </div>
                         <div class="form-field" style="flex: 2;">
@@ -862,7 +882,7 @@
         }
 
         function validateAge(age) {
-            return /^\d+$/.test(age) && parseInt(age) >= 0;
+            return age !== "" && !isNaN(age) && parseInt(age) >= 0;
         }
 
         function validateUHID(uhid) {
@@ -881,8 +901,8 @@
             const bedSelect = document.getElementById('bed-select');
 
             const name = nameInput.value.trim();
-            const ageYears = ageYearsInput.value.trim();
-            const ageMonths = ageMonthsInput.value.trim();
+            const ageYears = ageYearsInput.value;
+            const ageMonths = ageMonthsInput.value;
             const uhid = uhidInput.value.trim();
             const bed = bedSelect.value;
 
@@ -890,11 +910,17 @@
                 return false;
             }
 
-            if (!validateField('Age in years', ageYears, (val) => !val, validateAge, 'Age must be a non-negative number.')) {
+            if (!validateField('Age in years', ageYears, (val) => val === "", validateAge, 'Please select age in years.')) {
                 return false;
             }
 
-            if (!validateField('Age in months', ageMonths, (val) => !val, validateAge, 'Age must be a non-negative number.')) {
+            if (!validateField('Age in months', ageMonths, (val) => val === "", validateAge, 'Please select age in months.')) {
+                return false;
+            }
+
+            // Additional validation for months
+            if (parseInt(ageMonths) > 12) {
+                showAlert('Age in months cannot be greater than 12.');
                 return false;
             }
 
@@ -959,15 +985,16 @@
 
         function downloadTextFile() {
             if (!validateForm()) {
-                return; // Exit if validation fails
+                return;
             }
+
             // Show loading overlay
             const loadingOverlay = document.createElement('div');
             loadingOverlay.className = 'loading-overlay';
             loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
             document.body.appendChild(loadingOverlay);
 
-            // Clean empty rows before collecting data (as a final check)
+            // Clean empty rows before collecting data
             cleanEmptyRows();
 
             // Generate a new UUID for this entry
@@ -976,9 +1003,9 @@
             // Get current datetime in a formatted string
             const now = new Date();
             const datetime = now.toISOString()
-                .replace(/[:.]/g, '-')  // Replace colons and periods with hyphens
-                .replace('T', '_')      // Replace T with underscore
-                .slice(0, 19);          // Remove milliseconds and timezone
+                .replace(/[:.]/g, '-')
+                .replace('T', '_')
+                .slice(0, 19);
 
             // Get name and UHID for filename
             const name = document.getElementById('name-to-be-taken').value.trim().replace(/\s+/g, '_');
@@ -990,8 +1017,8 @@
             // Collect all form data with capitalized field names
             const formData = {
                 Name: document.getElementById('name-to-be-taken').value.trim(),
-                Age_year: document.getElementById('age-years-to-be-taken').value.trim(),
-                Age_month: document.getElementById('age-months-to-be-taken').value.trim(),
+                Age_year: document.getElementById('age-years-to-be-taken').value,
+                Age_month: document.getElementById('age-months-to-be-taken').value,
                 Sex: document.getElementById('sex-select').value.trim(),
                 uhid: document.getElementById('uuid-input').value.trim(),
                 uuid: newUuid,
@@ -1295,14 +1322,14 @@
                 
                 // Add rows from subtitles
                 const tbody = table.querySelector('tbody');
-                Object.entries(entryData.subtitles).forEach(([subtitleKey, subtitleData], index) => {
+                Object.entries(entryData.subtitles || {}).forEach(([subtitleKey, subtitleData], index) => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td class="cell-number">${index + 1}</td>
-                        <td class="cell-description"><input type="text" class="editable" value="${subtitleData.content}"></td>
-                        <td class="cell-day"><input type="text" class="editable" value="${subtitleData.day}"></td>
-                        <td class="cell-dose"><input type="text" class="editable" value="${subtitleData.dose}"></td>
-                        <td class="cell-volume"><input type="text" class="editable" value="${subtitleData.volume}"></td>
+                        <td class="cell-description"><input type="text" class="editable" value="${subtitleData.content || ''}"></td>
+                        <td class="cell-day"><input type="text" class="editable" value="${subtitleData.day || ''}"></td>
+                        <td class="cell-dose"><input type="text" class="editable" value="${subtitleData.dose || ''}"></td>
+                        <td class="cell-volume"><input type="text" class="editable" value="${subtitleData.volume || ''}"></td>
                     `;
                     tbody.appendChild(row);
                 });
@@ -1323,15 +1350,15 @@
             const tbody = parameterTable.querySelector('tbody');
             tbody.innerHTML = ''; // Clear existing content
             
-            Object.entries(currentData.each_table_row_layout).forEach(([rowKey, rowData]) => {
+            Object.entries(currentData.each_table_row_layout || {}).forEach(([rowKey, rowData]) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td class="cell-number">${rowKey.replace('row_', '')}</td>
                     <td class="cell-description">
-                        <input type="text" class="editable" value="${rowData.row_header_name}">
+                        <input type="text" class="editable" value="${rowData.row_header_name || ''}">
                     </td>
                     <td class="cell-value">
-                        <input type="text" class="editable" value="${rowData.row_header_description}">
+                        <input type="text" class="editable" value="${rowData.row_header_description || ''}">
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -1369,7 +1396,7 @@
             
             // Add event listener for add box button in footer
             document.getElementById('add-box-footer').addEventListener('click', function() {
-                addNewMedicationBox();
+                addNewBox();
                 // Reattach listeners after adding new box
                 setTimeout(reattachListeners, 0);
             });
@@ -1495,7 +1522,7 @@
                 
                 // Add the new listener
                 newAddBoxButton.addEventListener('click', function() {
-                    addNewMedicationBox();
+                    addNewBox();
                     // Reattach listeners after adding new box
                     addRowButtonListeners();
                 });
@@ -1546,22 +1573,18 @@
             });
         });
 
-        // Update the addNewMedicationBox function
-        function addNewMedicationBox() {
-            console.log('Adding new medication box');
-            const medicationsContainer = document.getElementById('medications-container');
-            
-            // Create table container
+        // Update the addNewBox function
+        function addNewBox() {
+            const container = document.getElementById('medications-container');
             const tableContainer = document.createElement('div');
             tableContainer.className = 'table-container';
             
-            // Create table
             const table = document.createElement('table');
             table.innerHTML = `
                 <colgroup>
-                    <col style="width: 8px;">
-                    <col style="width: 200px;">
-                    <col style="width: 80px;">
+                    <col style="width: 15px;">
+                    <col style="width: 245px;">
+                    <col style="width: 40px;">
                     <col style="width: 80px;">
                     <col style="width: 80px;">
                 </colgroup>
@@ -1569,7 +1592,7 @@
                     <tr>
                         <th class="cell-number"></th>
                         <th class="cell-description">
-                            <input type="text" class="header-editable" value="New Medication Box">
+                            <input type="text" class="header-editable" placeholder="Enter title">
                         </th>
                         <th class="cell-day">Day</th>
                         <th class="cell-dose">Dose</th>
@@ -1580,7 +1603,7 @@
                     <tr>
                         <td class="cell-number">1</td>
                         <td class="cell-description"><input type="text" class="editable"></td>
-                        <td class="cell-day"><input type="text" class="editable"></td>
+                        <td class="cell-day"><input type="text" class="editable" value="1"></td>
                         <td class="cell-dose"><input type="text" class="editable"></td>
                         <td class="cell-volume"><input type="text" class="editable"></td>
                     </tr>
@@ -1589,13 +1612,13 @@
             
             // Add table to container
             tableContainer.appendChild(table);
-            medicationsContainer.appendChild(tableContainer);
+            container.appendChild(tableContainer);
             
             // Add "Add Row" button
             const addRowButton = document.createElement('button');
             addRowButton.className = 'button add-row';
             addRowButton.textContent = 'Add Row';
-            medicationsContainer.appendChild(addRowButton);
+            container.appendChild(addRowButton);
 
             // Add input listeners to the new inputs
             const newInputs = tableContainer.querySelectorAll('input.editable');
@@ -1621,8 +1644,8 @@
             // Collect all form data with capitalized field names
             const formData = {
                 Name: document.getElementById('name-to-be-taken').value.trim(),
-                Age_year: document.getElementById('age-years-to-be-taken').value.trim(),
-                Age_month: document.getElementById('age-months-to-be-taken').value.trim(),
+                Age_year: document.getElementById('age-years-to-be-taken').value,
+                Age_month: document.getElementById('age-months-to-be-taken').value,
                 Sex: document.getElementById('sex-select').value.trim(),
                 uhid: document.getElementById('uuid-input').value.trim(),
                 uuid: newUuid,
@@ -1811,9 +1834,9 @@
                         const table = document.createElement('table');
                         table.innerHTML = `
                             <colgroup>
-                                <col style="width: 8px;">
-                                <col style="width: 200px;">
-                                <col style="width: 80px;">
+                                <col style="width: 15px;">
+                                <col style="width: 245px;">
+                                <col style="width: 40px;">
                                 <col style="width: 80px;">
                                 <col style="width: 80px;">
                             </colgroup>

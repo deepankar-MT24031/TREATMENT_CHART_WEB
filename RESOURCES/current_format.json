@@ -1,6 +1,6 @@
 {
-    "uuid": "3624396c-e722-4e64-8b8f-a6d08908c0e4",
-    "datetime": "11-05-2025 01:30:56",
+    "uuid": "7ec917ac-519b-4f79-9122-4ff128356c72",
+    "datetime": "11-05-2025 09:46:46",
     "date": "11-05-2025",
     "default_Bed_count": 16,
     "default_Sex_count": 3,
@@ -11,13 +11,13 @@
         "Sex_2_name": "Female",
         "Sex_3_name": "Other"
     },
-    "Name": "duma",
-    "Age_year": "3",
-    "Age_month": "45",
-    "Sex": "Female",
-    "uhid": "123456879",
-    "bed_number": "4",
-    "Diagnosis": "{\n  \"table\": [\n    {\n      \"Drug 1\": \"Ibuprofen\",\n      \"Drug 2\": \"Amoxicillin\",\n      \"Interaction\": \"Unknown\"\n    },\n    {\n      \"Drug 1\": \"Azithromycin\",\n      \"Drug 2\": \"Amoxicillin\",\n      \"Interaction\": \"Minor\"\n    }\n  ]\n}",
+    "Name": "sada",
+    "Age_year": "2",
+    "Age_month": "4",
+    "Sex": "Male",
+    "uhid": "456789123",
+    "bed_number": "10",
+    "Diagnosis": "",
     "Consultants": "",
     "JR": "",
     "SR": "",
@@ -35,11 +35,25 @@
         },
         "entry_2": {
             "title": "Sedation, analgesia, and neuromuscular blockade",
-            "subtitles": {}
+            "subtitles": {
+                "subtitle_1": {
+                    "content": "fcdsfsa",
+                    "day": "",
+                    "dose": "",
+                    "volume": ""
+                }
+            }
         },
         "entry_3": {
             "title": "Inotropes and Anti-hypertensives",
-            "subtitles": {}
+            "subtitles": {
+                "subtitle_1": {
+                    "content": "New Esdfsdfntry",
+                    "day": "1",
+                    "dose": "0",
+                    "volume": "0"
+                }
+            }
         }
     },
     "each_table_row_layout": {

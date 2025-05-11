@@ -143,6 +143,7 @@ def download():
             download_name='current.pdf',
             mimetype='application/pdf'
         )
+
     except Exception as e:
         print(f"Error in download route: {str(e)}")
         print(f"Error type: {type(e)}")  # Debug print
