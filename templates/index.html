@@ -200,7 +200,10 @@
             margin-right: 0; /* Remove margin to make room for the resizer */
             margin-bottom: 10px;
             overflow: hidden; /* Prevent overflow */
-        }
+        }   
+
+
+        
 
         .column:last-child {
             flex: 1;
@@ -859,6 +862,24 @@
             </div>
         </div>
     </div>
+
+    <!-- Calendar Modal -->
+    <div id="calendar-modal-overlay" class="settings-modal-overlay" style="display:none;">
+        <div class="settings-modal" style="max-width: 400px;">
+            <button class="close-btn" id="close-calendar-modal" title="Close">&times;</button>
+            <h2>Select Date</h2>
+            <div id="calendar-container" style="padding: 20px;">
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Add Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- Add Flatpickr Locale -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/default.js"></script>
 
     <script>
         // Global validation functions
@@ -1978,6 +1999,255 @@
                 input.addEventListener('input', handleInputChange);
             });
         }
+
+        // Calendar functionality
+        let currentDateInput = null;
+        let flatpickrInstance = null;
+
+        // Initialize calendar
+        function initializeCalendar() {
+            const calendarModal = document.getElementById('calendar-modal-overlay');
+            const closeCalendarBtn = document.getElementById('close-calendar-modal');
+            
+            // Close calendar on overlay click
+            calendarModal.addEventListener('click', function(e) {
+                if (e.target === calendarModal) {
+                    closeCalendar();
+                }
+            });
+
+            // Close calendar on button click
+            closeCalendarBtn.addEventListener('click', closeCalendar);
+        }
+
+        // Function to check if a parameter name indicates a date field
+        function isDateParameter(paramName) {
+            if (!paramName) return false;
+            const dateKeywords = ['date', 'dob', 'birth', 'admission', 'discharge'];
+            // Exclude time-related keywords
+            const timeKeywords = ['time', 'hour', 'minute', 'second'];
+            
+            // Check if it's a time field first
+            if (timeKeywords.some(keyword => paramName.toLowerCase().includes(keyword))) {
+                return false;
+            }
+            
+            // Then check if it's a date field
+            return dateKeywords.some(keyword => 
+                paramName.toLowerCase().includes(keyword)
+            );
+        }
+
+        // Function to handle parameter table changes
+        function handleParameterTableChanges() {
+            const parameterTable = document.getElementById('parameter-table');
+            const tbody = parameterTable.querySelector('tbody');
+
+            // Use event delegation for parameter name changes
+            tbody.addEventListener('input', function(e) {
+                if (e.target.matches('td:nth-child(2) input')) {
+                    const row = e.target.closest('tr');
+                    const valueCell = row.querySelector('td:nth-child(3) input');
+                    
+                    if (isDateParameter(e.target.value)) {
+                        valueCell.classList.add('date-field');
+                        valueCell.setAttribute('data-date-field', 'true');
+                        // Add a visual indicator
+                        valueCell.setAttribute('placeholder', 'Click to select date');
+                    } else {
+                        valueCell.classList.remove('date-field');
+                        valueCell.removeAttribute('data-date-field');
+                        valueCell.removeAttribute('placeholder');
+                    }
+                }
+            });
+
+            // Use event delegation for value cell clicks
+            tbody.addEventListener('click', function(e) {
+                if (e.target.matches('td:nth-child(3) input[data-date-field="true"]')) {
+                    e.preventDefault();
+                    showCalendar(e.target);
+                }
+            });
+        }
+
+        // Function to check existing parameter rows
+        function checkExistingParameterRows() {
+            const parameterTable = document.getElementById('parameter-table');
+            const rows = parameterTable.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const paramNameInput = row.querySelector('td:nth-child(2) input');
+                const valueInput = row.querySelector('td:nth-child(3) input');
+                
+                if (isDateParameter(paramNameInput.value)) {
+                    valueInput.classList.add('date-field');
+                    valueInput.setAttribute('data-date-field', 'true');
+                    valueInput.setAttribute('placeholder', 'Click to select date');
+                }
+            });
+        }
+
+        // Function to show calendar
+        function showCalendar(inputElement) {
+            currentDateInput = inputElement;
+            const calendarModal = document.getElementById('calendar-modal-overlay');
+            calendarModal.style.display = 'flex';
+            
+            // Destroy existing instance if any
+            if (flatpickrInstance) {
+                flatpickrInstance.destroy();
+            }
+            
+            // Initialize Flatpickr with more options
+            flatpickrInstance = flatpickr("#calendar", {
+                dateFormat: "d-m-Y",
+                allowInput: true,
+                enableTime: false,
+                time_24hr: false,
+                defaultDate: inputElement.value || "today",
+                locale: "default",
+                monthSelectorType: "static",
+                yearRange: "1900:2100",
+                showMonths: 1,
+                static: true,
+                inline: true,
+                onChange: function(selectedDates, dateStr) {
+                    if (currentDateInput) {
+                        currentDateInput.value = dateStr;
+                        // Trigger input event to ensure any listeners are notified
+                        currentDateInput.dispatchEvent(new Event('input'));
+                    }
+                    closeCalendar();
+                }
+            });
+        }
+
+        // Function to close calendar
+        function closeCalendar() {
+            const calendarModal = document.getElementById('calendar-modal-overlay');
+            calendarModal.style.display = 'none';
+            currentDateInput = null;
+        }
+
+        // Add click handler for search date field
+        document.getElementById('search-date').addEventListener('focus', function(e) {
+            showCalendar(this);
+        });
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCalendar();
+            handleParameterTableChanges();
+            checkExistingParameterRows();
+
+            // Set up MutationObserver for parameter table
+            const parameterTable = document.getElementById('parameter-table');
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        checkExistingParameterRows();
+                    }
+                });
+            });
+
+            observer.observe(parameterTable.querySelector('tbody'), {
+                childList: true,
+                subtree: true
+            });
+        });
+
+        // Add styles for date fields and calendar
+        const style = document.createElement('style');
+        style.textContent = `
+            .date-field {
+                background-color: #f0f8ff !important;
+                cursor: pointer !important;
+            }
+            .date-field:hover {
+                background-color: #e0f0ff !important;
+            }
+            #calendar {
+                width: 100%;
+                padding: 10px;
+            }
+            .flatpickr-calendar {
+                width: 100% !important;
+                max-width: 100% !important;
+                background: #fff;
+                box-shadow: 0 3px 13px rgba(0,0,0,0.08);
+                border-radius: 8px;
+                padding: 10px;
+            }
+            .flatpickr-month {
+                height: 50px !important;
+                background: #f8f9fa;
+                border-radius: 6px;
+                margin-bottom: 10px;
+            }
+            .flatpickr-current-month {
+                padding: 8px 0 !important;
+                font-size: 1.1em;
+            }
+            .flatpickr-weekday {
+                height: 35px !important;
+                line-height: 35px !important;
+                font-weight: 600;
+                color: #333;
+            }
+            .flatpickr-day {
+                height: 40px !important;
+                line-height: 40px !important;
+                border-radius: 4px;
+                margin: 2px;
+            }
+            .flatpickr-day.selected {
+                background: #4a90e2 !important;
+                border-color: #4a90e2 !important;
+            }
+            .flatpickr-day:hover {
+                background: #e0f0ff !important;
+            }
+            .flatpickr-months .flatpickr-month {
+                background: transparent;
+            }
+            .flatpickr-months .flatpickr-prev-month,
+            .flatpickr-months .flatpickr-next-month {
+                top: 8px;
+                padding: 5px;
+            }
+            .flatpickr-months .flatpickr-prev-month svg,
+            .flatpickr-months .flatpickr-next-month svg {
+                width: 16px;
+                height: 16px;
+            }
+            .flatpickr-current-month .flatpickr-monthDropdown-months {
+                appearance: none;
+                -webkit-appearance: none;
+                padding: 5px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background: white;
+                font-size: 1em;
+            }
+            .numInputWrapper {
+                width: 60px;
+            }
+            .numInputWrapper input {
+                padding: 5px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background: white;
+                font-size: 1em;
+            }
+            .flatpickr-calendar.arrowTop:before {
+                border-bottom-color: #f8f9fa;
+            }
+            .flatpickr-calendar.arrowBottom:before {
+                border-top-color: #f8f9fa;
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 
     <script>
