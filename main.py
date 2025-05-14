@@ -188,7 +188,33 @@ def download_pdf():
                                 break
                     
                     if not entry_found:
-                        print(f"Warning: No entry found in db.json with UUID: {uuid}")
+                        print(f"Entry not found in db.json, adding new entry with UUID: {uuid}")
+                        # Create new entry
+                        new_entry = {
+                            'uuid': uuid,
+                            'datetime': current_time,
+                            'date': current_time.split()[0],
+                            'Name': json_data.get('Name', ''),
+                            'Age_year': json_data.get('Age_year', ''),
+                            'Age_month': json_data.get('Age_month', ''),
+                            'Sex': json_data.get('Sex', ''),
+                            'uhid': json_data.get('uhid', ''),
+                            'bed_number': json_data.get('bed_number', ''),
+                            'Diagnosis': json_data.get('Diagnosis', ''),
+                            'Consultants': json_data.get('Consultants', ''),
+                            'JR': json_data.get('JR', ''),
+                            'SR': json_data.get('SR', ''),
+                            'print_time': current_time,
+                            'each_entry_layout': json_data.get('entries', {}),
+                            'each_table_row_layout': json_data.get('parameters', {})
+                        }
+                        
+                        # Get the next available ID
+                        next_id = str(max([int(k) for k in db_data['_default'].keys()]) + 1) if db_data['_default'] else '1'
+                        
+                        # Add the new entry
+                        db_data['_default'][next_id] = new_entry
+                        print(f"Added new entry with ID {next_id}: {new_entry}")
                     
                     # Save updated db.json
                     print(f"Saving updated db.json to: {db_path}")
