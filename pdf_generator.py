@@ -119,7 +119,7 @@ def generate_picu_treatment_chart(heading,subheading,json_data,font_size=9):
     if isinstance(json_data, str):
         print("Converting JSON string to dictionary...")
         json_data = json.loads(json_data)
-    
+
     print("\n=== Extracting Patient Information ===")
     # Extract patient information
     patient_info = extract_patient_info(json_data)
@@ -147,7 +147,7 @@ def generate_picu_treatment_chart(heading,subheading,json_data,font_size=9):
         table_rows=latex_table,
         font_size=font_size
     )
-    
+
     if pdf_path and os.path.exists(pdf_path):
         print(f"\n=== PDF Generation Successful ===")
         print(f"PDF generated at: {pdf_path}")
@@ -214,11 +214,11 @@ def extract_entry_tables(json_data):
     Returns:
         list: A list of dictionaries representing treatment tables
     """
-    entry_layout = json_data.get("each_entry_layout", {})
-
+    # Get entries from the parameters
+    entries = json_data.get("entries", {})
     tables = []
 
-    for entry_key, entry_data in entry_layout.items():
+    for entry_key, entry_data in entries.items():
         title = escape_latex(entry_data.get("title", "").strip())  # Escape title
         subtitles = entry_data.get("subtitles", {})
 
@@ -253,14 +253,12 @@ def extract_table_rows(json_data):
     Returns:
         list: A list of tuples representing table rows.
     """
-    # Extract the table row layout data
-    table_row_layout = json_data.get("each_table_row_layout", {})
-
-    # Initialize the table_data list
+    # Extract the table row layout data from parameters
+    parameters = json_data.get("parameters", {})
     table_data = []
 
     # Process each row
-    for row_key, row_data in table_row_layout.items():
+    for row_key, row_data in parameters.items():
         row_header_name = escape_latex(row_data.get("row_header_name", "").strip())  # Escape header name
         row_header_description = escape_latex(row_data.get("row_header_description", "").strip())  # Escape description
 
@@ -381,17 +379,17 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
         right_table = generate_two_column_table(table_rows)
 
         # Check for logo files
-        website_logo_path = os.path.join(current_dir, "RESOURCES", "website_logo.png")
-        default_logo_path = os.path.join(current_dir, "RESOURCES", "default_AIIMS_LOGO.png")
-        
-        if os.path.exists(website_logo_path):
-            logo_path = "RESOURCES/website_logo.png"
+    website_logo_path = os.path.join(current_dir, "RESOURCES", "website_logo.png")
+    default_logo_path = os.path.join(current_dir, "RESOURCES", "default_AIIMS_LOGO.png")
+    
+    if os.path.exists(website_logo_path):
+        logo_path = "RESOURCES/website_logo.png"
             print("Using website logo")
-        else:
-            logo_path = "RESOURCES/default_AIIMS_LOGO.png"
+    else:
+        logo_path = "RESOURCES/default_AIIMS_LOGO.png"
             print("Using default logo")
 
-        latex_code = rf"""
+    latex_code = rf"""
 \documentclass{{article}}
 \usepackage{{graphicx}}
 \usepackage[a4paper, margin=0.3in]{{geometry}} % Decreased margins
@@ -467,14 +465,14 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 
 \end{{document}}
 """
-        # --- Write LaTeX code to the intermediate .tex file ---
-        try:
+    # --- Write LaTeX code to the intermediate .tex file ---
+    try:
             print("\n=== Writing LaTeX File ===")
             print(f"Writing to: {tex_file_path}")
             with open(tex_file_path, "w", encoding="utf-8") as f:
-                f.write(latex_code)
+            f.write(latex_code)
             print("LaTeX file written successfully")
-        except Exception as e:
+    except Exception as e:
             print(f"ERROR: Failed to write LaTeX file: {e}")
             return None
 
