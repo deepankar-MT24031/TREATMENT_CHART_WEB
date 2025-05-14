@@ -1109,18 +1109,28 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/pdf'
                 },
                 body: JSON.stringify(formData)
             })
             .then(response => {
                 if (!response.ok) {
                     return response.json().then(data => {
+                        console.error('Server response:', data);
                         throw new Error(data.error || 'Error generating PDF');
                     });
+                }
+                if (response.headers.get('content-type') !== 'application/pdf') {
+                    throw new Error('Server did not return a PDF file');
                 }
                 return response.blob();
             })
             .then(blob => {
+                if (!blob || blob.size === 0) {
+                    throw new Error('Received empty PDF file');
+                }
+                console.log('Received PDF blob:', blob.size, 'bytes');
+                
                 // Create object URL from blob
                 const url = window.URL.createObjectURL(blob);
                 
