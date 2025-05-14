@@ -164,8 +164,9 @@ def download_pdf():
                 print(f"UUID from JSON data: {uuid}")
                 
                 if uuid:
-                    # Get current timestamp
-                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    # Get current timestamp in the correct format
+                    current_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+                    current_date = datetime.now().strftime("%d-%m-%Y")
                     print(f"Current timestamp: {current_time}")
                     
                     # Load current db.json from DATABASE directory
@@ -193,7 +194,7 @@ def download_pdf():
                         new_entry = {
                             'uuid': uuid,
                             'datetime': current_time,
-                            'date': current_time.split()[0],
+                            'date': current_date,
                             'Name': json_data.get('Name', ''),
                             'Age_year': json_data.get('Age_year', ''),
                             'Age_month': json_data.get('Age_month', ''),
