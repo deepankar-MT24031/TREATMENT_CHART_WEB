@@ -383,8 +383,9 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 
         # Generate a unique filename using timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        tex_file_path = os.path.join(output_dir, f"temp_{timestamp}.tex")
-        pdf_file_path = os.path.join(output_dir, f"current_{timestamp}.pdf")
+        base_filename = f"current_{timestamp}"
+        tex_file_path = os.path.join(output_dir, f"{base_filename}.tex")
+        pdf_file_path = os.path.join(output_dir, f"{base_filename}.pdf")
 
         # Process the tables into LaTeX code
         left_table = generate_minipage(treatment_tables)
@@ -507,7 +508,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 
             # Run pdflatex with full path and proper error handling
             result = subprocess.run(
-                [pdflatex_path, "-interaction=nonstopmode", tex_file_path],
+                [pdflatex_path, "-jobname", base_filename, "-interaction=nonstopmode", tex_file_path],
                 cwd=output_dir,  # Set working directory to output_dir
                 capture_output=True,
                 text=True
