@@ -6,9 +6,17 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
     texlive-latex-base \
     texlive-latex-extra \
     && rm -rf /var/lib/apt/lists/*
+
+# Install TinyTeX
+RUN wget -qO- "https://yihui.org/tinytex/install-bin-unix.sh" | sh
+
+# Add TinyTeX to PATH
+ENV PATH="/root/bin:${PATH}"
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
