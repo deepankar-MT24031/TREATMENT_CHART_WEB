@@ -96,10 +96,13 @@ def download():
         # Generate timestamp for unique filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
+        # Ensure GENERATED_PDFS directory exists
+        os.makedirs('GENERATED_PDFS', exist_ok=True)
+        
         # Create a unique filename using patient name, UHID, and timestamp
         name = json_data.get("Name", "UnknownName").replace(" ", "_")
         uhid = json_data.get("uhid", "NoUHID").replace(" ", "_")
-        filename = f'GENERATED_PDFS/{name}_{uhid}_{timestamp}.pdf'
+        filename = os.path.join('GENERATED_PDFS', f'{name}_{uhid}_{timestamp}.pdf')
         CURRENT_PDF = filename
 
         # Get settings from settings.json
