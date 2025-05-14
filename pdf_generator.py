@@ -357,6 +357,20 @@ def generate_two_column_table(data):
 
 def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables, table_rows, font_size=13):
     try:
+        # Detect pdflatex path
+        if sys.platform == 'win32':
+            pdflatex_path = r"C:\texlive\2023\bin\win32\pdflatex.exe"
+            if not os.path.exists(pdflatex_path):
+                pdflatex_path = r"C:\texlive\2022\bin\win32\pdflatex.exe"
+        else:
+            pdflatex_path = "/usr/local/bin/pdflatex"
+            if not os.path.exists(pdflatex_path):
+                pdflatex_path = "/usr/bin/pdflatex"
+
+        if not os.path.exists(pdflatex_path):
+            print(f"ERROR: pdflatex not found at {pdflatex_path}")
+            return None
+
         # Calculate line height based on font size
         line_height = font_size + 2
         header_font_size = font_size + 4
@@ -379,17 +393,17 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
         right_table = generate_two_column_table(table_rows)
 
         # Check for logo files
-    website_logo_path = os.path.join(current_dir, "RESOURCES", "website_logo.png")
-    default_logo_path = os.path.join(current_dir, "RESOURCES", "default_AIIMS_LOGO.png")
-    
-    if os.path.exists(website_logo_path):
-        logo_path = "RESOURCES/website_logo.png"
+        website_logo_path = os.path.join(current_dir, "RESOURCES", "website_logo.png")
+        default_logo_path = os.path.join(current_dir, "RESOURCES", "default_AIIMS_LOGO.png")
+        
+        if os.path.exists(website_logo_path):
+            logo_path = "RESOURCES/website_logo.png"
             print("Using website logo")
-    else:
-        logo_path = "RESOURCES/default_AIIMS_LOGO.png"
+        else:
+            logo_path = "RESOURCES/default_AIIMS_LOGO.png"
             print("Using default logo")
 
-    latex_code = rf"""
+        latex_code = rf"""
 \documentclass{{article}}
 \usepackage{{graphicx}}
 \usepackage[a4paper, margin=0.3in]{{geometry}} % Decreased margins
@@ -465,14 +479,14 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 
 \end{{document}}
 """
-    # --- Write LaTeX code to the intermediate .tex file ---
-    try:
+        # --- Write LaTeX code to the intermediate .tex file ---
+        try:
             print("\n=== Writing LaTeX File ===")
             print(f"Writing to: {tex_file_path}")
             with open(tex_file_path, "w", encoding="utf-8") as f:
-            f.write(latex_code)
+                f.write(latex_code)
             print("LaTeX file written successfully")
-    except Exception as e:
+        except Exception as e:
             print(f"ERROR: Failed to write LaTeX file: {e}")
             return None
 
