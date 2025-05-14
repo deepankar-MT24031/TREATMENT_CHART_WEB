@@ -1033,8 +1033,9 @@
             const name = document.getElementById('name-to-be-taken').value.trim().replace(/\s+/g, '_');
             const uhid = document.getElementById('uuid-input').value.trim();
 
-            // Create filename
-            const filename = `${name}_${uhid}_${datetime}.pdf`;
+            // Create filename with timestamp
+            const timestamp = now.getTime();
+            const filename = `current_${timestamp}.pdf`;
 
             // Collect all form data with capitalized field names
             const formData = {

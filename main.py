@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, send_file, jsonify, send_from_directory
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 import os
 import time
@@ -10,6 +10,7 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 from database_handler import create_entry, return_database_with_history, search_entries, return_database_with_query_is_uuid  # Import the history function and search_entries
 import requests
+import shutil
 
 app = Flask(__name__, static_folder='RESOURCES', static_url_path='/resources')
 
@@ -43,95 +44,75 @@ def index():
         return str(e), 500
 
 
+def cleanup_old_pdfs(max_age_days=7, max_files=100):
+    """
+    Clean up old PDF files to prevent storage overflow.
+    Args:
+        max_age_days: Maximum age of PDFs to keep (default: 7 days)
+        max_files: Maximum number of PDFs to keep (default: 100)
+    """
+    try:
+        pdf_dir = 'GENERATED_PDFS'
+        if not os.path.exists(pdf_dir):
+            return
+
+        # Get all PDF files
+        pdf_files = [f for f in os.listdir(pdf_dir) if f.endswith('.pdf')]
+        
+        # Sort files by modification time (oldest first)
+        pdf_files.sort(key=lambda x: os.path.getmtime(os.path.join(pdf_dir, x)))
+        
+        # Calculate cutoff time
+        cutoff_time = time.time() - (max_age_days * 24 * 60 * 60)
+        
+        # Remove files older than max_age_days
+        for pdf_file in pdf_files:
+            file_path = os.path.join(pdf_dir, pdf_file)
+            if os.path.getmtime(file_path) < cutoff_time:
+                os.remove(file_path)
+                print(f"Removed old PDF: {pdf_file}")
+        
+        # If still too many files, remove oldest ones
+        pdf_files = [f for f in os.listdir(pdf_dir) if f.endswith('.pdf')]
+        if len(pdf_files) > max_files:
+            for pdf_file in pdf_files[:-max_files]:
+                file_path = os.path.join(pdf_dir, pdf_file)
+                os.remove(file_path)
+                print(f"Removed excess PDF: {pdf_file}")
+                
+    except Exception as e:
+        print(f"Error in cleanup_old_pdfs: {str(e)}")
+
+
 @app.route('/download', methods=['POST'])
 def download():
     try:
-        # Get data from the form
-        data = request.get_json()
-        print("Received data:", data)  # Debug print
+        # Clean up old PDFs before generating new one
+        cleanup_old_pdfs()
+        
+        # Get the JSON data from the request
+        json_data = request.get_json()
+        
+        # Generate timestamp for unique filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # Create a unique filename using timestamp and UUID
+        filename = f'GENERATED_PDFS/current_{timestamp}_{json_data.get("uuid", "unknown")}.pdf'
+        CURRENT_PDF = filename
 
-        # Validate required fields
-        required_fields = {
-            'Name': data.get('Name', '').strip(),
-            'Age_year': data.get('Age_year', '').strip(),
-            'Age_month': data.get('Age_month', '').strip(),
-            'Sex': data.get('Sex', '').strip(),
-            'uhid': data.get('uhid', '').strip(),
-            'uuid': data.get('uuid', '').strip(),
-            'bed_number': data.get('bed_number', '').strip()
-        }
-
-        # Check for missing or empty fields
-        missing_fields = []
-        for field, value in required_fields.items():
-            if not value:
-                # Convert field names to more readable format
-                readable_field = field.replace('_', ' ').title()
-                if field == 'uhid':
-                    readable_field = 'UHID'
-                missing_fields.append(readable_field)
-
-        if missing_fields:
-            # Removed the alert message
-            return jsonify({'error': ''}), 400
-
-        # If all required fields are present, proceed with the download
-        val1 = {
-            "Name": required_fields['Name'],
-            "Age_year": required_fields['Age_year'],
-            "Age_month": required_fields['Age_month'],
-            "Sex": required_fields['Sex'],
-            "uhid": required_fields['uhid'],
-            "uuid": required_fields['uuid'],
-            "bed_number": required_fields['bed_number'],
-            "Diagnosis": data.get('Diagnosis', '').strip(),
-            "Consultants": data.get('Consultants', '').strip(),
-            "JR": data.get('JR', '').strip(),
-            "SR": data.get('SR', '').strip()
-        }
-
-        # Get entries data from the form
-        val2 = data.get('entries', {})
-
-        # Get parameter values from the form data
-        val3 = data.get('parameters', {})
-
-        print("Processed data:", val1, val2, val3)  # Debug print
-
-        # Call the create_json_file function
-        format_type = "current"
-        create_json_file(val1, val2, val3, format_type)
-
-        # Sleep for 1 second to ensure the file is updated
-        time.sleep(1)
-
-        # Ensure the filename is correct with the .json extension
-        filename = f'RESOURCES/{format_type}_format.json'
-
-        # Read the created JSON file
-        with open(filename, 'r') as file:
-            json_data = json.load(file)
-            print('JSON file loaded successfully')  # Debug print
-
-        # Create database entry using your existing create_entry function
-        create_entry(json_data)
-
-        time.sleep(1)
-
-        # Load settings from settings.json
+        # Get settings from settings.json
         with open('settings.json', 'r') as f:
             settings_data = json.load(f)
 
-        # Use heading, subheading, and font_size from settings
-        heading = settings_data.get('heading', 'Treatment Chart')
-        subheading = settings_data.get('subheading', 'Patient Information')
-        font_size = settings_data.get('font_size', 10)
+        # Extract settings
+        heading = settings_data.get('heading', '')
+        subheading = settings_data.get('subheading', '')
+        font_size = settings_data.get('font_size', 13)
 
         # Call the generate_picu_treatment_chart function with the new arguments
         generate_picu_treatment_chart(heading, subheading, json_data, font_size=font_size)
 
         time.sleep(1)
-        CURRENT_PDF = f'GENERATED_PDFS/current.pdf'
 
         # Check if the file exists before sending
         if not os.path.exists(filename):
@@ -140,7 +121,7 @@ def download():
         return send_file(
             CURRENT_PDF,
             as_attachment=True,
-            download_name='current.pdf',
+            download_name=f'current_{timestamp}.pdf',
             mimetype='application/pdf'
         )
 
