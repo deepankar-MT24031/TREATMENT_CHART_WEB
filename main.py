@@ -84,6 +84,29 @@ def cleanup_old_pdfs(max_age_days=7, max_files=100):
         print(f"Error in cleanup_old_pdfs: {str(e)}")
 
 
+def load_settings():
+    """
+    Load settings from settings.json file.
+    Returns a dictionary containing the settings.
+    """
+    try:
+        with open('settings.json', 'r') as f:
+            settings = json.load(f)
+        return settings
+    except Exception as e:
+        print(f"Error loading settings: {str(e)}")
+        # Return default settings if file not found or error occurs
+        return {
+            'heading': 'PICU TREATMENT CHART',
+            'subheading': 'MB 5 PCIU',
+            'font_size': 8,
+            'logo_upload': {
+                'path': 'RESOURCES/default_AIIMS_LOGO.png',
+                'url': '/resources/default_AIIMS_LOGO.png'
+            }
+        }
+
+
 @app.route('/download', methods=['POST'])
 def download_pdf():
     try:
