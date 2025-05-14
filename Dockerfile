@@ -22,7 +22,9 @@ RUN wget -qO- "https://yihui.org/tinytex/install-bin-unix.sh" | sh
 ENV PATH="/root/bin:${PATH}"
 
 # Install additional LaTeX packages
-RUN tlmgr install multirow tabularx textpos
+RUN tlmgr update --self && \
+    tlmgr install multirow textpos tools && \
+    tlmgr install collection-latexrecommended
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
