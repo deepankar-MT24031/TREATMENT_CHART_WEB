@@ -96,13 +96,22 @@ def download():
         # Generate timestamp for unique filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
+        # Debug prints for directory and file paths
+        current_dir = os.getcwd()
+        print(f"Current working directory: {current_dir}")
+        
         # Ensure GENERATED_PDFS directory exists
-        os.makedirs('GENERATED_PDFS', exist_ok=True)
+        pdf_dir = 'GENERATED_PDFS'
+        os.makedirs(pdf_dir, exist_ok=True)
+        print(f"PDF directory path: {os.path.abspath(pdf_dir)}")
+        print(f"PDF directory exists: {os.path.exists(pdf_dir)}")
+        print(f"PDF directory permissions: {oct(os.stat(pdf_dir).st_mode)[-3:]}")
         
         # Create a unique filename using patient name, UHID, and timestamp
         name = json_data.get("Name", "UnknownName").replace(" ", "_")
         uhid = json_data.get("uhid", "NoUHID").replace(" ", "_")
-        filename = os.path.join('GENERATED_PDFS', f'{name}_{uhid}_{timestamp}.pdf')
+        filename = os.path.join(pdf_dir, f'{name}_{uhid}_{timestamp}.pdf')
+        print(f"Target PDF path: {os.path.abspath(filename)}")
         CURRENT_PDF = filename
 
         # Get settings from settings.json
