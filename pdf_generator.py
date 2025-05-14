@@ -7,6 +7,7 @@ import sys
 import tempfile # Added for temporary directory
 import shutil   # Added for moving files
 import re
+from datetime import datetime
 
 
 def split_string(s,length=10):
@@ -339,8 +340,9 @@ def generate_two_column_table(data):
     for row in data:
         label, value = row[0], row[1]
 
-        label = split_string(label,length=9)
-        value = split_string(value,length=18)
+        # Split long text into multiple lines
+        label = split_string(label, length=9)
+        value = split_string(value, length=18)
 
         if label.lower().strip() == "date":
             table_code += fr" \textbf" + "{" + f"{label}" + "}" + " & " + r" \textbf" + "{" + f"{value}" + "}" + " \\\\\n        \\hline\n"
@@ -357,45 +359,26 @@ def generate_two_column_table(data):
 
 def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables, table_rows, font_size=13):
     try:
-        print("\n=== Starting LaTeX Generation ===")
-        current_dir = os.getcwd()
-        print(f"Current working directory: {current_dir}")
-        
-        # Define output directory
-        output_dir_name = 'GENERATED_PDFS'
-        output_dir = os.path.join(current_dir, output_dir_name)
-        print(f"Output directory path: {output_dir}")
-        
-        # Define intermediate TeX file path
-        tex_file_path = os.path.join(current_dir, "document.tex")
-        print(f"Intermediate TeX file path: {tex_file_path}")
-        
-        # Determine pdflatex path based on OS
-        if os.name == 'nt':  # Windows
-            pdflatex_path = os.path.join(current_dir, "RESOURCES", "Tinytex", "bin", "windows", "pdflatex.exe")
-        else:  # Linux/Unix
-            pdflatex_path = os.path.join(current_dir, "RESOURCES", "Tinytex", "bin", "pdflatex")
-        
-        print(f"pdflatex executable path: {pdflatex_path}")
-        
-        # Check if pdflatex exists
-        if not os.path.exists(pdflatex_path):
-            print(f"ERROR: pdflatex executable not found at: {pdflatex_path}")
-            # Try to find pdflatex in system PATH
-            import shutil
-            system_pdflatex = shutil.which('pdflatex')
-            if system_pdflatex:
-                print(f"Found pdflatex in system PATH: {system_pdflatex}")
-                pdflatex_path = system_pdflatex
-            else:
-                print("ERROR: pdflatex not found in system PATH either")
-                return None
+        # Calculate line height based on font size
+        line_height = font_size + 2
+        header_font_size = font_size + 4
+        adjusted_vspace = font_size * 0.1  # Dynamic spacing based on font size
 
-        # --- Generate LaTeX Code ---
-        print("\n=== Generating LaTeX Code ===")
-        line_height = int(font_size * 1.2)
-        header_font_size = font_size - 1
-        adjusted_vspace = max(1.5, (font_size / 11) * 1.0)
+        # Get the current directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Create output directory if it doesn't exist
+        output_dir = os.path.join(current_dir, "GENERATED_PDFS")
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Generate a unique filename using timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        tex_file_path = os.path.join(output_dir, f"temp_{timestamp}.tex")
+        pdf_file_path = os.path.join(output_dir, f"current_{timestamp}.pdf")
+
+        # Process the tables
+        left_table = generate_minipage(treatment_tables)
+        right_table = generate_two_column_table(table_rows)
 
         # Check for logo files
         website_logo_path = os.path.join(current_dir, "RESOURCES", "website_logo.png")
@@ -459,18 +442,15 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 \noindent
 \begin{{minipage}}[t]{{0.45\textwidth}}
 \vspace{{-{adjusted_vspace:.2f}cm}} % Dynamic spacing based on font size
-
-    {treatment_tables} % Replace with your treatment tables\
-
+{left_table}
 \end{{minipage}}%
 \hfill%
 \begin{{minipage}}[t]{{0.32\textwidth}}
-
 \hspace{{1cm}} % Negative hspace moves content to the left
-    % Date information table - fixed on right\\
+    % Date information table - fixed on right
     \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}}
     \hline
-    {table_rows}
+    {right_table}
     \end{{tabular}}
 \end{{minipage}}
 
@@ -498,197 +478,49 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
             print(f"ERROR: Failed to write LaTeX file: {e}")
             return None
 
-        # --- Prepare the Final PDF Path ---
+        # --- Compile LaTeX to PDF ---
         try:
-            print("\n=== Preparing Final PDF Path ===")
-            # Ensure the output directory exists
-            os.makedirs(output_dir, exist_ok=True)
-            print(f"Output directory created/verified: {output_dir}")
+            print("\n=== Compiling LaTeX to PDF ===")
+            print(f"Using pdflatex at: {pdflatex_path}")
+            print(f"Compiling: {tex_file_path}")
+            print(f"Output will be: {pdf_file_path}")
 
-            # Sanitize name and uhid
-            name = sanitize_filename(patient_info.get("patient_name", "UnknownName"))
-            uhid = sanitize_filename(patient_info.get("uhid", "NoUHID"))
-            timestamp = time.strftime("%Y%m%d_%H%M%S")
-            final_pdf_filename = f"{name}_{uhid}_{timestamp}.pdf"
-            generated_pdf_location_with_name = os.path.join(output_dir, final_pdf_filename)
-            print(f"Final PDF path: {generated_pdf_location_with_name}")
-        except Exception as e:
-            print(f"ERROR: Failed to prepare PDF path: {e}")
-            return None
-
-        # --- Call the function to compile the .tex file ---
-        print("\n=== Compiling LaTeX to PDF ===")
-        from_latex_to_pdf(
-            tex_filename=tex_file_path,
-            pdf_address=generated_pdf_location_with_name,
-            absolute_path_of_pdflatex_exe=pdflatex_path
-        )
-
-        # --- Cleanup and verify ---
-        print("\n=== Verifying PDF Generation ===")
-        if os.path.exists(generated_pdf_location_with_name):
-            print(f"PDF successfully generated at: {generated_pdf_location_with_name}")
-            print(f"File size: {os.path.getsize(generated_pdf_location_with_name)} bytes")
-            
-            # Clean up intermediate file
-            try:
-                if os.path.exists(tex_file_path):
-                    os.remove(tex_file_path)
-                    print("Intermediate .tex file cleaned up")
-            except Exception as e:
-                print(f"Warning: Could not clean up intermediate file: {e}")
-            
-            return generated_pdf_location_with_name
-        else:
-            print(f"ERROR: PDF file not found at: {generated_pdf_location_with_name}")
-            return None
-
-    except Exception as e:
-        print(f"\n--- An unexpected Python error occurred within generate_pdf_from_latex ---")
-        import traceback
-        traceback.print_exc()
-        # Show QMessageBox in GUI context
-
-    finally:
-        print("--- Exiting generate_pdf_from_latex ---")
-
-
-def from_latex_to_pdf(tex_filename, pdf_address, absolute_path_of_pdflatex_exe):
-    """
-    Compiles a given .tex file to a PDF at the specified address using a direct
-    pdflatex executable path and a temporary directory for intermediate files.
-
-    Args:
-        tex_filename (str): Full path to the input .tex file.
-        pdf_address (str): Full desired path for the output PDF file.
-        absolute_path_of_pdflatex_exe (str): Full path to the pdflatex executable.
-    """
-    print(f"--- Inside from_latex_to_pdf ---")
-    print(f"  Input TeX: {tex_filename}")
-    print(f"  Output PDF Target: {pdf_address}")
-    print(f"  pdflatex Exe: {absolute_path_of_pdflatex_exe}")
-
-    # Ensure the target directory for the final PDF exists
-    pdf_output_directory = os.path.dirname(pdf_address)
-    try:
-        os.makedirs(pdf_output_directory, exist_ok=True)
-    except Exception as e:
-        print(f"ERROR: Could not create target directory '{pdf_output_directory}': {e}")
-        # Show QMessageBox in GUI context if needed
-        return # Stop if we can't even make the output dir
-
-    # Use a temporary directory for the compilation process
-    try:
-        with tempfile.TemporaryDirectory() as tempdir:
-            print(f"  Created temporary directory: {tempdir}")
-
-            # Define the expected path of the PDF *within* the temporary directory
-            # pdflatex will use the basename of the input .tex file by default
-            temp_pdf_basename = os.path.splitext(os.path.basename(tex_filename))[0] + ".pdf"
-            temp_pdf_path = os.path.join(tempdir, temp_pdf_basename)
-            temp_log_path = os.path.join(tempdir, os.path.splitext(temp_pdf_basename)[0] + ".log")
-
-            # Prepare the command for subprocess
-            # Input tex_filename is outside tempdir, but output goes *into* tempdir
-            cmd = [
-                absolute_path_of_pdflatex_exe,
-                "-output-directory=" + tempdir,  # Crucial: direct output here
-                "-interaction=nonstopmode",      # Prevent interactive prompts
-                #"-halt-on-error",              # Optional: stop immediately on error
-                tex_filename                     # The input .tex file (full path)
-            ]
-
-            # Run the pdflatex command
-            print(f"  Running command: {' '.join(cmd)}")
-            process = subprocess.run(
-                cmd,
+            # Run pdflatex with full path and proper error handling
+            result = subprocess.run(
+                [pdflatex_path, "-interaction=nonstopmode", tex_file_path],
+                cwd=output_dir,  # Set working directory to output_dir
                 capture_output=True,
-                text=True,
-                check=False, # Check manually
-                encoding='utf-8',
-                errors='replace'
+                text=True
             )
 
-            # --- Check Compilation Results ---
-            if process.returncode == 0 and os.path.exists(temp_pdf_path):
-                print(f"  LaTeX compilation successful (Exit Code 0).")
-                # Move the generated PDF from temp dir to the final destination
-                try:
-                    print(f"  Moving temporary PDF '{temp_pdf_path}' to '{pdf_address}'")
-                    shutil.move(temp_pdf_path, pdf_address)
-                    print(f"  SUCCESS! PDF file saved to: '{pdf_address}'")
+            # Print compilation output for debugging
+            print("\n=== pdflatex Output ===")
+            print(result.stdout)
+            if result.stderr:
+                print("\n=== pdflatex Errors ===")
+                print(result.stderr)
 
-                    # Attempt to open the final PDF file
-                    try:
-                        print("  Attempting to open PDF...")
-                        # os.startfile(pdf_address) # Windows specific
-                    except AttributeError:
-                        print(f"  (Cannot auto-open on this OS. File at: {pdf_address})")
-                        # Add code for 'open' (macOS) or 'xdg-open' (Linux) if needed
-                    except Exception as open_e:
-                        print(f"  (Error trying to open file '{pdf_address}': {open_e})")
+            if result.returncode != 0:
+                print(f"ERROR: pdflatex compilation failed with return code {result.returncode}")
+                return None
 
-                except Exception as move_e:
-                    print(f"  ERROR: Failed to move temporary PDF '{temp_pdf_path}' to '{pdf_address}': {move_e}")
-                    # Attempt to provide logs even if move failed
-                    print("\n  --- pdflatex STDOUT (from failed move context) ---")
-                    print(process.stdout if process.stdout else "[No STDOUT]")
-                    print("\n  --- pdflatex STDERR (from failed move context) ---")
-                    print(process.stderr if process.stderr else "[No STDERR]")
-                    if os.path.exists(temp_log_path):
-                        try:
-                            with open(temp_log_path, 'r', encoding='utf-8', errors='replace') as logfile:
-                                print("\n  --- LOG FILE (from failed move context) ---")
-                                print(logfile.read())
-                                print("  -----------------------------------------")
-                        except Exception as log_read_e:
-                             print(f"  (Could not read log file '{temp_log_path}': {log_read_e})")
+            # Check if PDF was generated
+            if not os.path.exists(pdf_file_path):
+                print(f"ERROR: PDF file not found at {pdf_file_path}")
+                return None
 
+            print(f"PDF generated successfully at: {pdf_file_path}")
+            return pdf_file_path
 
-            else:
-                # Compilation failed or PDF not found in temp directory
-                print("\n  --- PDF GENERATION FAILED ---")
-                print(f"  pdflatex exited with code: {process.returncode}")
-                if not os.path.exists(temp_pdf_path):
-                    print(f"  Output PDF file '{temp_pdf_path}' was NOT found in the temporary directory.")
-                    print(f"  Content of temp dir: {os.listdir(tempdir)}")
-
-
-                # Print captured output for debugging
-                print("\n  --- pdflatex STDOUT ---")
-                print(process.stdout if process.stdout else "[No STDOUT]")
-                print("\n  --- pdflatex STDERR ---")
-                print(process.stderr if process.stderr else "[No STDERR]")
-
-                # Attempt to read and print the log file
-                if os.path.exists(temp_log_path):
-                    try:
-                        with open(temp_log_path, 'r', encoding='utf-8', errors='replace') as logfile:
-                            print("\n  --- LOG FILE ---")
-                            print(logfile.read())
-                            print("  ----------------")
-                    except Exception as log_e:
-                        print(f"  (Could not read log file '{temp_log_path}': {log_e})")
-                else:
-                    print(f"  Log file '{temp_log_path}' not found.")
-                # Show QMessageBox in GUI context
-
-    except FileNotFoundError:
-         # This might happen if absolute_path_of_pdflatex_exe is invalid *despite* the check in the caller
-         # Or if the input tex_filename doesn't exist when subprocess tries to access it.
-         print(f"ERROR: FileNotFoundError during subprocess execution.")
-         print(f"  Check pdflatex path: '{absolute_path_of_pdflatex_exe}'")
-         print(f"  Check input TeX file path: '{tex_filename}'")
+        except Exception as e:
+            print(f"ERROR: Failed to compile LaTeX: {e}")
+            return None
 
     except Exception as e:
-        print(f"\n--- An unexpected Python error occurred within from_latex_to_pdf ---")
+        print(f"ERROR: Unexpected error in generate_pdf_from_latex: {e}")
         import traceback
         traceback.print_exc()
-        # Show QMessageBox in GUI context
-
-    finally:
-        print("--- Exiting from_latex_to_pdf ---")
-#SOME COMMENT
+        return None
 
 # --- Keep the __main__ block for testing ---
 if __name__ == "__main__":
