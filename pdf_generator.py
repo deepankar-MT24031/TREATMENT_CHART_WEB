@@ -395,11 +395,21 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
         default_logo_path = os.path.join(current_dir, "RESOURCES", "default_AIIMS_LOGO.png")
         
         if os.path.exists(website_logo_path):
-            logo_path = "RESOURCES/website_logo.png"
+            logo_path = website_logo_path  # Use absolute path
             print("Using website logo")
         else:
-            logo_path = "RESOURCES/default_AIIMS_LOGO.png"
+            logo_path = default_logo_path  # Use absolute path
             print("Using default logo")
+
+        # Create a copy of the logo in the output directory
+        logo_filename = os.path.basename(logo_path)
+        logo_copy_path = os.path.join(output_dir, logo_filename)
+        try:
+            shutil.copy2(logo_path, logo_copy_path)
+            print(f"Copied logo to: {logo_copy_path}")
+        except Exception as e:
+            print(f"Warning: Failed to copy logo: {e}")
+            logo_copy_path = logo_path  # Fall back to original path
 
         latex_code = rf"""
 \documentclass{{article}}
@@ -420,7 +430,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 % Insert logo at the top-left
 \noindent
 \begin{{minipage}}{{0.2\textwidth}} % Adjust width as needed
-    \includegraphics[width=2cm]{{{logo_path}}} % Adjust width as needed
+    \includegraphics[width=2cm]{{{logo_filename}}} % Use just the filename
 \end{{minipage}}\
 \vspace{{-1cm}} % Adjust this value to position the logo at the top
 \hfill
