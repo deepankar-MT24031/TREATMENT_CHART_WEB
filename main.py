@@ -96,8 +96,10 @@ def download():
         # Generate timestamp for unique filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        # Create a unique filename using timestamp and UUID
-        filename = f'GENERATED_PDFS/current_{timestamp}_{json_data.get("uuid", "unknown")}.pdf'
+        # Create a unique filename using patient name, UHID, and timestamp
+        name = json_data.get("Name", "UnknownName").replace(" ", "_")
+        uhid = json_data.get("uhid", "NoUHID").replace(" ", "_")
+        filename = f'GENERATED_PDFS/{name}_{uhid}_{timestamp}.pdf'
         CURRENT_PDF = filename
 
         # Get settings from settings.json
@@ -121,7 +123,7 @@ def download():
         return send_file(
             filename,
             as_attachment=True,
-            download_name=f'current_{timestamp}.pdf',
+            download_name=f'{name}_{uhid}_{timestamp}.pdf',
             mimetype='application/pdf'
         )
 
