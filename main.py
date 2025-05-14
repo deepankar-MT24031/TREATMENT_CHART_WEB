@@ -122,12 +122,15 @@ def download_pdf():
         # Get current directory and PDF directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
         pdf_dir = os.path.join(current_dir, "GENERATED_PDFS")
+        db_dir = os.path.join(current_dir, "DATABASE")  # Add DATABASE directory path
 
         # Print directory information
         print("\n=== Directory Information ===")
         print(f"Current working directory: {os.getcwd()}")
         print(f"PDF directory path: {pdf_dir}")
+        print(f"Database directory path: {db_dir}")
         print(f"PDF directory exists: {os.path.exists(pdf_dir)}")
+        print(f"Database directory exists: {os.path.exists(db_dir)}")
         print(f"PDF directory permissions: {oct(os.stat(pdf_dir).st_mode)[-3:]}")
         print(f"Directory contents: {os.listdir(pdf_dir)}")
 
@@ -165,8 +168,8 @@ def download_pdf():
                     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     print(f"Current timestamp: {current_time}")
                     
-                    # Load current db.json
-                    db_path = os.path.join(current_dir, 'db.json')
+                    # Load current db.json from DATABASE directory
+                    db_path = os.path.join(db_dir, 'db.json')
                     print(f"Loading db.json from: {db_path}")
                     
                     with open(db_path, 'r') as f:
