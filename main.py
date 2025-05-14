@@ -87,17 +87,19 @@ def cleanup_old_pdfs(max_age_days=7, max_files=100):
 @app.route('/download', methods=['POST'])
 def download():
     try:
-        # Clean up old PDFs before generating new one
-        cleanup_old_pdfs()
+        print("\n=== Starting PDF Download Process ===")
         
         # Get the JSON data from the request
         json_data = request.get_json()
+        print(f"Received JSON data: {json_data}")
         
         # Generate timestamp for unique filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        print(f"Generated timestamp: {timestamp}")
         
         # Debug prints for directory and file paths
         current_dir = os.getcwd()
+        print(f"\n=== Directory Information ===")
         print(f"Current working directory: {current_dir}")
         
         # Ensure GENERATED_PDFS directory exists
@@ -106,44 +108,57 @@ def download():
         print(f"PDF directory path: {os.path.abspath(pdf_dir)}")
         print(f"PDF directory exists: {os.path.exists(pdf_dir)}")
         print(f"PDF directory permissions: {oct(os.stat(pdf_dir).st_mode)[-3:]}")
+        print(f"Directory contents: {os.listdir(pdf_dir)}")
         
-        # Create a unique filename using patient name, UHID, and timestamp
-        name = json_data.get("Name", "UnknownName").replace(" ", "_")
-        uhid = json_data.get("uhid", "NoUHID").replace(" ", "_")
-        filename = os.path.join(pdf_dir, f'{name}_{uhid}_{timestamp}.pdf')
-        print(f"Target PDF path: {os.path.abspath(filename)}")
-        CURRENT_PDF = filename
-
         # Get settings from settings.json
-        with open('settings.json', 'r') as f:
-            settings_data = json.load(f)
+        print("\n=== Loading Settings ===")
+        try:
+            with open('settings.json', 'r') as f:
+                settings_data = json.load(f)
+                print(f"Loaded settings: {settings_data}")
+        except Exception as e:
+            print(f"Error loading settings: {str(e)}")
+            settings_data = {}
 
         # Extract settings
         heading = settings_data.get('heading', '')
         subheading = settings_data.get('subheading', '')
         font_size = settings_data.get('font_size', 13)
+        print(f"Using settings - heading: {heading}, subheading: {subheading}, font_size: {font_size}")
 
-        # Call the generate_picu_treatment_chart function with the new arguments
-        generate_picu_treatment_chart(heading, subheading, json_data, font_size=font_size)
+        # Call the generate_picu_treatment_chart function
+        print("\n=== Generating PDF ===")
+        print("Calling generate_picu_treatment_chart...")
+        pdf_path = generate_picu_treatment_chart(heading, subheading, json_data, font_size=font_size)
+        print("Finished generate_picu_treatment_chart")
 
-        time.sleep(1)
-
-        # Check if the file exists before sending
-        if not os.path.exists(filename):
+        if not pdf_path or not os.path.exists(pdf_path):
+            print("\n=== PDF Generation Failed ===")
+            print(f"Generated PDF not found at: {pdf_path}")
+            print(f"Directory contents: {os.listdir(pdf_dir)}")
             return jsonify({'error': 'Generated file not found'}), 404
 
+        print("\n=== PDF Generation Successful ===")
+        print(f"File found at: {pdf_path}")
+        print(f"File size: {os.path.getsize(pdf_path)} bytes")
+        
+        # Send the file
+        print("\n=== Sending PDF to Client ===")
+        print(f"Sending file: {pdf_path}")
+        print(f"Download name: {os.path.basename(pdf_path)}")
+        
         return send_file(
-            filename,
+            pdf_path,
             as_attachment=True,
-            download_name=f'{name}_{uhid}_{timestamp}.pdf',
+            download_name=os.path.basename(pdf_path),
             mimetype='application/pdf'
         )
-
     except Exception as e:
-        print(f"Error in download route: {str(e)}")
-        print(f"Error type: {type(e)}")  # Debug print
+        print("\n=== Error in Download Route ===")
+        print(f"Error type: {type(e)}")
+        print(f"Error message: {str(e)}")
         import traceback
-        print(f"Traceback: {traceback.format_exc()}")  # Debug print
+        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 

@@ -108,25 +108,48 @@ def generate_picu_treatment_chart(heading,subheading,json_data,font_size=9):
     Returns:
         str: Path to the generated PDF file
     """
+    print("\n=== Starting PDF Generation Process ===")
+    print(f"Input parameters:")
+    print(f"- Heading: {heading}")
+    print(f"- Subheading: {subheading}")
+    print(f"- Font size: {font_size}")
+    
     # If json_data is a string, parse it
     if isinstance(json_data, str):
+        print("Converting JSON string to dictionary...")
         json_data = json.loads(json_data)
-
+    
+    print("\n=== Extracting Patient Information ===")
     # Extract patient information
     patient_info = extract_patient_info(json_data)
+    print(f"Extracted patient info: {patient_info}")
 
+    print("\n=== Extracting Treatment Tables ===")
     # Extract treatment tables
     treatment_tables = extract_entry_tables(json_data)
+    print(f"Found {len(treatment_tables)} treatment tables")
     minipage_latex = generate_minipage(treatment_tables)
 
+    print("\n=== Extracting Table Rows ===")
     # Extract table rows
     table_rows = extract_table_rows(json_data)
+    print(f"Found {len(table_rows)} table rows")
     latex_table = generate_two_column_table(table_rows)
 
-    # Generate the PDF
-    generate_pdf_from_latex(heading=heading,subheading=subheading,patient_info=patient_info, stacked_blocks=minipage_latex, table_data=latex_table, font_size=font_size)
-
-    return "success"
+    print("\n=== Generating PDF ===")
+    # Generate the PDF and get the path
+    pdf_path = generate_pdf_from_latex(heading=heading,subheading=subheading,patient_info=patient_info, stacked_blocks=minipage_latex, table_data=latex_table, font_size=font_size)
+    
+    if pdf_path and os.path.exists(pdf_path):
+        print(f"\n=== PDF Generation Successful ===")
+        print(f"PDF generated at: {pdf_path}")
+        print(f"File size: {os.path.getsize(pdf_path)} bytes")
+        return pdf_path
+    else:
+        print("\n=== PDF Generation Failed ===")
+        print(f"PDF path: {pdf_path}")
+        print(f"File exists: {os.path.exists(pdf_path) if pdf_path else False}")
+        return None
 
 
 
@@ -335,40 +358,43 @@ def generate_pdf_from_latex(heading,subheading,patient_info, stacked_blocks, tab
         table_data (str): LaTeX code for the table data
         font_size (int): Base font size in pt for the document
     """
+    print("\n=== Starting LaTeX Generation ===")
     current_dir = os.getcwd()
+    print(f"Current working directory: {current_dir}")
+    
     output_dir_name = "GENERATED_PDFS"
     output_dir_path = os.path.join(current_dir, output_dir_name)
+    print(f"Output directory path: {output_dir_path}")
 
-    # --- Define path for the intermediate .tex file (in CWD as per original logic) ---
+    # --- Define path for the intermediate .tex file ---
     intermediate_tex_filename = os.path.join(current_dir, "document.tex")
     print(f'Intermediate TeX file path: {intermediate_tex_filename}')
 
     # --- Define path for the pdflatex executable ---
-    # Adjust this path if your TinyTeX installation is elsewhere relative to your script
     absolute_path_of_pdflatex_exe = os.path.join(current_dir, "RESOURCES", "Tinytex", "bin", "windows", "pdflatex.exe")
-    # Add logic here for other OS if necessary
+    print(f"pdflatex executable path: {absolute_path_of_pdflatex_exe}")
 
-    # Check if pdflatex executable exists before proceeding
+    # Check if pdflatex executable exists
     if not os.path.isfile(absolute_path_of_pdflatex_exe):
-        print(f"ERROR: pdflatex executable not found at:")
-        print(f"'{absolute_path_of_pdflatex_exe}'")
-        print("Please check the RESOURCES/Tinytex path and installation.")
-        # Show QMessageBox in GUI context
-        return # Stop
+        print(f"ERROR: pdflatex executable not found at: {absolute_path_of_pdflatex_exe}")
+        return None
 
     # --- Generate LaTeX Code ---
+    print("\n=== Generating LaTeX Code ===")
     line_height = int(font_size * 1.2)
     header_font_size = font_size - 1
     adjusted_vspace = max(1.5, (font_size / 11) * 1.0)
 
-    # Check for logo files and determine which one to use
+    # Check for logo files
     website_logo_path = os.path.join(current_dir, "RESOURCES", "website_logo.png")
     default_logo_path = os.path.join(current_dir, "RESOURCES", "default_AIIMS_LOGO.png")
     
     if os.path.exists(website_logo_path):
         logo_path = "RESOURCES/website_logo.png"
+        print("Using website logo")
     else:
         logo_path = "RESOURCES/default_AIIMS_LOGO.png"
+        print("Using default logo")
 
     latex_code = rf"""
 \documentclass{{article}}
@@ -451,52 +477,59 @@ def generate_pdf_from_latex(heading,subheading,patient_info, stacked_blocks, tab
 """
     # --- Write LaTeX code to the intermediate .tex file ---
     try:
-        print(f"Writing LaTeX code to {intermediate_tex_filename}...")
+        print("\n=== Writing LaTeX File ===")
+        print(f"Writing to: {intermediate_tex_filename}")
         with open(intermediate_tex_filename, "w", encoding="utf-8") as f:
             f.write(latex_code)
-        print("Finished writing .tex file.")
+        print("LaTeX file written successfully")
     except Exception as e:
-        print(f"Error writing {intermediate_tex_filename}: {e}")
-        # Show QMessageBox
-        return # Stop
+        print(f"ERROR: Failed to write LaTeX file: {e}")
+        return None
 
-    # --- Prepare the Final PDF Path using the required convention ---
+    # --- Prepare the Final PDF Path ---
     try:
+        print("\n=== Preparing Final PDF Path ===")
         # Ensure the output directory exists
         os.makedirs(output_dir_path, exist_ok=True)
+        print(f"Output directory created/verified: {output_dir_path}")
 
-        # Sanitize name and uhid (using the defined function)
+        # Sanitize name and uhid
         name = sanitize_filename(patient_info.get("patient_name", "UnknownName"))
         uhid = sanitize_filename(patient_info.get("uhid", "NoUHID"))
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         final_pdf_filename = f"{name}_{uhid}_{timestamp}.pdf"
         generated_pdf_location_with_name = os.path.join(output_dir_path, final_pdf_filename)
-        print(f"Final PDF path target: {generated_pdf_location_with_name}")
+        print(f"Final PDF path: {generated_pdf_location_with_name}")
     except Exception as e:
-        print(f"Error preparing final PDF path: {e}")
-        # Show QMessageBox
-        return # Stop
+        print(f"ERROR: Failed to prepare PDF path: {e}")
+        return None
 
-    # --- Call the function to compile the .tex file to the final PDF location ---
-    print("<========= Calling from_latex_to_pdf ========>")
+    # --- Call the function to compile the .tex file ---
+    print("\n=== Compiling LaTeX to PDF ===")
     from_latex_to_pdf(
         tex_filename=intermediate_tex_filename,
         pdf_address=generated_pdf_location_with_name,
         absolute_path_of_pdflatex_exe=absolute_path_of_pdflatex_exe
     )
-    print("<========= Returned from from_latex_to_pdf ========>")
 
-    # --- Cleanup intermediate .tex file (optional, but good practice) ---
-    try:
-        if os.path.exists(intermediate_tex_filename):
-            # Check if the PDF was actually created before deleting the source .tex
-            if os.path.exists(generated_pdf_location_with_name):
-                 print(f"Cleaning up intermediate file: {intermediate_tex_filename}")
-                 #os.remove(intermediate_tex_filename) # Uncomment to delete .tex file on success
-            else:
-                 print(f"Keeping intermediate file {intermediate_tex_filename} as PDF generation failed.")
-    except Exception as e:
-        print(f"Warning: Could not clean up intermediate file {intermediate_tex_filename}: {e}")
+    # --- Cleanup and verify ---
+    print("\n=== Verifying PDF Generation ===")
+    if os.path.exists(generated_pdf_location_with_name):
+        print(f"PDF successfully generated at: {generated_pdf_location_with_name}")
+        print(f"File size: {os.path.getsize(generated_pdf_location_with_name)} bytes")
+        
+        # Clean up intermediate file
+        try:
+            if os.path.exists(intermediate_tex_filename):
+                os.remove(intermediate_tex_filename)
+                print("Intermediate .tex file cleaned up")
+        except Exception as e:
+            print(f"Warning: Could not clean up intermediate file: {e}")
+        
+        return generated_pdf_location_with_name
+    else:
+        print(f"ERROR: PDF file not found at: {generated_pdf_location_with_name}")
+        return None
 
 
 def from_latex_to_pdf(tex_filename, pdf_address, absolute_path_of_pdflatex_exe):
