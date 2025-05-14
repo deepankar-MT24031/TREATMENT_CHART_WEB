@@ -138,7 +138,14 @@ def generate_picu_treatment_chart(heading,subheading,json_data,font_size=9):
 
     print("\n=== Generating PDF ===")
     # Generate the PDF and get the path
-    pdf_path = generate_pdf_from_latex(heading=heading,subheading=subheading,patient_info=patient_info, stacked_blocks=minipage_latex, table_data=latex_table, font_size=font_size)
+    pdf_path = generate_pdf_from_latex(
+        heading=heading,
+        subheading=subheading,
+        patient_info=patient_info,
+        treatment_tables=minipage_latex,
+        table_rows=latex_table,
+        font_size=font_size
+    )
     
     if pdf_path and os.path.exists(pdf_path):
         print(f"\n=== PDF Generation Successful ===")
