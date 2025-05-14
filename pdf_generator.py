@@ -470,7 +470,6 @@ def generate_pdf_from_latex(heading,subheading,patient_info, stacked_blocks, tab
         uhid = sanitize_filename(patient_info.get("uhid", "NoUHID"))
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         final_pdf_filename = f"{name}_{uhid}_{timestamp}.pdf"
-        final_pdf_filename = f"current.pdf"
         generated_pdf_location_with_name = os.path.join(output_dir_path, final_pdf_filename)
         print(f"Final PDF path target: {generated_pdf_location_with_name}")
     except Exception as e:

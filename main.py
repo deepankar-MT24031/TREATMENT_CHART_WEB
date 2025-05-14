@@ -119,7 +119,7 @@ def download():
             return jsonify({'error': 'Generated file not found'}), 404
 
         return send_file(
-            CURRENT_PDF,
+            filename,
             as_attachment=True,
             download_name=f'current_{timestamp}.pdf',
             mimetype='application/pdf'
