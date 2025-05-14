@@ -178,13 +178,14 @@ def download_pdf():
                     
                     # Update print time for the entry
                     entry_found = False
-                    for entry in db_data:
-                        if entry.get('uuid') == uuid:
-                            print(f"Found matching entry in db.json: {entry}")
-                            entry['print_time'] = current_time
-                            entry_found = True
-                            print(f"Updated entry with new print_time: {entry}")
-                            break
+                    if '_default' in db_data:
+                        for entry_id, entry in db_data['_default'].items():
+                            if entry.get('uuid') == uuid:
+                                print(f"Found matching entry in db.json: {entry}")
+                                entry['print_time'] = current_time
+                                entry_found = True
+                                print(f"Updated entry with new print_time: {entry}")
+                                break
                     
                     if not entry_found:
                         print(f"Warning: No entry found in db.json with UUID: {uuid}")
