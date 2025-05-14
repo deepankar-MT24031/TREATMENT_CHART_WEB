@@ -158,29 +158,50 @@ def download_pdf():
                 print("\n=== Updating db.json ===")
                 # Get the UUID from the JSON data
                 uuid = json_data.get('uuid')
+                print(f"UUID from JSON data: {uuid}")
+                
                 if uuid:
                     # Get current timestamp
                     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"Current timestamp: {current_time}")
                     
                     # Load current db.json
                     db_path = os.path.join(current_dir, 'db.json')
+                    print(f"Loading db.json from: {db_path}")
+                    
                     with open(db_path, 'r') as f:
                         db_data = json.load(f)
+                    print(f"Current db.json content: {db_data}")
                     
                     # Update print time for the entry
+                    entry_found = False
                     for entry in db_data:
                         if entry.get('uuid') == uuid:
+                            print(f"Found matching entry in db.json: {entry}")
                             entry['print_time'] = current_time
+                            entry_found = True
+                            print(f"Updated entry with new print_time: {entry}")
                             break
                     
+                    if not entry_found:
+                        print(f"Warning: No entry found in db.json with UUID: {uuid}")
+                    
                     # Save updated db.json
+                    print(f"Saving updated db.json to: {db_path}")
                     with open(db_path, 'w') as f:
                         json.dump(db_data, f, indent=2)
-                    print(f"Successfully updated print time in db.json for UUID: {uuid}")
+                    print(f"Successfully saved updated db.json")
+                    
+                    # Verify the update
+                    with open(db_path, 'r') as f:
+                        updated_db = json.load(f)
+                    print(f"Verified db.json content after update: {updated_db}")
                 else:
                     print("Warning: No UUID found in JSON data, skipping db.json update")
             except Exception as db_error:
                 print(f"Warning: Failed to update db.json: {db_error}")
+                import traceback
+                traceback.print_exc()
 
             # Return the PDF file
             return send_file(
