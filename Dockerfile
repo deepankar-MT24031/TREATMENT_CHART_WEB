@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y \
     wget \
     texlive-latex-base \
     texlive-latex-extra \
+    texlive-latex-recommended \
+    texlive-science \
+    texlive-fonts-recommended \
     && rm -rf /var/lib/apt/lists/*
 
 # Install TinyTeX
@@ -17,6 +20,9 @@ RUN wget -qO- "https://yihui.org/tinytex/install-bin-unix.sh" | sh
 
 # Add TinyTeX to PATH
 ENV PATH="/root/bin:${PATH}"
+
+# Install additional LaTeX packages
+RUN tlmgr install multirow tabularx textpos
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
