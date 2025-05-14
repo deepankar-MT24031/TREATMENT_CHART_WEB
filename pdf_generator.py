@@ -129,13 +129,11 @@ def generate_picu_treatment_chart(heading,subheading,json_data,font_size=9):
     # Extract treatment tables
     treatment_tables = extract_entry_tables(json_data)
     print(f"Found {len(treatment_tables)} treatment tables")
-    minipage_latex = generate_minipage(treatment_tables)
 
     print("\n=== Extracting Table Rows ===")
     # Extract table rows
     table_rows = extract_table_rows(json_data)
     print(f"Found {len(table_rows)} table rows")
-    latex_table = generate_two_column_table(table_rows)
 
     print("\n=== Generating PDF ===")
     # Generate the PDF and get the path
@@ -143,8 +141,8 @@ def generate_picu_treatment_chart(heading,subheading,json_data,font_size=9):
         heading=heading,
         subheading=subheading,
         patient_info=patient_info,
-        treatment_tables=minipage_latex,
-        table_rows=latex_table,
+        treatment_tables=treatment_tables,  # Pass the raw tables, not the LaTeX code
+        table_rows=table_rows,  # Pass the raw rows, not the LaTeX code
         font_size=font_size
     )
 
@@ -388,7 +386,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
         tex_file_path = os.path.join(output_dir, f"temp_{timestamp}.tex")
         pdf_file_path = os.path.join(output_dir, f"current_{timestamp}.pdf")
 
-        # Process the tables
+        # Process the tables into LaTeX code
         left_table = generate_minipage(treatment_tables)
         right_table = generate_two_column_table(table_rows)
 
