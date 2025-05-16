@@ -333,7 +333,7 @@ def generate_minipage(tables):
             count += 1
         minipage_code += r"""    \end{tabular}
     \vspace{0.2cm}
-"""
+    """
         count = 1
     return minipage_code
 
