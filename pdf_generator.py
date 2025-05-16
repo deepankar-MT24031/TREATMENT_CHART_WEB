@@ -525,7 +525,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 {left_table}
 \end{{minipage}}%
 \hfill%
-\hspace{{0.5cm}} % Added horizontal space before right minipage
+%\hspace{{0.5cm}} % Removed horizontal space before right minipage
 \begin{{minipage}}[t]{{{right_minipage_width_fraction:.2f}\textwidth}} % MODIFIED WIDTH
     % \hspace{{1cm}} % You might not need this hspace anymore, or might need to adjust it.
                      % Test with and without it. Let's remove it for now.
