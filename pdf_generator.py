@@ -315,7 +315,7 @@ def generate_minipage(tables):
         # For data like "D3", "2L", "N/A", a small width can work.
         # Let's try 1.0cm or even 0.8cm.
         # You will need to test this with your actual data to see if it's too cramped.
-        extra_col_width = "2.0cm" # <--- VERY IMPORTANT: ADJUST THIS VALUE
+        extra_col_width = "1.2cm" # <--- VERY IMPORTANT: ADJUST THIS VALUE
                                   # Try 0.8cm, 1.0cm, 1.2cm.
         
         # Collect specs for extra columns
