@@ -277,87 +277,91 @@ def generate_minipage(tables):
     Generates LaTeX code for the treatment tables using tabularx,
     dynamically including only columns that exist in the data.
     All tables will span the full width of their parent minipage.
+    The first column is for the main item description (content),
+    and there can be up to 3 additional data columns.
     """
-    minipage_code = r"" # Initialize to empty string
+    minipage_code = r""
     
     for table_idx, table in enumerate(tables):
-        table_title = table["title"] # This is the main title for the 'content' column header
+        # table_title (e.g., "Respiratory support") is the overall title for this section/table
+        # it becomes the header for the first (X) column.
+        main_column_header = table["title"] 
         rows = table["rows"]
-        # columns_in_data is the list of column keys present for this table,
-        # e.g., ["content", "day", "dose"]
+        # columns_in_data: e.g., ["content", "day", "dose", "volume"]
+        # "content" holds the item description like "O2 via NC"
+        # "day", "dose", "volume" are the extra columns.
         columns_in_data = table["columns"] 
                                         
         headers_list = []
         col_specs_list = []
-        # This list will store the actual data keys in the order they will appear in the table,
-        # making it easier to fetch cell data in the row loop.
-        data_keys_for_rows = []
+        data_keys_for_rows_ordered = [] # To ensure data is pulled in the correct column order
 
-        # 1. Handle the "content" column (main descriptive column)
-        # It will always be present if columns_in_data is not empty and usually first.
+        # 1. The main descriptive column (corresponds to "content" key in your JSON)
+        # This will be the flexible 'X' column.
         if "content" in columns_in_data:
-            col_specs_list.append("X")  # Flexible width, raggedright for better text flow
-            headers_list.append(f"\\textbf{{{table_title}}}") # Use the table's title as the header for this column
-            data_keys_for_rows.append("content")
+            col_specs_list.append(">{\\raggedright\\arraybackslash}X") # Make it X and raggedright
+            headers_list.append(f"\\textbf{{{main_column_header}}}") # Header is the table's title
+            data_keys_for_rows_ordered.append("content")
         else:
-            # Fallback if 'content' is somehow missing but other columns exist
-            # This case should ideally not happen if 'content' is fundamental
-            # Or, if the first column isn't 'content', treat it as the 'X' column.
-            if columns_in_data: # If there are any columns
-                first_col_key = columns_in_data[0]
+            # This is a fallback: if 'content' is missing, but other columns exist,
+            # make the first available column the 'X' column.
+            # Ideally, 'content' should always be the primary key for the description.
+            if columns_in_data:
+                first_key = columns_in_data[0]
+                col_specs_list.append(">{\\raggedright\\arraybackslash}X")
+                headers_list.append(f"\\textbf{{{first_key.capitalize()}}}") # Or use main_column_header if appropriate
+                data_keys_for_rows_ordered.append(first_key)
+            else: # No columns at all, create a single X column table (empty)
                 col_specs_list.append("X")
-                headers_list.append(f"\\textbf{{{first_col_key.capitalize()}}}")
-                data_keys_for_rows.append(first_col_key)
+                headers_list.append(f"\\textbf{{{main_column_header}}}") # Still use the table title
+                # data_keys_for_rows_ordered will be empty, leading to empty cells later, which is fine
 
-        # 2. Handle other (extra) columns
-        # Define a width for these extra columns.
-        # Since there are at most 3 extra, 1.5cm to 2cm should be reasonable.
-        # Let's use 1.7cm as a balance.
-        extra_col_width = "1.7cm" 
+        # 2. Handle "extra" columns (day, dose, volume, rate, etc.) - max 3 of these
+        extra_col_width = "1.7cm" # Adjust if needed for 3 columns + X column to fit well
         
+        # Iterate through all columns specified in the JSON for this table
         for col_key in columns_in_data:
-            if col_key == "content" or col_key == data_keys_for_rows[0]: # Skip if it's the 'X' column already processed
+            # Skip if it's the key already designated for the main 'X' column
+            if col_key == data_keys_for_rows_ordered[0] and data_keys_for_rows_ordered[0] == "content":
                 continue
-            
-            # Add >{\raggedright\arraybackslash} for better text wrapping in narrow p columns
+            if col_key == data_keys_for_rows_ordered[0] and "content" not in columns_in_data: # If using fallback first_key
+                continue
+
+            # This 'col_key' is one of the "extra" columns
             col_specs_list.append(f">{{\\raggedright\\arraybackslash}}p{{{extra_col_width}}}")
             headers_list.append(f"\\textbf{{{col_key.capitalize()}}}")
-            data_keys_for_rows.append(col_key)
+            data_keys_for_rows_ordered.append(col_key)
             
-        # Join column specs with "|"
-        final_col_spec = "|" + "|".join(col_specs_list) + "|" if col_specs_list else "|X|" # Ensure at least one X column
+        final_col_spec = "|" + "|".join(col_specs_list) + "|" if col_specs_list else "|X|"
         
-        # --- Generate LaTeX for this specific table ---
-        # Use \linewidth to make the tabularx take the full width of its parent (the minipage)
         minipage_code += f"""
-    % Medication table '{table_title}' using tabularx
-    \\noindent % Ensure no unintended indent
+    % Medication table '{main_column_header}' using tabularx
+    \\noindent
     \\begin{{tabularx}}{{\\linewidth}}{{{final_col_spec}}}
         \\hline
 """
-        # Add headers
         if headers_list:
             minipage_code += "        " + " & ".join(headers_list) + r" \\" + "\n        \\hline\n"
-        else: # Should not happen if table has data
-             minipage_code += "        % No headers defined\n        \\hline\n"
 
-        # Add rows
-        # The 'count' for numbering items should be per table, starting from 1.
         for item_num, row_data in enumerate(rows):
             row_cells = []
-            # The content of the first column (title/content) gets the numbering
-            # item_num starts from 0, so add 1 for 1-based display.
-            first_col_content = f"{item_num + 1}. {row_data.get(data_keys_for_rows[0], '')}" if data_keys_for_rows else ""
-            row_cells.append(first_col_content)
+            # First cell: item number + data from the main descriptive key ("content")
+            if data_keys_for_rows_ordered: # Check if list is not empty
+                main_desc_key = data_keys_for_rows_ordered[0]
+                # The value from row_data[main_desc_key] is the "title" of the item (e.g. "O2 via NC")
+                item_description = row_data.get(main_desc_key, '') 
+                row_cells.append(f"{item_num + 1}. {item_description}")
 
-            # For subsequent columns
-            for col_key in data_keys_for_rows[1:]:
-                row_cells.append(row_data.get(col_key, '')) # Get data or empty string
-            
+                # Subsequent cells for extra columns
+                for extra_col_key in data_keys_for_rows_ordered[1:]:
+                    row_cells.append(row_data.get(extra_col_key, ''))
+            else: # No columns defined, but rows might exist (e.g. if JSON is malformed)
+                row_cells.append(f"{item_num + 1}. ") # Just number
+
             minipage_code += "        " + " & ".join(row_cells) + r" \\" + "\n        \\hline\n"
         
         minipage_code += r"""    \end{tabularx}
-    \vspace{0.2cm} % Space between tables
+    \vspace{0.2cm}
 """
     return minipage_code
 
