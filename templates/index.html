@@ -256,7 +256,7 @@
         }
 
         .cell-description {
-            width: 200px;
+            width: auto !important;
             min-width: 200px;
         }
 
@@ -539,7 +539,7 @@
         }
 
         .cell-description {
-            width: calc(100% - 25px);
+            width: auto !important;
             min-width: 200px;
         }
 
@@ -1717,14 +1717,22 @@
             
             // Create colgroup based on visible columns
             const colgroup = document.createElement('colgroup');
-            colgroup.innerHTML = `
-                <col style="width: 25px;">
-                <col style="width: 200px;">
-                ${columns.includes('day') ? '<col style="width: auto; min-width: 80px;">' : ''}
-                ${columns.includes('dose') ? '<col style="width: auto; min-width: 80px;">' : ''}
-                ${columns.includes('volume') ? '<col style="width: auto; min-width: 80px;">' : ''}
-                ${columns.includes('rate') ? '<col style="width: auto; min-width: 80px;">' : ''}
-            `;
+            if (columns.length === 1) {
+                // Only number and description columns
+                colgroup.innerHTML = `
+                    <col style="width:25px;">
+                    <col style="width:auto;">
+                `;
+            } else {
+                colgroup.innerHTML = `
+                    <col style="width:25px;">
+                    <col style="width:200px;">
+                    ${columns.includes('day') ? '<col style="width:auto; min-width:80px;">' : ''}
+                    ${columns.includes('dose') ? '<col style="width:auto; min-width:80px;">' : ''}
+                    ${columns.includes('volume') ? '<col style="width:auto; min-width:80px;">' : ''}
+                    ${columns.includes('rate') ? '<col style="width:auto; min-width:80px;">' : ''}
+                `;
+            }
             table.appendChild(colgroup);
 
             // Create header row
