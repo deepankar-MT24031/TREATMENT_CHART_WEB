@@ -178,11 +178,11 @@ def extract_patient_info(json_data):
         "gender": json_data.get("Sex", ""),
         "bed_number": int(json_data.get("bed_number", 0)) if json_data.get("bed_number", "").isdigit() else 0,
         "uhid": json_data.get("uhid", ""),
-        # REMOVED .replace() calls here:
-        "diagnosis": json_data.get("diagnosis", "").strip(),
-        "consultant_names": json_data.get("consultants", "").strip(), # Added strip
-        "jr_names": json_data.get("JR", "").strip(),                 # Added strip
-        "sr_names": json_data.get("SR", "").strip()                  # Added strip
+        # Updated field names to match frontend capitalization
+        "diagnosis": json_data.get("Diagnosis", "").strip(),
+        "consultant_names": json_data.get("Consultants", "").strip(),
+        "jr_names": json_data.get("JR", "").strip(),
+        "sr_names": json_data.get("SR", "").strip()
     }
 
     # Now, apply escaping using the dedicated function to all string fields
