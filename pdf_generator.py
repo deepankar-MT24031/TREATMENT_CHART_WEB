@@ -499,16 +499,16 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
     \hline
     \textbf{{Name:}} {patient_info["patient_name"]} & \textbf{{Age:}} {patient_info["years"]} years {patient_info["months"]} months & \textbf{{Gender:}} {patient_info["gender"]} & \textbf{{Bed:}} {patient_info["bed_number"]} & \textbf{{UHID:}} {patient_info["uhid"]} \\
     \hline
-    \multicolumn{{5}}{{|p{{19cm}}|}}{{\textbf{{Diagnosis:}} \parbox[t]{{18cm}}{{{patient_info["diagnosis"]}}}}} \\
+    \multicolumn{{5}}{{|p{{19cm}}|}}{{\textbf{{Diagnosis:}} \parbox[t]{{18cm}}{{{patient_info["diagnosis"]}\vspace{{0.3em}}}}}} \\
     \hline
 \end{{tabular}}
 \\
 \\
 \noindent\begin{{tabular}}{{|p{{11.3cm}}|p{{7.3cm}}|}}
      \hline
-    \textbf{{Consultant:}} \parbox[t]{{10.5cm}}{{{patient_info["consultant_names"]}}}      & \textbf{{JRs:}} \parbox[t]{{6.5cm}}{{{patient_info["jr_names"]}}} \\
+    \textbf{{Consultant:}} \parbox[t]{{10.5cm}}{{{patient_info["consultant_names"]}\vspace{{0.3em}}}}      & \textbf{{JRs:}} \parbox[t]{{6.5cm}}{{{patient_info["jr_names"]}\vspace{{0.3em}}}} \\
     \cline{{2-2}}
-      & \textbf{{SRs:}} \parbox[t]{{6.5cm}}{{{patient_info["sr_names"]}}} \\
+      & \textbf{{SRs:}} \parbox[t]{{6.5cm}}{{{patient_info["sr_names"]}\vspace{{0.3em}}}} \\
     \hline
 \end{{tabular}}
 \vspace{{0.1cm}} % Reduced space
