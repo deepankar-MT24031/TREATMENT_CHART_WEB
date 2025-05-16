@@ -573,7 +573,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
                 cwd=output_dir,  # Set working directory to output_dir
                 capture_output=True,
                 text=True
-            )
+            ) 
 
             # Print compilation output for debugging
             print("\n=== pdflatex Output ===")
