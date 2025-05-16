@@ -499,18 +499,29 @@
             width: 100%;
         }
 
-        #medications-container table colgroup col:first-child {
+        /* Force number column to be exactly 25px regardless of table structure */
+        #medications-container table colgroup col:first-child,
+        #medications-container table th.cell-number,
+        #medications-container table td.cell-number {
             width: 25px !important;
             min-width: 25px !important;
             max-width: 25px !important;
+            box-sizing: border-box !important;
         }
 
+        /* Ensure description column takes remaining space when no other columns */
         #medications-container table colgroup col:nth-child(2) {
+            width: calc(100% - 25px);
+            min-width: 200px;
+        }
+
+        /* Style for tables with additional columns */
+        #medications-container table:has(colgroup col:nth-child(3)) colgroup col:nth-child(2) {
             width: 200px;
             min-width: 200px;
         }
 
-        #medications-container table colgroup col:not(:first-child):not(:nth-child(2)) {
+        #medications-container table:has(colgroup col:nth-child(3)) colgroup col:not(:first-child):not(:nth-child(2)) {
             width: auto;
             min-width: 80px;
         }
@@ -524,14 +535,24 @@
             white-space: nowrap !important;
             overflow: hidden !important;
             font-size: 0.9em !important;
+            box-sizing: border-box !important;
         }
 
         .cell-description {
+            width: calc(100% - 25px);
+            min-width: 200px;
+        }
+
+        /* Only apply these widths when there are additional columns */
+        #medications-container table:has(colgroup col:nth-child(3)) .cell-description {
             width: 200px;
             min-width: 200px;
         }
 
-        .cell-day, .cell-dose, .cell-volume, .cell-rate {
+        #medications-container table:has(colgroup col:nth-child(3)) .cell-day,
+        #medications-container table:has(colgroup col:nth-child(3)) .cell-dose,
+        #medications-container table:has(colgroup col:nth-child(3)) .cell-volume,
+        #medications-container table:has(colgroup col:nth-child(3)) .cell-rate {
             width: auto;
             min-width: 80px;
         }
