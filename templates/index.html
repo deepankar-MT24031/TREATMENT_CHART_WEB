@@ -1078,16 +1078,18 @@
             medicationTables.forEach((tableContainer, tableIndex) => {
                 const table = tableContainer.querySelector('table');
                 if (!table) return;
+                // Get columns from header row (skip first two ths: number and description)
                 const headerCells = Array.from(table.querySelectorAll('thead th'));
-                // Determine which columns exist in this table
-                const columns = headerCells.map(th => {
-                    if (th.classList.contains('cell-day')) return 'day';
-                    if (th.classList.contains('cell-dose')) return 'dose';
-                    if (th.classList.contains('cell-volume')) return 'volume';
-                    if (th.classList.contains('cell-rate')) return 'rate';
-                    if (th.classList.contains('cell-description')) return 'content';
-                    return null;
-                }).filter(Boolean);
+                let columns = ['content'];
+                headerCells.forEach((th, idx) => {
+                    if (idx < 2) return;
+                    const classList = th.classList;
+                    if (classList.contains('cell-day')) columns.push('day');
+                    else if (classList.contains('cell-dose')) columns.push('dose');
+                    else if (classList.contains('cell-volume')) columns.push('volume');
+                    else if (classList.contains('cell-rate')) columns.push('rate');
+                    else columns.push(th.textContent.trim().toLowerCase());
+                });
                 const title = table.querySelector('th.cell-description input').value.trim();
                 const rows = table.querySelectorAll('tbody tr');
                 const subtitles = {};
@@ -1107,9 +1109,11 @@
                         subtitles[`subtitle_${rowIndex + 1}`] = subtitleData;
                     }
                 });
+                // Also store columns in the entry for backend use
                 if (title || Object.keys(subtitles).length > 0) {
                     entries[`entry_${tableIndex + 1}`] = {
                         title: title,
+                        columns: columns.filter(col => col !== 'content'),
                         subtitles: subtitles
                     };
                 }
@@ -1630,14 +1634,18 @@
         // Update: determine columns to show per-table based on all subtitle keys, with extensive logging
         function determineColumnsToShow(entryData, entryKey) {
             // Always show content
-            const columns = { content: true };
-            // Collect all keys from all subtitles
-            Object.values(entryData.subtitles || {}).forEach(subtitle => {
-                Object.keys(subtitle).forEach(key => {
-                    if (key !== 'content') columns[key] = true;
+            let columns = ['content'];
+            if (Array.isArray(entryData.columns)) {
+                columns = ['content', ...entryData.columns.filter(col => col !== 'content')];
+            } else {
+                // fallback: infer from subtitles as before
+                Object.values(entryData.subtitles || {}).forEach(subtitle => {
+                    Object.keys(subtitle).forEach(key => {
+                        if (key !== 'content' && !columns.includes(key)) columns.push(key);
+                    });
                 });
-            });
-            console.log('DEBUG: Columns detected for', entryKey, columns);
+            }
+            console.log('DEBUG: Columns for', entryKey, columns);
             return columns;
         }
 
@@ -1657,26 +1665,28 @@
             colgroup.innerHTML = `
                 <col style="width: 8px;">
                 <col style="width: 200px;">
-                ${columns.day ? '<col style="width: 80px;">' : ''}
-                ${columns.dose ? '<col style="width: 80px;">' : ''}
-                ${columns.volume ? '<col style="width: 80px;">' : ''}
-                ${columns.rate ? '<col style="width: 80px;">' : ''}
+                ${columns.includes('day') ? '<col style="width: 80px;">' : ''}
+                ${columns.includes('dose') ? '<col style="width: 80px;">' : ''}
+                ${columns.includes('volume') ? '<col style="width: 80px;">' : ''}
+                ${columns.includes('rate') ? '<col style="width: 80px;">' : ''}
             `;
             table.appendChild(colgroup);
 
             // Create header row
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
-            headerRow.innerHTML = `
+            let headerHtml = `
                 <th class="cell-number"></th>
                 <th class="cell-description">
                     <input type="text" class="header-editable" value="${entryData.title || ''}">
                 </th>
-                ${columns.day ? '<th class="cell-day">Day</th>' : ''}
-                ${columns.dose ? '<th class="cell-dose">Dose</th>' : ''}
-                ${columns.volume ? '<th class="cell-volume">Volume</th>' : ''}
-                ${columns.rate ? '<th class="cell-rate">Rate</th>' : ''}
             `;
+            columns.forEach(col => {
+                if (col === 'content') return;
+                let label = col.charAt(0).toUpperCase() + col.slice(1); // Capitalize
+                headerHtml += `<th class="cell-${col}">${label}</th>`;
+            });
+            headerRow.innerHTML = headerHtml;
             thead.appendChild(headerRow);
             table.appendChild(thead);
 
@@ -1690,14 +1700,15 @@
             const tbody = document.createElement('tbody');
             Object.entries(entryData.subtitles || {}).forEach(([subtitleKey, subtitleData], index) => {
                 const row = document.createElement('tr');
-                row.innerHTML = `
+                let rowHtml = `
                     <td class="cell-number">${index + 1}</td>
                     <td class="cell-description"><input type="text" class="editable" value="${subtitleData.content || ''}"></td>
-                    ${columns.day ? `<td class="cell-day"><input type="text" class="editable" value="${subtitleData.day || ''}"></td>` : ''}
-                    ${columns.dose ? `<td class="cell-dose"><input type="text" class="editable" value="${subtitleData.dose || ''}"></td>` : ''}
-                    ${columns.volume ? `<td class="cell-volume"><input type="text" class="editable" value="${subtitleData.volume || ''}"></td>` : ''}
-                    ${columns.rate ? `<td class="cell-rate"><input type="text" class="editable" value="${subtitleData.rate || ''}"></td>` : ''}
                 `;
+                columns.forEach(col => {
+                    if (col === 'content') return;
+                    rowHtml += `<td class="cell-${col}"><input type="text" class="editable" value="${subtitleData[col] || ''}"></td>`;
+                });
+                row.innerHTML = rowHtml;
                 tbody.appendChild(row);
             });
             table.appendChild(tbody);
