@@ -402,7 +402,7 @@ def generate_two_column_table(data):
 
         # Wrap both the label and value in minipage environments to force wrapping
         table_code += fr" \begin{{minipage}}[t]{{1.7cm}}\textbf{{{label}}}\end{{minipage}}" + \
-                      f" & \\begin{{minipage}}[t]{{4cm}}\\raggedright {value} \\end{{minipage}} \\\\\n        \\hline\n"
+                      f" & \\begin{{minipage}}[t]{{2.3cm}}\\raggedright {value} \\end{{minipage}} \\\\\n        \\hline\n"
 
     return table_code
 
@@ -468,13 +468,13 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
             print(f"Warning: Failed to copy logo: {e}")
             logo_copy_path = logo_path  # Fall back to original path
 
-        # ---- ADJUST MINIPAGE WIDTHS HERE ----
-        # Adjust these values to move the right table further right
-        left_minipage_width_fraction = 0.55  # Reduced slightly from 0.60
-        right_minipage_width_fraction = 0.30  # Keep this the same
-        # Add horizontal spacing between minipages
-        h_spacing = "2cm"  # Increase this value to move the right table further right
-
+        # ---- ADJUST MINIPAGE WIDTHS AND POSITIONING HERE ----
+        # Increase the space between the left and right tables
+        left_minipage_width_fraction = 0.55  # Width of left table (treatments)
+        right_minipage_width_fraction = 0.3  # Width of right table (date/time/etc)
+        
+        # Important: Use \hfill instead of fixed spacing to push right table to the far right
+        
         latex_code = rf"""
 \documentclass{{article}}
 \usepackage{{graphicx}}
@@ -521,14 +521,14 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 \end{{tabular}}
 \vspace{{0.1cm}} % Reduced space
 
-% Create a two-column layout with fixed positions and more spacing
+% FIXED LAYOUT: Create a two-column layout with the right table pushed to the right edge
 \noindent
-\begin{{minipage}}[t]{{{left_minipage_width_fraction:.2f}\textwidth}} % Slightly reduced width
+\begin{{minipage}}[t]{{{left_minipage_width_fraction:.2f}\textwidth}} % Left table (treatments)
 \vspace{{-{adjusted_vspace:.2f}cm}} 
 {left_table}
 \end{{minipage}}%
-\hspace{{{h_spacing}}}% Add explicit horizontal spacing here
-\begin{{minipage}}[t]{{{right_minipage_width_fraction:.2f}\textwidth}} % Same width as before
+\hfill % This pushes the right minipage all the way to the right edge
+\begin{{minipage}}[t]{{{right_minipage_width_fraction:.2f}\textwidth}} % Right table (date, time, etc)
     \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table 
     \hline
     {right_table}
