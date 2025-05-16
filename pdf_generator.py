@@ -469,9 +469,11 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
             logo_copy_path = logo_path  # Fall back to original path
 
         # ---- ADJUST MINIPAGE WIDTHS HERE ----
-        left_minipage_width_fraction = 0.60  # Increased from 0.45
-        right_minipage_width_fraction = 0.30 # Adjusted from 0.32 (0.60 + 0.30 = 0.90)
-                                             # This leaves 0.10 for \hfill and any other spacing
+        # Adjust these values to move the right table further right
+        left_minipage_width_fraction = 0.55  # Reduced slightly from 0.60
+        right_minipage_width_fraction = 0.30  # Keep this the same
+        # Add horizontal spacing between minipages
+        h_spacing = "2cm"  # Increase this value to move the right table further right
 
         latex_code = rf"""
 \documentclass{{article}}
@@ -518,19 +520,17 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
     \hline
 \end{{tabular}}
 \vspace{{0.1cm}} % Reduced space
-% Create a two-column layout with fixed positions
+
+% Create a two-column layout with fixed positions and more spacing
 \noindent
-\begin{{minipage}}[t]{{{left_minipage_width_fraction:.2f}\textwidth}} % MODIFIED WIDTH
+\begin{{minipage}}[t]{{{left_minipage_width_fraction:.2f}\textwidth}} % Slightly reduced width
 \vspace{{-{adjusted_vspace:.2f}cm}} 
 {left_table}
 \end{{minipage}}%
-\hfill%
-%\hspace{{0.5cm}} % Removed horizontal space before right minipage
-\begin{{minipage}}[t]{{{right_minipage_width_fraction:.2f}\textwidth}} % MODIFIED WIDTH
-    % \hspace{{1cm}} % You might not need this hspace anymore, or might need to adjust it.
-                     % Test with and without it. Let's remove it for now.
-    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table might need adjustment too
-    \hline                                     % if the minipage becomes too narrow.
+\hspace{{{h_spacing}}}% Add explicit horizontal spacing here
+\begin{{minipage}}[t]{{{right_minipage_width_fraction:.2f}\textwidth}} % Same width as before
+    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table 
+    \hline
     {right_table}
     \end{{tabular}}
 \end{{minipage}}
