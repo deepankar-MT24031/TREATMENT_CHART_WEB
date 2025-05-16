@@ -1696,6 +1696,19 @@
             setTimeout(() => {
                 const ths = Array.from(headerRow.querySelectorAll('th')).map(th => th.textContent.trim());
                 console.log('DEBUG: Rendered header cells for', entryKey, ths);
+                // Debug: log the computed width of the number column
+                const numberCol = table.querySelector('colgroup col');
+                const numberTh = table.querySelector('th.cell-number');
+                const numberTd = table.querySelector('td.cell-number');
+                if (numberCol) {
+                    console.log('DEBUG: Table', tableIndex, 'number <col> width:', numberCol.style.width, 'offsetWidth:', numberCol.offsetWidth);
+                }
+                if (numberTh) {
+                    console.log('DEBUG: Table', tableIndex, 'number <th> computed width:', getComputedStyle(numberTh).width);
+                }
+                if (numberTd) {
+                    console.log('DEBUG: Table', tableIndex, 'number <td> computed width:', getComputedStyle(numberTd).width);
+                }
             }, 0);
 
             // Create tbody
