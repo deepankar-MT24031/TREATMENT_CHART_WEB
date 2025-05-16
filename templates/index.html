@@ -797,7 +797,7 @@
 
             <div class="footer">
                 <div>
-                    <button class="footer-button" id="add-box-footer">Add Box</button>
+                    <button class="footer-button" id="edit-layout-btn">Edit Layout</button>
                 </div>
                 <div style="display: flex; justify-content: center; flex: 1;">
                     <button class="footer-button" id="print-button">Print</button>
@@ -2310,6 +2310,149 @@
                 settingsModalOverlay.style.display = 'none';
             });
         });
+    </script>
+
+    <!-- Edit Layout Modal -->
+    <div id="edit-layout-modal-overlay" class="settings-modal-overlay" style="display:none;">
+        <div class="settings-modal" style="max-width: 700px;">
+            <button class="close-btn" id="close-edit-layout-modal" title="Close">&times;</button>
+            <h2>Edit Table Layouts</h2>
+            <div id="edit-layout-list"></div>
+            <button class="save-btn" id="save-edit-layout">Save</button>
+        </div>
+    </div>
+
+    <script>
+    // Edit Layout Modal Logic
+    let editLayoutData = null;
+    function renderEditLayoutList() {
+        const container = document.getElementById('edit-layout-list');
+        container.innerHTML = '';
+        if (!editLayoutData || !editLayoutData.each_entry_layout) return;
+        Object.entries(editLayoutData.each_entry_layout).forEach(([entryKey, entryData], idx) => {
+            const tableDiv = document.createElement('div');
+            tableDiv.className = 'edit-layout-table';
+            tableDiv.style = 'border:1px solid #ccc; margin-bottom:12px; padding:10px; border-radius:6px;';
+            // Title
+            const titleInput = document.createElement('input');
+            titleInput.type = 'text';
+            titleInput.value = entryData.title || '';
+            titleInput.className = 'editable';
+            titleInput.style = 'font-weight:bold; font-size:1.1em; width:60%; margin-bottom:6px;';
+            tableDiv.appendChild(titleInput);
+            // Columns
+            const columnsDiv = document.createElement('div');
+            columnsDiv.style = 'margin-bottom:6px;';
+            let columns = Array.isArray(entryData.columns) ? [...entryData.columns] : [];
+            // Render up to 3 columns
+            columns.forEach((col, colIdx) => {
+                const colInput = document.createElement('input');
+                colInput.type = 'text';
+                colInput.value = col;
+                colInput.className = 'editable';
+                colInput.style = 'margin-right:8px; width:110px;';
+                colInput.oninput = () => { columns[colIdx] = colInput.value; };
+                columnsDiv.appendChild(colInput);
+                // Remove column button
+                const delColBtn = document.createElement('button');
+                delColBtn.textContent = '✕';
+                delColBtn.className = 'button';
+                delColBtn.style = 'margin-right:8px;';
+                delColBtn.onclick = () => {
+                    columns.splice(colIdx, 1);
+                    renderEditLayoutList();
+                };
+                columnsDiv.appendChild(delColBtn);
+            });
+            // Add column button (max 3)
+            if (columns.length < 3) {
+                const addColBtn = document.createElement('button');
+                addColBtn.textContent = '+ Add Column';
+                addColBtn.className = 'button';
+                addColBtn.onclick = () => {
+                    columns.push('');
+                    renderEditLayoutList();
+                };
+                columnsDiv.appendChild(addColBtn);
+            }
+            tableDiv.appendChild(columnsDiv);
+            // Delete table button
+            const delTableBtn = document.createElement('button');
+            delTableBtn.textContent = 'Delete Table';
+            delTableBtn.className = 'button';
+            delTableBtn.style = 'background:#ffdddd; color:#a00;';
+            delTableBtn.onclick = () => {
+                delete editLayoutData.each_entry_layout[entryKey];
+                renderEditLayoutList();
+            };
+            tableDiv.appendChild(delTableBtn);
+            // Save changes on input
+            titleInput.oninput = () => { entryData.title = titleInput.value; };
+            entryData.columns = columns.filter(c => c.trim() !== '');
+            container.appendChild(tableDiv);
+        });
+        // Add new table button
+        const addTableBtn = document.createElement('button');
+        addTableBtn.textContent = '+ Add Table';
+        addTableBtn.className = 'button';
+        addTableBtn.onclick = () => {
+            // Find next available entry key
+            let idx = 1;
+            while (editLayoutData.each_entry_layout[`entry_${idx}`]) idx++;
+            editLayoutData.each_entry_layout[`entry_${idx}`] = {
+                title: 'New Table',
+                columns: [],
+                subtitles: { subtitle_1: { content: '' } }
+            };
+            renderEditLayoutList();
+        };
+        container.appendChild(addTableBtn);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Remove Add Box button if present
+        const addBoxBtn = document.getElementById('add-box-footer');
+        if (addBoxBtn) addBoxBtn.remove();
+        // Edit Layout button logic
+        const editLayoutBtn = document.getElementById('edit-layout-btn');
+        const editLayoutModal = document.getElementById('edit-layout-modal-overlay');
+        const closeEditLayoutModal = document.getElementById('close-edit-layout-modal');
+        const saveEditLayoutBtn = document.getElementById('save-edit-layout');
+        if (editLayoutBtn) {
+            editLayoutBtn.addEventListener('click', function() {
+                fetch('/default_format')
+                    .then(res => res.json())
+                    .then(data => {
+                        editLayoutData = JSON.parse(JSON.stringify(data));
+                        renderEditLayoutList();
+                        editLayoutModal.style.display = 'flex';
+                    });
+            });
+        }
+        if (closeEditLayoutModal) {
+            closeEditLayoutModal.addEventListener('click', function() {
+                editLayoutModal.style.display = 'none';
+            });
+        }
+        if (saveEditLayoutBtn) {
+            saveEditLayoutBtn.addEventListener('click', function() {
+                fetch('/default_format', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editLayoutData)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert('Layout saved!');
+                    editLayoutModal.style.display = 'none';
+                    window.location.reload();
+                })
+                .catch(err => {
+                    alert('Failed to save layout: ' + err);
+                });
+            });
+        }
+    });
     </script>
 
 </body>

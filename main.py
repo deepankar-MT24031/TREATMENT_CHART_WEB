@@ -423,6 +423,27 @@ def serve_resource(filename):
     return send_from_directory('RESOURCES', filename)
 
 
+# Step 1: Add endpoints for editing default layout
+@app.route('/default_format', methods=['GET'])
+def get_default_format():
+    try:
+        with open('RESOURCES/default_format.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/default_format', methods=['POST'])
+def save_default_format():
+    try:
+        data = request.get_json()
+        with open('RESOURCES/default_format.json', 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+        return jsonify({'message': 'Default format saved successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     host = os.getenv('FLASK_HOST', '0.0.0.0')
     port = int(os.getenv('FLASK_PORT', 5001))
