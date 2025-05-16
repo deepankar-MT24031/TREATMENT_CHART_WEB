@@ -1808,6 +1808,16 @@
             table.appendChild(tbody);
             
             tableContainer.appendChild(table);
+
+            // Debug: log colgroup, header, and first row column counts
+            setTimeout(() => {
+                const colCount = table.querySelectorAll('colgroup col').length;
+                const thCount = table.querySelectorAll('thead th').length;
+                const firstRow = table.querySelector('tbody tr');
+                const tdCount = firstRow ? firstRow.querySelectorAll('td').length : 0;
+                console.log(`DEBUG: Table ${tableIndex} - colgroup cols: ${colCount}, header ths: ${thCount}, first row tds: ${tdCount}`);
+            }, 0);
+
             return tableContainer;
         }
 
