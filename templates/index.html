@@ -2351,7 +2351,7 @@
                 colInput.value = col;
                 colInput.className = 'editable';
                 colInput.style = 'margin-right:8px; width:110px;';
-                colInput.oninput = () => { columns[colIdx] = colInput.value; };
+                colInput.oninput = () => { columns[colIdx] = colInput.value; entryData.columns = columns.filter(c => c.trim() !== ''); };
                 columnsDiv.appendChild(colInput);
                 // Remove column button
                 const delColBtn = document.createElement('button');
@@ -2360,6 +2360,7 @@
                 delColBtn.style = 'margin-right:8px;';
                 delColBtn.onclick = () => {
                     columns.splice(colIdx, 1);
+                    entryData.columns = columns.filter(c => c.trim() !== '');
                     renderEditLayoutList();
                 };
                 columnsDiv.appendChild(delColBtn);
@@ -2371,6 +2372,7 @@
                 addColBtn.className = 'button';
                 addColBtn.onclick = () => {
                     columns.push('');
+                    entryData.columns = columns.filter(c => c.trim() !== '');
                     renderEditLayoutList();
                 };
                 columnsDiv.appendChild(addColBtn);
