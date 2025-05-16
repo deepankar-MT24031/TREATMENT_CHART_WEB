@@ -25,7 +25,7 @@
     "each_entry_layout": {
         "entry_1": {
             "title": "Respiratory support",
-            "columns": ["rate", "volume"],
+            "columns": [],
             "subtitles": {
                 "subtitle_1": {
                     "content": " ",
@@ -36,11 +36,11 @@
         },
         "entry_2": {
             "title": "Sedation, analgesia, and neuromuscular blockade",
-            "columns": ["day", "dose", "volume"],
+            "columns": ["dose", "volume"],
             "subtitles": {
                 "subtitle_1": {
                     "content": " ",
-                    "day": "",
+                    
                     "dose": "",
                     "volume": ""
                 }
@@ -48,11 +48,11 @@
         },
         "entry_3": {
             "title": "Inotropes and Anti-hypertensives",
-            "columns": ["day", "dose", "volume"],
+            "columns": ["dose", "volume"],
             "subtitles": {
                 "subtitle_1": {
                     "content": "",
-                    "day": "",
+                    
                     "dose": "",
                     "volume": ""
                 }
@@ -72,35 +72,34 @@
         },
         "entry_5": {
             "title": "IV Fluid ",
-            "columns": ["day", "dose", "volume"],
+            "columns": ["rate", "volume"],
             "subtitles": {
                 "subtitle_1": {
                     "content": "",
-                    "day": "",
-                    "dose": "",
+                    "rate": "",
+                    
                     "volume": ""
                 }
             }
         },
         "entry_6": {
             "title": "Feeds ",
-            "columns": ["day", "dose", "volume"],
+            "columns": ["volume"],
             "subtitles": {
                 "subtitle_1": {
                     "content": "",
-                    "day": "",
-                    "dose": "",
+                   
                     "volume": ""
                 }
             }
         },
         "entry_7": {
             "title": "Other Medications ",
-            "columns": ["day", "dose", "volume"],
+            "columns": ["dose", "volume"],
             "subtitles": {
                 "subtitle_1": {
                     "content": "",
-                    "day": "",
+                    
                     "dose": "",
                     "volume": ""
                 }
@@ -108,13 +107,11 @@
         },
         "entry_8": {
             "title": "Supportive care",
-            "columns": ["day", "dose", "volume"],
+            "columns": [],
             "subtitles": {
                 "subtitle_1": {
                     "content": "",
-                    "day": "",
-                    "dose": "",
-                    "volume": ""
+                    
                 }
             }
         }
