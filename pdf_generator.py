@@ -205,38 +205,34 @@ def extract_patient_info(json_data):
 def extract_entry_tables(json_data):
     """
     Extracts treatment tables from the JSON data and applies LaTeX escaping.
-
-    Args:
-        json_data (dict): The JSON data containing treatment information
-
-    Returns:
-        list: A list of dictionaries representing treatment tables
+    Returns a list of dicts, each with 'title', 'rows', and 'columns' (list of present columns).
     """
-    # Get entries from the parameters
     entries = json_data.get("entries", {})
     tables = []
 
     for entry_key, entry_data in entries.items():
-        title = escape_latex(entry_data.get("title", "").strip())  # Escape title
+        title = escape_latex(entry_data.get("title", "").strip())
         subtitles = entry_data.get("subtitles", {})
 
         rows = []
+        present_columns = set(["content"])  # Always present
         for subtitle_key, subtitle_data in subtitles.items():
+            # Only add fields that exist in the data
             content = escape_latex(str(subtitle_data.get("content", "")).strip())
-            day = escape_latex(str(subtitle_data.get("day", "")).strip())
-            dose = escape_latex(str(subtitle_data.get("dose", "")).strip())
-            volume = escape_latex(str(subtitle_data.get("volume", "")).strip())
-
-            if any([content, day, dose, volume]):  # Keep row if any field has data
-                rows.append((content, day, dose, volume))
-
+            row = {"content": content}
+            for col in ["day", "dose", "volume", "rate"]:
+                if col in subtitle_data:
+                    row[col] = escape_latex(str(subtitle_data.get(col, "")).strip())
+                    present_columns.add(col)
+            # Only keep row if any field has data
+            if any(row.get(col, "") for col in row):
+                rows.append(row)
         if rows:
             tables.append({
                 "title": title,
-                "first_header": title,  # Use the title dynamically
-                "rows": rows
+                "rows": rows,
+                "columns": list(present_columns)
             })
-
     return tables
 
 
@@ -268,64 +264,54 @@ def extract_table_rows(json_data):
 
 def generate_minipage(tables):
     """
-    Generates LaTeX code for the treatment tables, dynamically including only columns that have content.
+    Generates LaTeX code for the treatment tables, dynamically including only columns that exist in the data.
     """
     minipage_code = r"""
 """
     count = 1
-
     for table in tables:
         table_title = table["title"]
         rows = table["rows"]
-
-        # Check which columns have content
-        has_day = any(row[1].strip() for row in rows)  # Check day column
-        has_dose = any(row[2].strip() for row in rows)  # Check dose column
-        has_volume = any(row[3].strip() for row in rows)  # Check volume column
-
-        # Build column specification and headers based on which columns have content
-        col_spec = "|p{7cm}|"  # Start with content column
+        columns = table["columns"]
+        # Always start with content
+        col_spec = "|p{7cm}|"
         headers = [table_title]
-        
-        if has_day:
+        col_latex = ["content"]
+        if "day" in columns:
             col_spec += "p{1cm}|"
             headers.append("Day")
-        if has_dose:
+            col_latex.append("day")
+        if "dose" in columns:
             col_spec += "p{2cm}|"
             headers.append("Dose")
-        if has_volume:
+            col_latex.append("dose")
+        if "volume" in columns:
             col_spec += "p{2cm}|"
             headers.append("Volume")
-
+            col_latex.append("volume")
+        if "rate" in columns:
+            col_spec += "p{2cm}|"
+            headers.append("Rate")
+            col_latex.append("rate")
         # Generate table with dynamic columns
         minipage_code += f"""
     % Medication table with dynamic columns
     \\begin{{tabular}}{{{col_spec}}}
         \\hline
         \\textbf{{{headers[0]}}}"""
-        
-        # Add remaining headers
         for header in headers[1:]:
             minipage_code += f" & \\textbf{{{header}}}"
         minipage_code += r" \\" + "\n        \\hline\n"
-
-        # Add rows
         for row in rows:
-            minipage_code += f"       {count}. {row[0]}"
-            if has_day:
-                minipage_code += f" & {row[1]}"
-            if has_dose:
-                minipage_code += f" & {row[2]}"
-            if has_volume:
-                minipage_code += f" & {row[3]}"
+            minipage_code += f"       {count}. {row.get('content', '')}"
+            for col in col_latex[1:]:
+                minipage_code += f" & {row.get(col, '')}"
             minipage_code += r" \\" + "\n        \\hline\n"
             count += 1
-
         minipage_code += r"""    \end{tabular}
     \vspace{0.2cm}
 """
-        count = 1  # Reset counter for next table
-
+        count = 1
     return minipage_code
 
 
