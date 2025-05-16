@@ -1451,12 +1451,9 @@
                 });
             });
             
-            // Add event listener for add box button in footer
-            document.getElementById('add-box-footer').addEventListener('click', function() {
-                addNewBox();
-                // Reattach listeners after adding new box
-                setTimeout(reattachListeners, 0);
-            });
+            // Remove Add Box button if present
+            const addBoxBtn = document.getElementById('add-box-footer');
+            if (addBoxBtn) addBoxBtn.remove();
         });
 
         // Add event listeners to all input fields in medication tables
@@ -1569,21 +1566,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Initial setup of add row button listeners
             addRowButtonListeners();
-
-            // Add box button functionality - remove any existing listeners first
-            const addBoxButton = document.getElementById('add-box-footer');
-            if (addBoxButton) {
-                // Remove any existing listeners by cloning the button
-                const newAddBoxButton = addBoxButton.cloneNode(true);
-                addBoxButton.parentNode.replaceChild(newAddBoxButton, addBoxButton);
-                
-                // Add the new listener
-                newAddBoxButton.addEventListener('click', function() {
-                    addNewBox();
-                    // Reattach listeners after adding new box
-                    addRowButtonListeners();
-                });
-            }
 
             // Add parameter/cell functionality
             document.getElementById('add-parameter').addEventListener('click', addNewParameter);
