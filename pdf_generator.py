@@ -283,29 +283,27 @@ def generate_minipage(tables):
         table_title = table["title"]
         rows = table["rows"]
         columns = table["columns"]
-        # Always start with content
-        col_spec = "|p{7cm}|"
+        
+        # Calculate total width for non-title columns (2cm each)
+        non_title_cols = len(columns) - 1  # Subtract 1 for title column
+        non_title_width = non_title_cols * 2  # 2cm per column
+        
+        # Title column gets remaining width (total width - non-title columns)
+        title_width = 7  # Base width for title column
+        
+        # Start with title column specification
+        col_spec = f"|p{{{title_width}cm}}|"
         headers = [table_title]
         col_latex = ["content"]
+        
+        # Add all other columns with 2cm width
         for col in columns:
             if col == "content":
                 continue
-            if col == "day":
-                col_spec += "p{1cm}|"
-                headers.append("Day")
-            elif col == "dose":
-                col_spec += "p{2cm}|"
-                headers.append("Dose")
-            elif col == "volume":
-                col_spec += "p{2cm}|"
-                headers.append("Volume")
-            elif col == "rate":
-                col_spec += "p{2cm}|"
-                headers.append("Rate")
-            else:
-                col_spec += "p{2cm}|"
-                headers.append(col.capitalize())
+            col_spec += "p{2cm}|"
+            headers.append(col.capitalize())
             col_latex.append(col)
+            
         # Generate table with dynamic columns
         minipage_code += f"""
     % Medication table with dynamic columns
