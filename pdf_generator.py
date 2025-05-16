@@ -289,7 +289,7 @@ def generate_minipage(tables):
         non_title_width = non_title_cols * 2  # 2cm per column
         
         # Title column gets remaining width (total width - non-title columns)
-        title_width = 7  # Base width for title column
+        title_width = 5  # Base width for title column
         
         # Start with title column specification
         col_spec = f"|p{{{title_width}cm}}|"
