@@ -274,57 +274,97 @@ def extract_table_rows(json_data):
 
 def generate_minipage(tables):
     """
-    Generates LaTeX code for the treatment tables, dynamically including only columns that exist in the data, in the order specified by the JSON if present.
+    Generates LaTeX code for the treatment tables using tabularx.
+    The first "content" (title/description) column is an 'X' (flexible) column
+    and is prioritized to be significantly wider.
+    There can be up to 3 additional "extra" columns with a very narrow, fixed width.
+    All tables span the full width of their parent minipage.
     """
-    minipage_code = r"""
-"""
-    count = 1
-    for table in tables:
-        table_title = table["title"]
+    minipage_code = r""
+    
+    for table_idx, table in enumerate(tables):
+        main_column_header = table["title"] 
         rows = table["rows"]
-        columns = table["columns"]
-        # Always start with content
-        col_spec = "|p{7cm}|"
-        headers = [table_title]
-        col_latex = ["content"]
-        for col in columns:
-            if col == "content":
+        columns_in_data = table["columns"] 
+
+        # --- SKIP TABLES WITH NO COLUMNS OR NO ROWS ---
+        if not columns_in_data or not rows:
+            continue
+                                        
+        headers_list = []
+        col_specs_list = []
+        data_keys_for_rows_ordered = []
+
+        # 1. The main descriptive column ("content" / "title" column)
+        # This will be the 'X' column. It will get the lion's share of the space.
+        if "content" in columns_in_data:
+            col_specs_list.append(">{\\raggedright\\arraybackslash}X") 
+            headers_list.append(f"\\textbf{{{main_column_header}}}")
+            data_keys_for_rows_ordered.append("content")
+        else: # Fallback (should ideally not be hit if 'content' is always present)
+            if columns_in_data:
+                first_key = columns_in_data[0]
+                col_specs_list.append(">{\\raggedright\\arraybackslash}X")
+                headers_list.append(f"\\textbf{{{first_key.capitalize()}}}")
+                data_keys_for_rows_ordered.append(first_key)
+            else: # No columns at all in data
+                col_specs_list.append(">{\\raggedright\\arraybackslash}X") 
+                headers_list.append(f"\\textbf{{{main_column_header}}}") # Still use the table title as header
+
+        # 2. Handle "extra" columns (day, dose, volume, rate, etc.)
+        # 'day' column gets 1.0cm, all others get 2.0cm
+        temp_extra_cols_specs = []
+        temp_extra_cols_headers = []
+        temp_extra_cols_keys = []
+
+        current_main_col_key = data_keys_for_rows_ordered[0] if data_keys_for_rows_ordered else None
+
+        for col_key in columns_in_data:
+            if col_key == current_main_col_key:
                 continue
-            if col == "day":
-                col_spec += "p{1cm}|"
-                headers.append("Day")
-            elif col == "dose":
-                col_spec += "p{2cm}|"
-                headers.append("Dose")
-            elif col == "volume":
-                col_spec += "p{2cm}|"
-                headers.append("Volume")
-            elif col == "rate":
-                col_spec += "p{2cm}|"
-                headers.append("Rate")
+            # Special width for 'day', default for others
+            if col_key == "day":
+                col_width = "0.7cm"
             else:
-                col_spec += "p{2cm}|"
-                headers.append(col.capitalize())
-            col_latex.append(col)
-        # Generate table with dynamic columns
+                col_width = "2.0cm"
+            temp_extra_cols_specs.append(f">{{\\raggedright\\arraybackslash}}p{{{col_width}}}")
+            temp_extra_cols_headers.append(f"\\textbf{{{col_key.capitalize()}}}")
+            temp_extra_cols_keys.append(col_key)
+
+        col_specs_list.extend(temp_extra_cols_specs)
+        headers_list.extend(temp_extra_cols_headers)
+        data_keys_for_rows_ordered.extend(temp_extra_cols_keys)
+            
+        final_col_spec = "|" + "|".join(col_specs_list) + "|" if col_specs_list else "|>{\\raggedright\\arraybackslash}X|"
+        
         minipage_code += f"""
-    % Medication table with dynamic columns
-    \\begin{{tabular}}{{{col_spec}}}
+    % Medication table '{main_column_header}' (PRIORITIZED WIDE TITLE COLUMN)
+    \\noindent
+    \\begin{{tabularx}}{{\\linewidth}}{{{final_col_spec}}}
         \\hline
-        \\textbf{{{headers[0]}}}"""
-        for header in headers[1:]:
-            minipage_code += f" & \\textbf{{{header}}}"
-        minipage_code += r" \\" + "\n        \\hline\n"
-        for row in rows:
-            minipage_code += f"       {count}. {row.get('content', '')}"
-            for col in col_latex[1:]:
-                minipage_code += f" & {row.get(col, '')}"
-            minipage_code += r" \\" + "\n        \\hline\n"
-            count += 1
-        minipage_code += r"""    \end{tabular}
+"""
+        if headers_list:
+            minipage_code += "        " + " & ".join(headers_list) + r" \\" + "\n        \\hline\n"
+
+        for item_num, row_data in enumerate(rows):
+            row_cells = []
+            if data_keys_for_rows_ordered:
+                main_desc_key = data_keys_for_rows_ordered[0]
+                item_description = row_data.get(main_desc_key, '') 
+                row_cells.append(f"{item_num + 1}. {item_description}") # This goes into the X column
+
+                # Data for the narrow extra columns
+                for extra_col_key in data_keys_for_rows_ordered[1:]:
+                    cell_text = row_data.get(extra_col_key, '')
+                    row_cells.append(cell_text)
+            else: # No columns defined in spec, but row data might exist
+                row_cells.append(f"{item_num + 1}. ") # Default for malformed cases
+
+            minipage_code += "        " + " & ".join(row_cells) + r" \\" + "\n        \\hline\n"
+        
+        minipage_code += r"""    \end{tabularx}
     \vspace{0.2cm}
 """
-        count = 1
     return minipage_code
 
 
@@ -380,7 +420,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
         # Calculate line height based on font size
         line_height = font_size + 2
         header_font_size = font_size + 4
-        adjusted_vspace = font_size * 0.1  # Dynamic spacing based on font size
+        adjusted_vspace = font_size * 0.19  # Increased upward shift, still dynamic with font size
 
         # Get the current directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -420,22 +460,27 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
             print(f"Warning: Failed to copy logo: {e}")
             logo_copy_path = logo_path  # Fall back to original path
 
+        # ---- ADJUST MINIPAGE WIDTHS AND POSITIONING HERE ----
+        # Increase the space between the left and right tables
+        left_minipage_width_fraction = 0.73 # Slightly narrower left table
+        right_minipage_width_fraction = 0.26  # Slightly wider right table, moved a bit left
+        
+        # Important: Use \hfill instead of fixed spacing to push right table to the far right
+        
         latex_code = rf"""
 \documentclass{{article}}
 \usepackage{{graphicx}}
-\usepackage[a4paper, margin=0.3in]{{geometry}} % Decreased margins
+\usepackage[a4paper, margin=0.3in]{{geometry}} 
 \usepackage{{array}}
 \usepackage{{multirow}}
-\usepackage{{tabularx}} % For dynamic column widths
-\usepackage{{calc}} % For calculation of lengths
-\usepackage[absolute,overlay]{{textpos}} % For absolute positioning
-\setlength{{\TPHorizModule}}{{1mm}} % Set horizontal unit to mm
-\setlength{{\TPVertModule}}{{1mm}} % Set vertical unit to mm
-% Set font size for entire document
+\usepackage{{tabularx}} 
+\usepackage{{calc}} 
+\usepackage[absolute,overlay]{{textpos}} 
+\setlength{{\TPHorizModule}}{{1mm}} 
+\setlength{{\TPVertModule}}{{1mm}} 
 \fontsize{{{font_size}pt}}{{{line_height}pt}}\selectfont
-% Create a special column type for automatic line breaking
 \newcolumntype{{Y}}{{>{{\raggedright\arraybackslash\hspace{{0pt}}\parfillskip=0pt plus 1fil}}p}}
-\begin{{document}}\
+\begin{{document}}
 % Insert logo at the top-left
 \noindent
 \begin{{minipage}}{{0.2\textwidth}} % Adjust width as needed
@@ -467,17 +512,16 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
     \hline
 \end{{tabular}}
 \vspace{{0.1cm}} % Reduced space
-% Create a two-column layout with fixed positions
+
+% FIXED LAYOUT: Create a two-column layout with the right table pushed to the right edge
 \noindent
-\begin{{minipage}}[t]{{0.45\textwidth}}
-\vspace{{-{adjusted_vspace:.2f}cm}} % Dynamic spacing based on font size
+\begin{{minipage}}[t]{{{left_minipage_width_fraction:.2f}\textwidth}} % Left table (treatments)
+\vspace{{-{adjusted_vspace:.2f}cm}} 
 {left_table}
 \end{{minipage}}%
-\hfill%
-\begin{{minipage}}[t]{{0.32\textwidth}}
-\hspace{{1cm}} % Negative hspace moves content to the left
-    % Date information table - fixed on right
-    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}}
+\hfill % This pushes the right minipage all the way to the right edge
+\begin{{minipage}}[t]{{{right_minipage_width_fraction:.2f}\textwidth}} % Right table (date, time, etc)
+    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table 
     \hline
     {right_table}
     \end{{tabular}}
@@ -520,7 +564,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
                 cwd=output_dir,  # Set working directory to output_dir
                 capture_output=True,
                 text=True
-            )
+            ) 
 
             # Print compilation output for debugging
             print("\n=== pdflatex Output ===")
@@ -549,6 +593,18 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
         print(f"ERROR: Unexpected error in generate_pdf_from_latex: {e}")
         import traceback
         traceback.print_exc()
+        return None
+    
+    # Ensure it returns pdf_path at the end if successful
+    if 'result' in locals() and result.returncode == 0 and os.path.exists(pdf_file_path):
+        print(f"PDF generated successfully at: {pdf_file_path}")
+        return pdf_file_path
+    else:
+        # Attempt to find pdf_file_path if it was created before an error
+        if 'pdf_file_path' in locals() and os.path.exists(pdf_file_path):
+             print(f"PDF may have been generated at: {pdf_file_path}, but an error occurred later.")
+             return pdf_file_path
+        print(f"ERROR: PDF generation failed or an error occurred.")
         return None
 
 # --- Keep the __main__ block for testing ---
