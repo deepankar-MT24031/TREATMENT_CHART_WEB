@@ -286,6 +286,10 @@ def generate_minipage(tables):
         main_column_header = table["title"] 
         rows = table["rows"]
         columns_in_data = table["columns"] 
+
+        # --- SKIP TABLES WITH NO COLUMNS OR NO ROWS ---
+        if not columns_in_data or not rows:
+            continue
                                         
         headers_list = []
         col_specs_list = []
@@ -294,9 +298,6 @@ def generate_minipage(tables):
         # 1. The main descriptive column ("content" / "title" column)
         # This will be the 'X' column. It will get the lion's share of the space.
         if "content" in columns_in_data:
-            # >{\raggedright\arraybackslash} helps with text flow in the X column.
-            # You can also add \hyphenpenalty=5000 \exhyphenpenalty=5000 if you want to discourage hyphenation
-            # but for a wide column, raggedright is often enough.
             col_specs_list.append(">{\\raggedright\\arraybackslash}X") 
             headers_list.append(f"\\textbf{{{main_column_header}}}")
             data_keys_for_rows_ordered.append("content")
@@ -316,7 +317,7 @@ def generate_minipage(tables):
         # Let's try 1.0cm or even 0.8cm.
         # You will need to test this with your actual data to see if it's too cramped.
         extra_col_width = "1.2cm" # <--- VERY IMPORTANT: ADJUST THIS VALUE
-                                  # Try 0.8cm, 1.0cm, 1.2cm.
+                                   # Try 0.8cm, 1.0cm, 1.2cm.
         
         # Collect specs for extra columns
         temp_extra_cols_specs = []
