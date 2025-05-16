@@ -274,55 +274,91 @@ def extract_table_rows(json_data):
 
 def generate_minipage(tables):
     """
-    Generates LaTeX code for the treatment tables, dynamically including only columns that exist in the data, in the order specified by the JSON if present.
+    Generates LaTeX code for the treatment tables using tabularx,
+    dynamically including only columns that exist in the data.
+    All tables will span the full width of their parent minipage.
     """
-    minipage_code = r"""
-"""
-    count = 1
-    for table in tables:
-        table_title = table["title"]
+    minipage_code = r"" # Initialize to empty string
+    
+    for table_idx, table in enumerate(tables):
+        table_title = table["title"] # This is the main title for the 'content' column header
         rows = table["rows"]
-        columns = table["columns"]
+        # columns_in_data is the list of column keys present for this table,
+        # e.g., ["content", "day", "dose"]
+        columns_in_data = table["columns"] 
+                                        
+        headers_list = []
+        col_specs_list = []
+        # This list will store the actual data keys in the order they will appear in the table,
+        # making it easier to fetch cell data in the row loop.
+        data_keys_for_rows = []
+
+        # 1. Handle the "content" column (main descriptive column)
+        # It will always be present if columns_in_data is not empty and usually first.
+        if "content" in columns_in_data:
+            col_specs_list.append("X")  # Flexible width, raggedright for better text flow
+            headers_list.append(f"\\textbf{{{table_title}}}") # Use the table's title as the header for this column
+            data_keys_for_rows.append("content")
+        else:
+            # Fallback if 'content' is somehow missing but other columns exist
+            # This case should ideally not happen if 'content' is fundamental
+            # Or, if the first column isn't 'content', treat it as the 'X' column.
+            if columns_in_data: # If there are any columns
+                first_col_key = columns_in_data[0]
+                col_specs_list.append("X")
+                headers_list.append(f"\\textbf{{{first_col_key.capitalize()}}}")
+                data_keys_for_rows.append(first_col_key)
+
+        # 2. Handle other (extra) columns
+        # Define a width for these extra columns.
+        # Since there are at most 3 extra, 1.5cm to 2cm should be reasonable.
+        # Let's use 1.7cm as a balance.
+        extra_col_width = "1.7cm" 
         
-        # Calculate total width for non-title columns (2cm each)
-        non_title_cols = len(columns) - 1  # Subtract 1 for title column
-        non_title_width = non_title_cols * 2  # 2cm per column
-        
-        # Title column gets remaining width (total width - non-title columns)
-        title_width = 5  # Base width for title column
-        
-        # Start with title column specification
-        col_spec = f"|p{{{title_width}cm}}|"
-        headers = [table_title]
-        col_latex = ["content"]
-        
-        # Add all other columns with 2cm width
-        for col in columns:
-            if col == "content":
+        for col_key in columns_in_data:
+            if col_key == "content" or col_key == data_keys_for_rows[0]: # Skip if it's the 'X' column already processed
                 continue
-            col_spec += "p{2cm}|"
-            headers.append(col.capitalize())
-            col_latex.append(col)
             
-        # Generate table with dynamic columns
+            # Add >{\raggedright\arraybackslash} for better text wrapping in narrow p columns
+            col_specs_list.append(f">{{\\raggedright\\arraybackslash}}p{{{extra_col_width}}}")
+            headers_list.append(f"\\textbf{{{col_key.capitalize()}}}")
+            data_keys_for_rows.append(col_key)
+            
+        # Join column specs with "|"
+        final_col_spec = "|" + "|".join(col_specs_list) + "|" if col_specs_list else "|X|" # Ensure at least one X column
+        
+        # --- Generate LaTeX for this specific table ---
+        # Use \linewidth to make the tabularx take the full width of its parent (the minipage)
         minipage_code += f"""
-    % Medication table with dynamic columns
-    \\begin{{tabular}}{{{col_spec}}}
+    % Medication table '{table_title}' using tabularx
+    \\noindent % Ensure no unintended indent
+    \\begin{{tabularx}}{{\\linewidth}}{{{final_col_spec}}}
         \\hline
-        \\textbf{{{headers[0]}}}"""
-        for header in headers[1:]:
-            minipage_code += f" & \\textbf{{{header}}}"
-        minipage_code += r" \\" + "\n        \\hline\n"
-        for row in rows:
-            minipage_code += f"       {count}. {row.get('content', '')}"
-            for col in col_latex[1:]:
-                minipage_code += f" & {row.get(col, '')}"
-            minipage_code += r" \\" + "\n        \\hline\n"
-            count += 1
-        minipage_code += r"""    \end{tabular}
-    \vspace{0.2cm}
 """
-        count = 1
+        # Add headers
+        if headers_list:
+            minipage_code += "        " + " & ".join(headers_list) + r" \\" + "\n        \\hline\n"
+        else: # Should not happen if table has data
+             minipage_code += "        % No headers defined\n        \\hline\n"
+
+        # Add rows
+        # The 'count' for numbering items should be per table, starting from 1.
+        for item_num, row_data in enumerate(rows):
+            row_cells = []
+            # The content of the first column (title/content) gets the numbering
+            # item_num starts from 0, so add 1 for 1-based display.
+            first_col_content = f"{item_num + 1}. {row_data.get(data_keys_for_rows[0], '')}" if data_keys_for_rows else ""
+            row_cells.append(first_col_content)
+
+            # For subsequent columns
+            for col_key in data_keys_for_rows[1:]:
+                row_cells.append(row_data.get(col_key, '')) # Get data or empty string
+            
+            minipage_code += "        " + " & ".join(row_cells) + r" \\" + "\n        \\hline\n"
+        
+        minipage_code += r"""    \end{tabularx}
+    \vspace{0.2cm} % Space between tables
+"""
     return minipage_code
 
 
