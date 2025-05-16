@@ -2458,7 +2458,7 @@
                 addColBtn.className = 'button';
                 addColBtn.onclick = () => {
                     columns.push('');
-                    entryData.columns = columns.filter(c => c.trim() !== '');
+                    entryData.columns = columns; // Do not filter here!
                     renderEditLayoutList();
                 };
                 columnsDiv.appendChild(addColBtn);
@@ -2524,6 +2524,12 @@
         }
         if (saveEditLayoutBtn) {
             saveEditLayoutBtn.addEventListener('click', function() {
+                // Filter out empty columns before saving
+                Object.values(editLayoutData.each_entry_layout).forEach(entryData => {
+                    if (Array.isArray(entryData.columns)) {
+                        entryData.columns = entryData.columns.filter(c => c.trim() !== '');
+                    }
+                });
                 fetch('/default_format', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
