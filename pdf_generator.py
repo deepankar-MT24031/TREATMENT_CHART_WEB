@@ -504,7 +504,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 \\
 \noindent\begin{{tabular}}{{|p{{11.3cm}}|p{{7.3cm}}|}}
      \hline
-    \textbf{{Consultant:}} {patient_info["consultant_names"]}      & \textbf{{JRs:}} {patient_info["jr_names"]} \\
+    \textbf{{Consultant:}} \parbox[t]{{10.5cm}}{{{patient_info["consultant_names"]}}}      & \textbf{{JRs:}} {patient_info["jr_names"]} \\
     \cline{{2-2}}
       & \textbf{{SRs:}} {patient_info["sr_names"]} \\
     \hline
