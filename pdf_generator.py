@@ -274,8 +274,11 @@ def extract_table_rows(json_data):
 
 def generate_minipage(tables):
     """
-    Generates LaTeX code for the treatment tables, dynamically including only columns that exist in the data, in the order specified by the JSON if present.
+    Generates LaTeX code for the treatment tables, all with the same total width.
     """
+    TOTAL_WIDTH_CM = 15
+    NUMBER_COL_CM = 1
+    EXTRA_COL_CM = 2
     minipage_code = r"""
 """
     count = 1
@@ -283,32 +286,19 @@ def generate_minipage(tables):
         table_title = table["title"]
         rows = table["rows"]
         columns = table["columns"]
-        # Always start with content
-        col_spec = "|p{7cm}|"
+        n_extra = len([col for col in columns if col != 'content'])
+        content_col_cm = TOTAL_WIDTH_CM - NUMBER_COL_CM - n_extra * EXTRA_COL_CM
+        col_spec = f"|p{{{NUMBER_COL_CM}cm}}|p{{{content_col_cm}cm}}|"
         headers = [table_title]
         col_latex = ["content"]
         for col in columns:
             if col == "content":
                 continue
-            if col == "day":
-                col_spec += "p{1cm}|"
-                headers.append("Day")
-            elif col == "dose":
-                col_spec += "p{2cm}|"
-                headers.append("Dose")
-            elif col == "volume":
-                col_spec += "p{2cm}|"
-                headers.append("Volume")
-            elif col == "rate":
-                col_spec += "p{2cm}|"
-                headers.append("Rate")
-            else:
-                col_spec += "p{2cm}|"
-                headers.append(col.capitalize())
+            col_spec += f"p{{{EXTRA_COL_CM}cm}}|"
+            headers.append(col.capitalize())
             col_latex.append(col)
-        # Generate table with dynamic columns
         minipage_code += f"""
-    % Medication table with dynamic columns
+    % Medication table with fixed total width
     \\begin{{tabular}}{{{col_spec}}}
         \\hline
         \\textbf{{{headers[0]}}}"""
