@@ -493,13 +493,13 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 \end{{center}}
 \fontsize{{{font_size}pt}}{{{line_height}pt}}\selectfont % Restore main font size
 % Keep original upper tables unchanged
-\noindent\begin{{tabular}}{{|p{{5cm}}|p{{4cm}}|p{{2.5cm}}|p{{1.5cm}}|p{{3cm}}|}}
+\noindent\begin{tabular}{|p{5cm}|p{4cm}|p{2.5cm}|p{1.5cm}|p{3cm}|}
     \hline
-    \textbf{{Name:}} {patient_info["patient_name"]} & \textbf{{Age:}} {patient_info["years"]} years {patient_info["months"]} months & \textbf{{Gender:}} {patient_info["gender"]} & \textbf{{Bed:}} {patient_info["bed_number"]} & \textbf{{UHID:}} {patient_info["uhid"]} \\
+    \textbf{Name:} {patient_info["patient_name"]} & \textbf{Age:} {patient_info["years"]} years {patient_info["months"]} months & \textbf{Gender:} {patient_info["gender"]} & \textbf{Bed:} {patient_info["bed_number"]} & \textbf{UHID:} {patient_info["uhid"]} \\
     \hline
-    \multicolumn{{5}}{{|p{{19cm}}|}}{{\textbf{{Diagnosis:}} {patient_info["diagnosis"]} }}\\
+    \multicolumn{5}{|p{19cm}|}{\textbf{Diagnosis:} \parbox[t]{18cm}{{patient_info["diagnosis"]}} }\\
     \hline
-\end{{tabular}}
+\end{tabular}
 \\
 \\
 \noindent\begin{{tabular}}{{|p{{11.3cm}}|p{{7.3cm}}|}}
