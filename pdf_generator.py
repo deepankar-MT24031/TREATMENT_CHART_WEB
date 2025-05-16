@@ -22,15 +22,15 @@ def split_string(s,length=10):
 def escape_latex(text):
     """
     Escapes special LaTeX characters in the given text.
-    Also handles newlines by converting them to LaTeX newline commands.
+    Handles newlines by converting them to LaTeX newline commands.
     """
     if not isinstance(text, str):
         return text
 
-    # First convert newlines to LaTeX newline commands (without extra spaces)
-    text = text.replace('\n', '\\\\')
-    
-    # Then escape other special characters
+    # Temporarily replace newlines with a unique placeholder
+    text = text.replace('\n', '__NEWLINE__')
+
+    # Escape special LaTeX characters (except backslash)
     special_chars = {
         '&': r'\&',
         '%': r'\%',
@@ -41,7 +41,6 @@ def escape_latex(text):
         '}': r'\}',
         '~': r'\textasciitilde{}',
         '^': r'\textasciicircum{}',
-        '\\': r'\textbackslash{}',
         '<': r'\textless{}',
         '>': r'\textgreater{}',
         '|': r'\textbar{}',
@@ -49,10 +48,12 @@ def escape_latex(text):
         "'": r'\textquotesingle{}',
         '`': r'\textasciigrave{}'
     }
-    
     for char, escape in special_chars.items():
         text = text.replace(char, escape)
-    
+
+    # Now replace the placeholder with LaTeX newline
+    text = text.replace('__NEWLINE__', r'\\')
+
     return text
 
 # --- Assume PyQt5 imports and other helper functions like catch_exceptions, escape_latex, etc. are defined above ---
