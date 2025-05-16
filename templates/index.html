@@ -1654,6 +1654,84 @@
             });
         });
 
+        // Add this function to determine which columns to show based on data
+        function determineColumnsToShow(entryData) {
+            const columns = {
+                content: true, // Always show content column
+                day: false,
+                dose: false,
+                volume: false,
+                rate: false
+            };
+
+            // Check each subtitle in the entry
+            Object.values(entryData.subtitles || {}).forEach(subtitle => {
+                if (subtitle.day && subtitle.day.trim()) columns.day = true;
+                if (subtitle.dose && subtitle.dose.trim()) columns.dose = true;
+                if (subtitle.volume && subtitle.volume.trim()) columns.volume = true;
+                if (subtitle.rate && subtitle.rate.trim()) columns.rate = true;
+            });
+
+            return columns;
+        }
+
+        // Update the table creation function
+        function createTableWithDynamicColumns(entryData, tableIndex) {
+            const columns = determineColumnsToShow(entryData);
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'table-container';
+            
+            const table = document.createElement('table');
+            table.style.tableLayout = 'fixed';
+            
+            // Create colgroup based on visible columns
+            const colgroup = document.createElement('colgroup');
+            colgroup.innerHTML = `
+                <col style="width: 8px;">
+                <col style="width: 200px;">
+                ${columns.day ? '<col style="width: 80px;">' : ''}
+                ${columns.dose ? '<col style="width: 80px;">' : ''}
+                ${columns.volume ? '<col style="width: 80px;">' : ''}
+                ${columns.rate ? '<col style="width: 80px;">' : ''}
+            `;
+            table.appendChild(colgroup);
+
+            // Create header row
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `
+                <th class="cell-number"></th>
+                <th class="cell-description">
+                    <input type="text" class="header-editable" value="${entryData.title || ''}">
+                </th>
+                ${columns.day ? '<th class="cell-day">Day</th>' : ''}
+                ${columns.dose ? '<th class="cell-dose">Dose</th>' : ''}
+                ${columns.volume ? '<th class="cell-volume">Volume</th>' : ''}
+                ${columns.rate ? '<th class="cell-rate">Rate</th>' : ''}
+            `;
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Create tbody
+            const tbody = document.createElement('tbody');
+            Object.entries(entryData.subtitles || {}).forEach(([subtitleKey, subtitleData], index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="cell-number">${index + 1}</td>
+                    <td class="cell-description"><input type="text" class="editable" value="${subtitleData.content || ''}"></td>
+                    ${columns.day ? `<td class="cell-day"><input type="text" class="editable" value="${subtitleData.day || ''}"></td>` : ''}
+                    ${columns.dose ? `<td class="cell-dose"><input type="text" class="editable" value="${subtitleData.dose || ''}"></td>` : ''}
+                    ${columns.volume ? `<td class="cell-volume"><input type="text" class="editable" value="${subtitleData.volume || ''}"></td>` : ''}
+                    ${columns.rate ? `<td class="cell-rate"><input type="text" class="editable" value="${subtitleData.rate || ''}"></td>` : ''}
+                `;
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            
+            tableContainer.appendChild(table);
+            return tableContainer;
+        }
+
         // Update the addNewBox function
         function addNewBox() {
             const container = document.getElementById('medications-container');
@@ -1661,37 +1739,50 @@
             tableContainer.className = 'table-container';
             
             const table = document.createElement('table');
-            table.innerHTML = `
-                <colgroup>
-                    <col style="width: 15px;">
-                    <col style="width: 245px;">
-                    <col style="width: 40px;">
-                    <col style="width: 80px;">
-                    <col style="width: 80px;">
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th class="cell-number"></th>
-                        <th class="cell-description">
-                            <input type="text" class="header-editable" placeholder="Enter title">
-                        </th>
-                        <th class="cell-day">Day</th>
-                        <th class="cell-dose">Dose</th>
-                        <th class="cell-volume">Volume</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="cell-number">1</td>
-                        <td class="cell-description"><input type="text" class="editable"></td>
-                        <td class="cell-day"><input type="text" class="editable" value="1"></td>
-                        <td class="cell-dose"><input type="text" class="editable"></td>
-                        <td class="cell-volume"><input type="text" class="editable"></td>
-                    </tr>
-                </tbody>
-            `;
+            table.style.tableLayout = 'fixed';
             
-            // Add table to container
+            // Create colgroup with all possible columns
+            const colgroup = document.createElement('colgroup');
+            colgroup.innerHTML = `
+                <col style="width: 8px;">
+                <col style="width: 200px;">
+                <col style="width: 80px;">
+                <col style="width: 80px;">
+                <col style="width: 80px;">
+                <col style="width: 80px;">
+            `;
+            table.appendChild(colgroup);
+
+            // Create header row with all possible columns
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `
+                <th class="cell-number"></th>
+                <th class="cell-description">
+                    <input type="text" class="header-editable" placeholder="Enter title">
+                </th>
+                <th class="cell-day">Day</th>
+                <th class="cell-dose">Dose</th>
+                <th class="cell-volume">Volume</th>
+                <th class="cell-rate">Rate</th>
+            `;
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Create tbody with initial row
+            const tbody = document.createElement('tbody');
+            const initialRow = document.createElement('tr');
+            initialRow.innerHTML = `
+                <td class="cell-number">1</td>
+                <td class="cell-description"><input type="text" class="editable"></td>
+                <td class="cell-day"><input type="text" class="editable"></td>
+                <td class="cell-dose"><input type="text" class="editable"></td>
+                <td class="cell-volume"><input type="text" class="editable"></td>
+                <td class="cell-rate"><input type="text" class="editable"></td>
+            `;
+            tbody.appendChild(initialRow);
+            table.appendChild(tbody);
+            
             tableContainer.appendChild(table);
             container.appendChild(tableContainer);
             
@@ -1708,179 +1799,74 @@
             });
         }
 
-        // Update the handleDDIClick function
-        function handleDDIClick() {
-            // Show loading overlay
-            const loadingOverlay = document.createElement('div');
-            loadingOverlay.className = 'loading-overlay';
-            loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
-            document.body.appendChild(loadingOverlay);
-
-            // Clean empty rows before collecting data
-            cleanEmptyRows();
-
-            // Generate a new UUID for this entry
-            const newUuid = generateUUID();
-
-            // Collect all form data with capitalized field names
-            const formData = {
-                Name: document.getElementById('name-to-be-taken').value.trim(),
-                Age_year: document.getElementById('age-years-to-be-taken').value,
-                Age_month: document.getElementById('age-months-to-be-taken').value,
-                Sex: document.getElementById('sex-select').value.trim(),
-                uhid: document.getElementById('uuid-input').value.trim(),
-                uuid: newUuid,
-                bed_number: document.getElementById('bed-select').value.trim(),
-                Diagnosis: document.getElementById('diagnosis-input').value.trim(),
-                Consultants: document.getElementById('consultants-input').value.trim(),
-                JR: document.getElementById('jr-input').value.trim(),
-                SR: document.getElementById('sr-input').value.trim()
-            };
-
-            // Collect parameters from the table
-            const parametersTable = document.getElementById('parameter-table');
-            const parameterRows = parametersTable.querySelectorAll('tbody tr');
-            const parameters = {};
-            
-            parameterRows.forEach((row, index) => {
-                const parameterName = row.querySelector('td:nth-child(2) input').value.trim();
-                const parameterValue = row.querySelector('td:nth-child(3) input').value.trim();
-                parameters[`row_${index + 1}`] = {
-                    row_header_name: parameterName || ' ',
-                    row_header_description: parameterValue || ' '
-                };
-            });
-
-            // Collect all medication tables data
-            const medicationTables = document.querySelectorAll('#medications-container .table-container');
-            const entries = {};
-            
-            medicationTables.forEach((tableContainer, tableIndex) => {
-                const table = tableContainer.querySelector('table');
-                const title = table.querySelector('th.cell-description input').value.trim();
-                const rows = table.querySelectorAll('tbody tr');
-                const subtitles = {};
-                
-                rows.forEach((row, rowIndex) => {
-                    const content = row.querySelector('td.cell-description input').value.trim();
-                    const day = row.querySelector('td.cell-day input').value.trim();
-                    const dose = row.querySelector('td.cell-dose input').value.trim();
-                    const volume = row.querySelector('td.cell-volume input').value.trim();
-                    
-                    if (content || day || dose || volume) {
-                        subtitles[`subtitle_${rowIndex + 1}`] = {
-                            content: content,
-                            day: day,
-                            dose: dose,
-                            volume: volume
-                        };
-                    }
-                });
-                
-                if (title || Object.keys(subtitles).length > 0) {
-                    entries[`entry_${tableIndex + 1}`] = {
-                        title: title,
-                        subtitles: subtitles
-                    };
-                }
-            });
-
-            // Add parameters and entries to form data
-            formData.parameters = parameters;
-            formData.entries = entries;
-
-            // Send data to server for DDI processing
-            fetch('/ddi', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Error processing drug interactions');
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Remove loading overlay
-                loadingOverlay.remove();
-
-                const tbody = document.querySelector('#ddi-table tbody');
-                tbody.innerHTML = '';
-
-                if (data.error) {
-                    // Show error in table format
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td colspan="3" style="background-color: #FFC8C8; text-align: center; font-weight: bold;">${data.error}</td>
-                    `;
-                    tbody.appendChild(tr);
-                } else if (data.table && data.table.length > 0) {
-                    data.table.forEach(row => {
-                        const tr = document.createElement('tr');
-                        const color = getInteractionColor(row['Interaction']);
-                        tr.innerHTML = `
-                            <td>${row['Drug 1']}</td>
-                            <td>${row['Drug 2']}</td>
-                            <td style="background-color: ${color};">${row['Interaction']}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                } else {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td colspan="3" style="background-color: #FFC8C8; text-align: center; font-weight: bold;">No drug interactions found</td>
-                    `;
-                    tbody.appendChild(tr);
-                }
-                document.getElementById('ddi-modal-overlay').style.display = 'flex';
-            })
-            .catch(error => {
-                // Remove loading overlay
-                loadingOverlay.remove();
-                
-                console.error('Error:', error);
-                const tbody = document.querySelector('#ddi-table tbody');
-                
-                // Show error in table format
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="3" style="background-color: #FFC8C8; text-align: center; font-weight: bold;">${error.message}</td>
-                    </tr>
+        // Update the handleAddRow function
+        function handleAddRow() {
+            const tableContainer = this.previousElementSibling;
+            const table = tableContainer.querySelector('tbody');
+            if (table) {
+                const rowCount = table.querySelectorAll('tr').length + 1;
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td class="cell-number">${rowCount}</td>
+                    <td class="cell-description"><input type="text" class="editable"></td>
+                    <td class="cell-day"><input type="text" class="editable"></td>
+                    <td class="cell-dose"><input type="text" class="editable"></td>
+                    <td class="cell-volume"><input type="text" class="editable"></td>
+                    <td class="cell-rate"><input type="text" class="editable"></td>
                 `;
+                table.appendChild(newRow);
                 
-                document.getElementById('ddi-modal-overlay').style.display = 'flex';
-            });
-        }
-
-        // Add this function to determine the color based on interaction severity
-        function getInteractionColor(interaction) {
-            const lowerInteraction = interaction.toLowerCase();
-            if (lowerInteraction.includes('major') || lowerInteraction.includes('high') || lowerInteraction.includes('severe')) {
-                return '#FFC8C8';  // Light red
-            } else if (lowerInteraction.includes('moderate') || lowerInteraction.includes('medium')) {
-                return '#FFFFC8';  // Light yellow
-            } else if (lowerInteraction.includes('minor') || lowerInteraction.includes('low') || lowerInteraction.includes('mild')) {
-                return '#C8FFC8';  // Light green
-            } else {
-                return '#F0F0F0';  // Light gray for unknown
+                // Add listeners to the new inputs
+                const newInputs = newRow.querySelectorAll('input.editable');
+                newInputs.forEach(input => {
+                    input.addEventListener('input', handleInputChange);
+                });
             }
         }
 
-        // Add this function to handle row clicks
+        // Update the cleanEmptyRows function
+        function cleanEmptyRows() {
+            console.log('Cleaning empty rows');
+            const medicationTables = document.querySelectorAll('#medications-container .table-container');
+            
+            medicationTables.forEach(tableContainer => {
+                const table = tableContainer.querySelector('table');
+                const rows = table.querySelectorAll('tbody tr');
+                
+                rows.forEach((row, index) => {
+                    const inputs = row.querySelectorAll('input.editable');
+                    let hasContent = false;
+                    
+                    inputs.forEach(input => {
+                        if (input.value.trim()) {
+                            hasContent = true;
+                        }
+                    });
+                    
+                    if (!hasContent) {
+                        console.log('Removing empty row:', row);
+                        row.remove();
+                    }
+                });
+                
+                // Update row numbers after removing empty rows
+                const remainingRows = table.querySelectorAll('tbody tr');
+                remainingRows.forEach((row, index) => {
+                    row.querySelector('td.cell-number').textContent = index + 1;
+                });
+            });
+        }
+
+        // Update the loadEntryData function to use dynamic columns
         function loadEntryData(uuid) {
-            console.log('Loading entry with UUID:', uuid); // Debug log
+            console.log('Loading entry with UUID:', uuid);
             fetch(`/get_entry/${uuid}`)
                 .then(response => {
-                    console.log('Response status:', response.status); // Debug log
+                    console.log('Response status:', response.status);
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Received data:', data); // Debug log
+                    console.log('Received data:', data);
                     if (data.error) {
                         alert(data.error);
                         return;
@@ -1889,13 +1875,13 @@
                     // Switch to edit tab
                     document.querySelector('.tab[data-tab="edit"]').click();
 
-                    // Fill form fields with capitalized field names
+                    // Fill form fields
                     document.getElementById('name-to-be-taken').value = data.Name || '';
                     document.getElementById('age-years-to-be-taken').value = data.Age_year || '';
                     document.getElementById('age-months-to-be-taken').value = data.Age_month || '';
                     document.getElementById('sex-select').value = data.Sex || '';
                     document.getElementById('bed-select').value = data.bed_number || '';
-                    document.getElementById('uuid-input').value = data.uhid || ''; // This is the UHID
+                    document.getElementById('uuid-input').value = data.uhid || '';
                     document.getElementById('diagnosis-input').value = data.Diagnosis || '';
                     document.getElementById('consultants-input').value = data.Consultants || '';
                     document.getElementById('jr-input').value = data.JR || '';
@@ -1905,53 +1891,9 @@
                     const medicationsContainer = document.getElementById('medications-container');
                     medicationsContainer.innerHTML = '';
 
-                    // Create medication tables from entries
-                    Object.entries(data.each_entry_layout || {}).forEach(([entryKey, entryData]) => {
-                        // Create table container
-                        const tableContainer = document.createElement('div');
-                        tableContainer.className = 'table-container';
-                        
-                        // Create table
-                        const table = document.createElement('table');
-                        table.innerHTML = `
-                            <colgroup>
-                                <col style="width: 15px;">
-                                <col style="width: 245px;">
-                                <col style="width: 40px;">
-                                <col style="width: 80px;">
-                                <col style="width: 80px;">
-                            </colgroup>
-                            <thead>
-                                <tr>
-                                    <th class="cell-number"></th>
-                                    <th class="cell-description">
-                                        <input type="text" class="header-editable" value="${entryData.title || ''}">
-                                    </th>
-                                    <th class="cell-day">Day</th>
-                                    <th class="cell-dose">Dose</th>
-                                    <th class="cell-volume">Volume</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        `;
-                        
-                        // Add rows from subtitles
-                        const tbody = table.querySelector('tbody');
-                        Object.entries(entryData.subtitles || {}).forEach(([subtitleKey, subtitleData], index) => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td class="cell-number">${index + 1}</td>
-                                <td class="cell-description"><input type="text" class="editable" value="${subtitleData.content || ''}"></td>
-                                <td class="cell-day"><input type="text" class="editable" value="${subtitleData.day || ''}"></td>
-                                <td class="cell-dose"><input type="text" class="editable" value="${subtitleData.dose || ''}"></td>
-                                <td class="cell-volume"><input type="text" class="editable" value="${subtitleData.volume || ''}"></td>
-                            `;
-                            tbody.appendChild(row);
-                        });
-                        
-                        // Add table to container
-                        tableContainer.appendChild(table);
+                    // Create medication tables from entries with dynamic columns
+                    Object.entries(data.each_entry_layout || {}).forEach(([entryKey, entryData], index) => {
+                        const tableContainer = createTableWithDynamicColumns(entryData, index);
                         medicationsContainer.appendChild(tableContainer);
                         
                         // Add "Add Row" button
@@ -1964,7 +1906,7 @@
                     // Populate parameter table
                     const parameterTable = document.getElementById('parameter-table');
                     const tbody = parameterTable.querySelector('tbody');
-                    tbody.innerHTML = ''; // Clear existing content
+                    tbody.innerHTML = '';
                     
                     Object.entries(data.each_table_row_layout || {}).forEach(([rowKey, rowData]) => {
                         const row = document.createElement('tr');
@@ -1980,7 +1922,7 @@
                         tbody.appendChild(row);
                     });
 
-                    // Reattach all event listeners after loading data
+                    // Reattach all event listeners
                     addRowButtonListeners();
                     addInputListeners();
                 })
