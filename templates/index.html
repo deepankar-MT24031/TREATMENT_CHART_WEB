@@ -261,8 +261,8 @@
         }
 
         .cell-day, .cell-dose, .cell-volume, .cell-rate {
-            width: 1% !important;
-            min-width: 60px;
+            width: 80px !important;
+            min-width: 80px;
         }
 
         .scrollable-table {
@@ -553,8 +553,8 @@
         #medications-container table:has(colgroup col:nth-child(3)) .cell-dose,
         #medications-container table:has(colgroup col:nth-child(3)) .cell-volume,
         #medications-container table:has(colgroup col:nth-child(3)) .cell-rate {
-            width: 1% !important;
-            min-width: 60px;
+            width: 80px !important;
+            min-width: 80px;
         }
 
         /* Add loading state styles */
@@ -1742,7 +1742,7 @@
                 let colgroupHtml = '<col style="width:25px;">';
                 colgroupHtml += '<col style="width:auto;">'; // title/content column
                 for (let i = 1; i < columns.length; i++) {
-                    colgroupHtml += '<col style="width:1%; min-width:60px;">';
+                    colgroupHtml += '<col style="width:80px; min-width:80px;">';
                 }
                 colgroup.innerHTML = colgroupHtml;
             }
