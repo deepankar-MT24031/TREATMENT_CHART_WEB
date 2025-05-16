@@ -499,7 +499,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
     \hline
     \textbf{{Name:}} {patient_info["patient_name"]} & \textbf{{Age:}} {patient_info["years"]} years {patient_info["months"]} months & \textbf{{Gender:}} {patient_info["gender"]} & \textbf{{Bed:}} {patient_info["bed_number"]} & \textbf{{UHID:}} {patient_info["uhid"]} \\
     \hline
-    \multicolumn{{5}}{{|p{{19cm}}|}}{{\textbf{{Diagnosis:}} \parbox[t]{{18cm}}{{{patient_info["diagnosis"]}\vspace{{0.3em}}}}}}} \\
+    \multicolumn{{5}}{{|p{{19cm}}|}}{{\textbf{{Diagnosis:}} \parbox[t]{{18cm}}{{{patient_info["diagnosis"]}\vspace{{0.3em}}}}}} \\
     \hline
 \end{{tabular}}
 \\
