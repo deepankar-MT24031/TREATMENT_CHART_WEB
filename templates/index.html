@@ -1731,9 +1731,13 @@
             
             const table = document.createElement('table');
             table.style.tableLayout = 'fixed';
-            table.style.width = '100%';
             if (columns.length === 1) {
                 table.classList.add('two-col-table');
+                table.style.width = '100%';
+            } else {
+                // 25px (number) + auto (description, but let's use 200px) + 80px * (columns.length - 1)
+                const totalWidth = 25 + 200 + 80 * (columns.length - 1);
+                table.style.width = totalWidth + 'px';
             }
             // Create colgroup based on visible columns
             const colgroup = document.createElement('colgroup');
