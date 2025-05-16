@@ -19,43 +19,43 @@ def split_string(s,length=10):
 
 
 # @catch_exceptions() # Assuming decorator is defined elsewhere
-def escape_latex(s):
-    if not isinstance(s, str) or not s.strip():
-        return "" # Return empty string for None, empty, or whitespace-only
-    if s is None:
-        return ""
+def escape_latex(text):
+    """
+    Escapes special LaTeX characters in the given text.
+    Handles newlines by converting them to LaTeX newline commands.
+    """
+    if not isinstance(text, str):
+        return text
 
-    s = s.strip() # Strip whitespace first
-    if not s:
-        return ""
+    # Use a placeholder that does not contain any LaTeX special characters
+    placeholder = '<<NEWLINE>>'
+    text = text.replace('\n', placeholder)
 
-    # 1. Escape literal backslash FIRST to avoid interfering with other escapes
-    # This assumes backslashes in the input JSON are meant to be literal characters
-    temp_s = s.replace("\\", r"\textbackslash{}")
+    # Now replace the placeholder with LaTeX newline
+    text = text.replace(placeholder, r'\\')
 
-    # 2. Define other replacements (excluding backslash now)
-    replacements = {
-        "&": r"\&",
-        "%": r"\%",
-        "$": r"\$",
-        "#": r"\#",
-        "_": r"\_",  # Correct underscore escape
-        "~": r"\textasciitilde{}",
-        "^": r"\textasciicircum{}",
-        # Generally avoid escaping {}[]() unless they cause specific issues
-        "\"": r"''", # Double quotes -> two single quotes
-        "'": r"'",  # Keep single quote as is (or use ` for left, ' for right if needed)
-        "\n": r" \\ ",  # Preserve line breaks as LaTeX line breaks
+    # Escape special LaTeX characters (including underscore)
+    special_chars = {
+        '&': r'\&',
+        '%': r'\%',
+        '$': r'\$',
+        '#': r'\#',
+        '_': r'\_',
+        '{': r'\{',
+        '}': r'\}',
+        '~': r'\textasciitilde{}',
+        '^': r'\textasciicircum{}',
+        '<': r'\textless{}',
+        '>': r'\textgreater{}',
+        '|': r'\textbar{}',
+        '"': r'\textquotedbl{}',
+        "'": r'\textquotesingle{}',
+        '`': r'\textasciigrave{}'
     }
+    for char, escape in special_chars.items():
+        text = text.replace(char, escape)
 
-    # 3. Apply the rest of the replacements
-    for char, escape in replacements.items():
-        # Make sure we don't re-process parts of already inserted escapes
-        # (This simple replace loop can have issues with overlapping patterns,
-        # but let's try it first)
-        temp_s = temp_s.replace(char, escape)
-
-    return temp_s
+    return text
 
 # --- Assume PyQt5 imports and other helper functions like catch_exceptions, escape_latex, etc. are defined above ---
 
@@ -499,16 +499,16 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
     \hline
     \textbf{{Name:}} {patient_info["patient_name"]} & \textbf{{Age:}} {patient_info["years"]} years {patient_info["months"]} months & \textbf{{Gender:}} {patient_info["gender"]} & \textbf{{Bed:}} {patient_info["bed_number"]} & \textbf{{UHID:}} {patient_info["uhid"]} \\
     \hline
-    \multicolumn{{5}}{{|p{{19cm}}|}}{{\textbf{{Diagnosis:}} {patient_info["diagnosis"]} }}\\
+    \multicolumn{{5}}{{|p{{19cm}}|}}{{\textbf{{Diagnosis:}} \parbox[t]{{18cm}}{{{patient_info["diagnosis"]}}}}} \\
     \hline
 \end{{tabular}}
 \\
 \\
 \noindent\begin{{tabular}}{{|p{{11.3cm}}|p{{7.3cm}}|}}
      \hline
-    \textbf{{Consultant:}} {patient_info["consultant_names"]}      & \textbf{{JRs:}} {patient_info["jr_names"]} \\
+    \textbf{{Consultant:}} \parbox[t]{{10.5cm}}{{{patient_info["consultant_names"]}}}      & \textbf{{JRs:}} \parbox[t]{{6.5cm}}{{{patient_info["jr_names"]}}} \\
     \cline{{2-2}}
-      & \textbf{{SRs:}} {patient_info["sr_names"]} \\
+      & \textbf{{SRs:}} \parbox[t]{{6.5cm}}{{{patient_info["sr_names"]}}} \\
     \hline
 \end{{tabular}}
 \vspace{{0.1cm}} % Reduced space
