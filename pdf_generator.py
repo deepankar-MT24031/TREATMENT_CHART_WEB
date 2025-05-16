@@ -402,7 +402,7 @@ def generate_two_column_table(data):
 
         # Wrap both the label and value in minipage environments to force wrapping
         table_code += fr" \begin{{minipage}}[t]{{1.7cm}}\textbf{{{label}}}\end{{minipage}}" + \
-                      f" & \\begin{{minipage}}[t]{{2.5cm}}\\raggedright {value} \\end{{minipage}} \\\\\n        \\hline\n"
+                      f" & \\begin{{minipage}}[t]{{4cm}}\\raggedright {value} \\end{{minipage}} \\\\\n        \\hline\n"
 
     return table_code
 
