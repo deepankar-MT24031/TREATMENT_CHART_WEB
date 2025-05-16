@@ -471,8 +471,8 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 
         # ---- ADJUST MINIPAGE WIDTHS AND POSITIONING HERE ----
         # Increase the space between the left and right tables
-        left_minipage_width_fraction = 0.55  # Width of left table (treatments)
-        right_minipage_width_fraction = 0.3  # Width of right table (date/time/etc)
+        left_minipage_width_fraction = 0.45  # Reduced width for left table
+        right_minipage_width_fraction = 0.40  # Increased width for right table
         
         # Important: Use \hfill instead of fixed spacing to push right table to the far right
         
