@@ -268,8 +268,7 @@ def extract_table_rows(json_data):
 
 def generate_minipage(tables):
     """
-    Generates LaTeX code for the treatment tables, only including Day/Dose/Volume columns
-    if there's content in those fields.
+    Generates LaTeX code for the treatment tables, dynamically including only columns that have content.
     """
     minipage_code = r"""
 """
@@ -279,40 +278,50 @@ def generate_minipage(tables):
         table_title = table["title"]
         rows = table["rows"]
 
-        # Check if any row has content in day, dose, or volume columns
-        has_day_dose_volume = any(
-            any(row[i].strip() for i in [1, 2, 3])  # Check day(1), dose(2), volume(3)
-            for row in rows
-        )
+        # Check which columns have content
+        has_day = any(row[1].strip() for row in rows)  # Check day column
+        has_dose = any(row[2].strip() for row in rows)  # Check dose column
+        has_volume = any(row[3].strip() for row in rows)  # Check volume column
 
-        if has_day_dose_volume:
-            # Full table with all columns
-            minipage_code += f"""
-    % Medication table with Day/Dose/Volume
-    \\begin{{tabular}}{{|p{{7cm}}|p{{1cm}}|p{{2cm}}|p{{2cm}}|}}
+        # Build column specification and headers based on which columns have content
+        col_spec = "|p{7cm}|"  # Start with content column
+        headers = [table_title]
+        
+        if has_day:
+            col_spec += "p{1cm}|"
+            headers.append("Day")
+        if has_dose:
+            col_spec += "p{2cm}|"
+            headers.append("Dose")
+        if has_volume:
+            col_spec += "p{2cm}|"
+            headers.append("Volume")
+
+        # Generate table with dynamic columns
+        minipage_code += f"""
+    % Medication table with dynamic columns
+    \\begin{{tabular}}{{{col_spec}}}
         \\hline
-        \\textbf{{{table_title}}} & \\textbf{{Day}} & \\textbf{{Dose}} & \\textbf{{Volume}} \\\\
-        \\hline
-"""
-            for row in rows:
-                minipage_code += f"       {count}. {row[0]} & {row[1]} & {row[2]} & {row[3]} \\\\\n        \\hline\n"
-                count += 1
-            minipage_code += r"""    \end{tabular}
-    \vspace{0.2cm}
-"""
-        else:
-            # Simplified table without Day/Dose/Volume columns
-            minipage_code += f"""
-    % Medication table without Day/Dose/Volume
-    \\begin{{tabular}}{{|p{{12cm}}|}}
-        \\hline
-        \\textbf{{{table_title}}} \\\\
-        \\hline
-"""
-            for row in rows:
-                minipage_code += f"       {count}. {row[0]} \\\\\n        \\hline\n"
-                count += 1
-            minipage_code += r"""    \end{tabular}
+        \\textbf{{{headers[0]}}}"""
+        
+        # Add remaining headers
+        for header in headers[1:]:
+            minipage_code += f" & \\textbf{{{header}}}"
+        minipage_code += r" \\" + "\n        \\hline\n"
+
+        # Add rows
+        for row in rows:
+            minipage_code += f"       {count}. {row[0]}"
+            if has_day:
+                minipage_code += f" & {row[1]}"
+            if has_dose:
+                minipage_code += f" & {row[2]}"
+            if has_volume:
+                minipage_code += f" & {row[3]}"
+            minipage_code += r" \\" + "\n        \\hline\n"
+            count += 1
+
+        minipage_code += r"""    \end{tabular}
     \vspace{0.2cm}
 """
         count = 1  # Reset counter for next table
