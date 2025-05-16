@@ -1105,7 +1105,7 @@
             formData.entries = entries;
 
             // Send data to server
-            fetch('http://0.0.0.0:5001/download', {
+            fetch('https://treatmentchartweb-production.up.railway.app/download', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1169,7 +1169,7 @@
         // Initialize event listeners when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             // Load initial search data
-            fetch('http://0.0.0.0:5001/get_entries')
+            fetch('https://treatmentchartweb-production.up.railway.app/get_entries')
                 .then(response => response.json())
                 .then(entries => {
                     const tbody = document.querySelector('.search-results table tbody');
