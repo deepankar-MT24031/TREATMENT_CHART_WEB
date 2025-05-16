@@ -261,8 +261,8 @@
         }
 
         .cell-day, .cell-dose, .cell-volume, .cell-rate {
-            width: auto;
-            min-width: 80px;
+            width: 1% !important;
+            min-width: 60px;
         }
 
         .scrollable-table {
@@ -553,8 +553,8 @@
         #medications-container table:has(colgroup col:nth-child(3)) .cell-dose,
         #medications-container table:has(colgroup col:nth-child(3)) .cell-volume,
         #medications-container table:has(colgroup col:nth-child(3)) .cell-rate {
-            width: auto;
-            min-width: 80px;
+            width: 1% !important;
+            min-width: 60px;
         }
 
         /* Add loading state styles */
@@ -1739,14 +1739,12 @@
                     <col style="width:auto;">
                 `;
             } else {
-                colgroup.innerHTML = `
-                    <col style="width:25px;">
-                    <col style="width:200px;">
-                    ${columns.includes('day') ? '<col style="width:auto; min-width:80px;">' : ''}
-                    ${columns.includes('dose') ? '<col style="width:auto; min-width:80px;">' : ''}
-                    ${columns.includes('volume') ? '<col style="width:auto; min-width:80px;">' : ''}
-                    ${columns.includes('rate') ? '<col style="width:auto; min-width:80px;">' : ''}
-                `;
+                let colgroupHtml = '<col style="width:25px;">';
+                colgroupHtml += '<col style="width:auto;">'; // title/content column
+                for (let i = 1; i < columns.length; i++) {
+                    colgroupHtml += '<col style="width:1%; min-width:60px;">';
+                }
+                colgroup.innerHTML = colgroupHtml;
             }
             table.appendChild(colgroup);
 
