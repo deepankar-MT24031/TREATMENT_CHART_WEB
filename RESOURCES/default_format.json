@@ -25,10 +25,10 @@
     "each_entry_layout": {
         "entry_1": {
             "title": "Respiratory support",
+            "columns": ["rate", "volume"],
             "subtitles": {
                 "subtitle_1": {
                     "content": " ",
-                    
                     "rate": "",
                     "volume": ""
                 }
@@ -36,6 +36,7 @@
         },
         "entry_2": {
             "title": "Sedation, analgesia, and neuromuscular blockade",
+            "columns": ["day", "dose", "volume"],
             "subtitles": {
                 "subtitle_1": {
                     "content": " ",
@@ -47,6 +48,7 @@
         },
         "entry_3": {
             "title": "Inotropes and Anti-hypertensives",
+            "columns": ["day", "dose", "volume"],
             "subtitles": {
                 "subtitle_1": {
                     "content": "",
@@ -55,62 +57,67 @@
                     "volume": ""
                 }
             }
-            },
-            "entry_4": {
-                "title": "Antimicrobials",
-                "subtitles": {
-                    "subtitle_1": {
-                        "content": "",
-                        "day": "",
-                        "dose": "",
-                        "volume": ""
-                    }
-                }
-            },
-            "entry_5": {
-                "title": "IV Fluid ",
-                "subtitles": {
-                    "subtitle_1": {
-                        "content": "",
-                        "day": "",
-                        "dose": "",
-                        "volume": ""
-                    }
-                }
-            },
-            "entry_6": {
-                "title": "Feeds ",
-                "subtitles": {
-                    "subtitle_1": {
-                        "content": "",
-                        "day": "",
-                        "dose": "",
-                        "volume": ""
-                    }
-                }
-            },
-            "entry_7": {
-                "title": "Other Medications ",
-                "subtitles": {
-                    "subtitle_1": {
-                        "content": "",
-                        "day": "",
-                        "dose": "",
-                        "volume": ""
-                    }
-                }
-            },
-            "entry_8": {
-                "title": "Supportive care",
-                "subtitles": {
-                    "subtitle_1": {
-                        "content": "",
-                        "day": "",
-                        "dose": "",
-                        "volume": ""
-                    }
+        },
+        "entry_4": {
+            "title": "Antimicrobials",
+            "columns": ["day", "dose", "volume"],
+            "subtitles": {
+                "subtitle_1": {
+                    "content": "",
+                    "day": "",
+                    "dose": "",
+                    "volume": ""
                 }
             }
+        },
+        "entry_5": {
+            "title": "IV Fluid ",
+            "columns": ["day", "dose", "volume"],
+            "subtitles": {
+                "subtitle_1": {
+                    "content": "",
+                    "day": "",
+                    "dose": "",
+                    "volume": ""
+                }
+            }
+        },
+        "entry_6": {
+            "title": "Feeds ",
+            "columns": ["day", "dose", "volume"],
+            "subtitles": {
+                "subtitle_1": {
+                    "content": "",
+                    "day": "",
+                    "dose": "",
+                    "volume": ""
+                }
+            }
+        },
+        "entry_7": {
+            "title": "Other Medications ",
+            "columns": ["day", "dose", "volume"],
+            "subtitles": {
+                "subtitle_1": {
+                    "content": "",
+                    "day": "",
+                    "dose": "",
+                    "volume": ""
+                }
+            }
+        },
+        "entry_8": {
+            "title": "Supportive care",
+            "columns": ["day", "dose", "volume"],
+            "subtitles": {
+                "subtitle_1": {
+                    "content": "",
+                    "day": "",
+                    "dose": "",
+                    "volume": ""
+                }
+            }
+        }
     },
     "each_table_row_layout": {
         "row_1": {

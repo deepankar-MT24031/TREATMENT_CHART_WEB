@@ -205,7 +205,7 @@ def extract_patient_info(json_data):
 def extract_entry_tables(json_data):
     """
     Extracts treatment tables from the JSON data and applies LaTeX escaping.
-    Returns a list of dicts, each with 'title', 'rows', and 'columns' (list of present columns).
+    Returns a list of dicts, each with 'title', 'rows', and 'columns' (list of present columns, in order if specified).
     """
     entries = json_data.get("entries", {})
     tables = []
@@ -214,16 +214,26 @@ def extract_entry_tables(json_data):
         title = escape_latex(entry_data.get("title", "").strip())
         subtitles = entry_data.get("subtitles", {})
 
+        # Use columns array from JSON if present, otherwise infer
+        if "columns" in entry_data and isinstance(entry_data["columns"], list):
+            columns = ["content"] + [col for col in entry_data["columns"] if col != "content"]
+        else:
+            # fallback: infer from subtitles
+            present_columns = set(["content"])
+            for subtitle_key, subtitle_data in subtitles.items():
+                for col in ["day", "dose", "volume", "rate"]:
+                    if col in subtitle_data:
+                        present_columns.add(col)
+            columns = list(present_columns)
+
         rows = []
-        present_columns = set(["content"])  # Always present
         for subtitle_key, subtitle_data in subtitles.items():
-            # Only add fields that exist in the data
-            content = escape_latex(str(subtitle_data.get("content", "")).strip())
-            row = {"content": content}
-            for col in ["day", "dose", "volume", "rate"]:
+            row = {"content": escape_latex(str(subtitle_data.get("content", "")).strip())}
+            for col in columns:
+                if col == "content":
+                    continue
                 if col in subtitle_data:
                     row[col] = escape_latex(str(subtitle_data.get(col, "")).strip())
-                    present_columns.add(col)
             # Only keep row if any field has data
             if any(row.get(col, "") for col in row):
                 rows.append(row)
@@ -231,7 +241,7 @@ def extract_entry_tables(json_data):
             tables.append({
                 "title": title,
                 "rows": rows,
-                "columns": list(present_columns)
+                "columns": columns
             })
     return tables
 
@@ -264,7 +274,7 @@ def extract_table_rows(json_data):
 
 def generate_minipage(tables):
     """
-    Generates LaTeX code for the treatment tables, dynamically including only columns that exist in the data.
+    Generates LaTeX code for the treatment tables, dynamically including only columns that exist in the data, in the order specified by the JSON if present.
     """
     minipage_code = r"""
 """
@@ -277,22 +287,25 @@ def generate_minipage(tables):
         col_spec = "|p{7cm}|"
         headers = [table_title]
         col_latex = ["content"]
-        if "day" in columns:
-            col_spec += "p{1cm}|"
-            headers.append("Day")
-            col_latex.append("day")
-        if "dose" in columns:
-            col_spec += "p{2cm}|"
-            headers.append("Dose")
-            col_latex.append("dose")
-        if "volume" in columns:
-            col_spec += "p{2cm}|"
-            headers.append("Volume")
-            col_latex.append("volume")
-        if "rate" in columns:
-            col_spec += "p{2cm}|"
-            headers.append("Rate")
-            col_latex.append("rate")
+        for col in columns:
+            if col == "content":
+                continue
+            if col == "day":
+                col_spec += "p{1cm}|"
+                headers.append("Day")
+            elif col == "dose":
+                col_spec += "p{2cm}|"
+                headers.append("Dose")
+            elif col == "volume":
+                col_spec += "p{2cm}|"
+                headers.append("Volume")
+            elif col == "rate":
+                col_spec += "p{2cm}|"
+                headers.append("Rate")
+            else:
+                col_spec += "p{2cm}|"
+                headers.append(col.capitalize())
+            col_latex.append(col)
         # Generate table with dynamic columns
         minipage_code += f"""
     % Medication table with dynamic columns
