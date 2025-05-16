@@ -316,11 +316,11 @@ def generate_minipage(tables):
                 col_latex.append(None)
         minipage_code += f"""
     % Medication table with fixed total width
-    \begin{{tabular}}{{{col_spec}}}
-        \hline
-        \textbf{{{headers[0]}}}"
+    \\begin{{tabular}}{{{col_spec}}}
+        \\hline
+        \\textbf{{{headers[0]}}}"""
         for header in headers[1:]:
-            minipage_code += f" & \textbf{{{header}}}"
+            minipage_code += f" & \\textbf{{{header}}}"
         minipage_code += r" \\" + "\n        \\hline\n"
         for row in rows:
             minipage_code += f"       {count}. {row.get('content', '')}"
@@ -333,7 +333,7 @@ def generate_minipage(tables):
             count += 1
         minipage_code += r"""    \end{tabular}
     \vspace{0.2cm}
-    """
+"""
         count = 1
     return minipage_code
 
