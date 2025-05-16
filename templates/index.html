@@ -1636,7 +1636,10 @@
             // Always show content
             let columns = ['content'];
             if (Array.isArray(entryData.columns)) {
-                columns = ['content', ...entryData.columns.filter(col => col !== 'content')];
+                // If columns is empty, just use content
+                if (entryData.columns.length > 0) {
+                    columns = ['content', ...entryData.columns.filter(col => col !== 'content')];
+                }
             } else {
                 // fallback: infer from subtitles as before
                 Object.values(entryData.subtitles || {}).forEach(subtitle => {
