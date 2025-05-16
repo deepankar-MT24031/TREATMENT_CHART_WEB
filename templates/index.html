@@ -582,6 +582,19 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* For two-column tables, make description column fill remaining space */
+        #medications-container table.two-col-table colgroup col:nth-child(2),
+        #medications-container table.two-col-table .cell-description {
+            width: auto !important;
+            min-width: 200px;
+        }
+        /* For other tables, keep description column at 200px */
+        #medications-container table:not(.two-col-table) colgroup col:nth-child(2),
+        #medications-container table:not(.two-col-table) .cell-description {
+            width: 200px !important;
+            min-width: 200px;
+        }
     </style>
 </head>
 <body>
@@ -1714,7 +1727,9 @@
             const table = document.createElement('table');
             table.style.tableLayout = 'fixed';
             table.style.width = '100%';
-            
+            if (columns.length === 1) {
+                table.classList.add('two-col-table');
+            }
             // Create colgroup based on visible columns
             const colgroup = document.createElement('colgroup');
             if (columns.length === 1) {
