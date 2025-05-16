@@ -27,8 +27,8 @@ def escape_latex(text):
     if not isinstance(text, str):
         return text
 
-    # First convert newlines to LaTeX newline commands
-    text = text.replace('\n', ' \\\\ ')
+    # First convert newlines to LaTeX newline commands (without extra spaces)
+    text = text.replace('\n', '\\\\')
     
     # Then escape other special characters
     special_chars = {
