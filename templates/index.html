@@ -241,16 +241,28 @@
 
         #medications-container table colgroup col:first-child {
             width: 25px !important;
-            max-width: 25px !important;
             min-width: 25px !important;
+            max-width: 25px !important;
+        }
+
+        #medications-container table colgroup col:nth-child(2) {
+            width: 200px;
+            min-width: 200px;
+        }
+
+        #medications-container table colgroup col:not(:first-child):not(:nth-child(2)) {
+            width: auto;
+            min-width: 80px;
         }
 
         .cell-description {
-            width: 45%;
+            width: 200px;
+            min-width: 200px;
         }
 
-        .cell-day, .cell-dose, .cell-volume {
-            width: 15%;
+        .cell-day, .cell-dose, .cell-volume, .cell-rate {
+            width: auto;
+            min-width: 80px;
         }
 
         .scrollable-table {
@@ -484,7 +496,44 @@
         /* Force medication tables to use fixed layout */
         #medications-container table {
             table-layout: fixed;
-            min-width: 300px;
+            width: 100%;
+        }
+
+        #medications-container table colgroup col:first-child {
+            width: 25px !important;
+            min-width: 25px !important;
+            max-width: 25px !important;
+        }
+
+        #medications-container table colgroup col:nth-child(2) {
+            width: 200px;
+            min-width: 200px;
+        }
+
+        #medications-container table colgroup col:not(:first-child):not(:nth-child(2)) {
+            width: auto;
+            min-width: 80px;
+        }
+
+        .cell-number {
+            width: 25px !important;
+            min-width: 25px !important;
+            max-width: 25px !important;
+            padding: 0 !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            font-size: 0.9em !important;
+        }
+
+        .cell-description {
+            width: 200px;
+            min-width: 200px;
+        }
+
+        .cell-day, .cell-dose, .cell-volume, .cell-rate {
+            width: auto;
+            min-width: 80px;
         }
 
         /* Add loading state styles */
@@ -1643,16 +1692,17 @@
             
             const table = document.createElement('table');
             table.style.tableLayout = 'fixed';
+            table.style.width = '100%';
             
             // Create colgroup based on visible columns
             const colgroup = document.createElement('colgroup');
             colgroup.innerHTML = `
                 <col style="width: 25px;">
                 <col style="width: 200px;">
-                ${columns.includes('day') ? '<col style="width: 80px;">' : ''}
-                ${columns.includes('dose') ? '<col style="width: 80px;">' : ''}
-                ${columns.includes('volume') ? '<col style="width: 80px;">' : ''}
-                ${columns.includes('rate') ? '<col style="width: 80px;">' : ''}
+                ${columns.includes('day') ? '<col style="width: auto; min-width: 80px;">' : ''}
+                ${columns.includes('dose') ? '<col style="width: auto; min-width: 80px;">' : ''}
+                ${columns.includes('volume') ? '<col style="width: auto; min-width: 80px;">' : ''}
+                ${columns.includes('rate') ? '<col style="width: auto; min-width: 80px;">' : ''}
             `;
             table.appendChild(colgroup);
 
