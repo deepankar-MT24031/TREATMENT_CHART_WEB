@@ -2337,84 +2337,84 @@
     </script>
 
     <script>
-        let previousFontSize = 13; // Default fallback
-        document.addEventListener('DOMContentLoaded', function() {
-            const settingsButton = document.getElementById('settings-btn');
-            const settingsModalOverlay = document.getElementById('settings-modal-overlay');
-            const saveSettingsButton = document.getElementById('save-settings');
-            const closeSettingsButton = document.getElementById('close-settings-modal');
-            const fontSizeInput = document.getElementById('font-size-input');
+    let previousFontSize = 13; // Default fallback
+    document.addEventListener('DOMContentLoaded', function() {
+        const settingsButton = document.getElementById('settings-btn');
+        const settingsModalOverlay = document.getElementById('settings-modal-overlay');
+        const saveSettingsButton = document.getElementById('save-settings');
+        const closeSettingsButton = document.getElementById('close-settings-modal');
+        const fontSizeInput = document.getElementById('font-size-input');
 
-            settingsButton.addEventListener('click', function() {
-                fetch('/settings')
-                    .then(response => response.json())
-                    .then(data => {
-                        document.getElementById('ip-input').value = data.ip_settings.host;
-                        document.getElementById('port-input').value = data.ip_settings.port;
-                        // Update logo path and image source
-                        const logoPath = 'RESOURCES/website_logo.png';
-                        document.getElementById('current-logo-path').textContent = logoPath;
-                        document.getElementById('current-logo-img').src = '/resources/website_logo.png?' + new Date().getTime();
-                        document.getElementById('heading-input').value = data.heading;
-                        document.getElementById('subheading-input').value = data.subheading;
-                        document.getElementById('font-size-input').value = data.font_size;
-                        previousFontSize = data.font_size || 13;
-                        settingsModalOverlay.style.display = 'flex';
-                    })
-                    .catch(error => console.error('Error fetching settings:', error));
-            });
-
-            saveSettingsButton.addEventListener('click', function() {
-                const fontSize = parseInt(fontSizeInput.value);
-                if (fontSize > 13) {
-                    alert('Font size cannot be above 13.');
-                    fontSizeInput.value = previousFontSize;
-                    fontSizeInput.focus();
-                    return;
-                }
-                if (fontSize < 1) {
-                    alert('Font size cannot be smaller than 1.');
-                    fontSizeInput.value = previousFontSize;
-                    fontSizeInput.focus();
-                    return;
-                }
-                const newSettings = {
-                    ip_settings: {
-                        host: document.getElementById('ip-input').value,
-                        port: parseInt(document.getElementById('port-input').value)
-                    },
-                    logo_upload: {
-                        path: document.getElementById('current-logo-path').textContent,
-                        url: document.getElementById('current-logo-img').src
-                    },
-                    heading: document.getElementById('heading-input').value,
-                    subheading: document.getElementById('subheading-input').value,
-                    font_size: fontSize
-                };
-
-                fetch('/settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(newSettings)
-                })
+        settingsButton.addEventListener('click', function() {
+            fetch('/settings')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.message) {
-                        alert('Settings saved successfully!');
-                        settingsModalOverlay.style.display = 'none';
-                    } else {
-                        alert('Error saving settings: ' + data.error);
-                    }
+                    document.getElementById('ip-input').value = data.ip_settings.host;
+                    document.getElementById('port-input').value = data.ip_settings.port;
+                    // Update logo path and image source
+                    const logoPath = 'RESOURCES/website_logo.png';
+                    document.getElementById('current-logo-path').textContent = logoPath;
+                    document.getElementById('current-logo-img').src = '/resources/website_logo.png?' + new Date().getTime();
+                    document.getElementById('heading-input').value = data.heading;
+                    document.getElementById('subheading-input').value = data.subheading;
+                    document.getElementById('font-size-input').value = data.font_size;
+                    previousFontSize = data.font_size || 13;
+                    settingsModalOverlay.style.display = 'flex';
                 })
-                .catch(error => console.error('Error saving settings:', error));
-            });
-
-            closeSettingsButton.addEventListener('click', function() {
-                settingsModalOverlay.style.display = 'none';
-            });
+                .catch(error => console.error('Error fetching settings:', error));
         });
+
+        saveSettingsButton.addEventListener('click', function() {
+            const fontSize = parseInt(fontSizeInput.value);
+            if (fontSize > 13) {
+                alert('Font size cannot be above 13.');
+                fontSizeInput.value = previousFontSize;
+                fontSizeInput.focus();
+                return;
+            }
+            if (fontSize < 1) {
+                alert('Font size cannot be smaller than 1.');
+                fontSizeInput.value = previousFontSize;
+                fontSizeInput.focus();
+                return;
+            }
+            const newSettings = {
+                ip_settings: {
+                    host: document.getElementById('ip-input').value,
+                    port: parseInt(document.getElementById('port-input').value)
+                },
+                logo_upload: {
+                    path: document.getElementById('current-logo-path').textContent,
+                    url: document.getElementById('current-logo-img').src
+                },
+                heading: document.getElementById('heading-input').value,
+                subheading: document.getElementById('subheading-input').value,
+                font_size: fontSize
+            };
+
+            fetch('/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newSettings)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert('Settings saved successfully!');
+                    settingsModalOverlay.style.display = 'none';
+                } else {
+                    alert('Error saving settings: ' + data.error);
+                }
+            })
+            .catch(error => console.error('Error saving settings:', error));
+        });
+
+        closeSettingsButton.addEventListener('click', function() {
+            settingsModalOverlay.style.display = 'none';
+        });
+    });
     </script>
 
     <!-- Edit Layout Modal -->
