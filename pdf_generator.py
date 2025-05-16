@@ -312,14 +312,7 @@ def generate_minipage(tables):
                 headers_list.append(f"\\textbf{{{main_column_header}}}") # Still use the table title as header
 
         # 2. Handle "extra" columns (day, dose, volume, rate, etc.)
-        # Make these VERY NARROW to maximize space for the X column.
-        # For data like "D3", "2L", "N/A", a small width can work.
-        # Let's try 1.0cm or even 0.8cm.
-        # You will need to test this with your actual data to see if it's too cramped.
-        extra_col_width = "1.2cm" # <--- VERY IMPORTANT: ADJUST THIS VALUE
-                                   # Try 0.8cm, 1.0cm, 1.2cm.
-        
-        # Collect specs for extra columns
+        # 'day' column gets 1.0cm, all others get 2.0cm
         temp_extra_cols_specs = []
         temp_extra_cols_headers = []
         temp_extra_cols_keys = []
@@ -327,13 +320,14 @@ def generate_minipage(tables):
         current_main_col_key = data_keys_for_rows_ordered[0] if data_keys_for_rows_ordered else None
 
         for col_key in columns_in_data:
-            if col_key == current_main_col_key: # Skip the main X column's key
+            if col_key == current_main_col_key:
                 continue
-            
-            # For these narrow columns, >{\centering\arraybackslash} might also be an option
-            # if the data is very short (like "D5", "2mg").
-            # Raggedright is generally safer for potentially slightly longer text.
-            temp_extra_cols_specs.append(f">{{\\raggedright\\arraybackslash}}p{{{extra_col_width}}}")
+            # Special width for 'day', default for others
+            if col_key == "day":
+                col_width = "1.0cm"
+            else:
+                col_width = "2.0cm"
+            temp_extra_cols_specs.append(f">{{\\raggedright\\arraybackslash}}p{{{col_width}}}")
             temp_extra_cols_headers.append(f"\\textbf{{{col_key.capitalize()}}}")
             temp_extra_cols_keys.append(col_key)
 
@@ -362,9 +356,6 @@ def generate_minipage(tables):
                 # Data for the narrow extra columns
                 for extra_col_key in data_keys_for_rows_ordered[1:]:
                     cell_text = row_data.get(extra_col_key, '')
-                    # Optional: If text in extra columns is very short, you could split it, but
-                    # with p{width} and raggedright, LaTeX should handle wrapping.
-                    # For very short things like "D10", "1mg", it will likely fit.
                     row_cells.append(cell_text)
             else: # No columns defined in spec, but row data might exist
                 row_cells.append(f"{item_num + 1}. ") # Default for malformed cases
@@ -471,8 +462,8 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 
         # ---- ADJUST MINIPAGE WIDTHS AND POSITIONING HERE ----
         # Increase the space between the left and right tables
-        left_minipage_width_fraction = 0.63 # Slightly narrower left table
-        right_minipage_width_fraction = 0.27  # Slightly wider right table, moved a bit left
+        left_minipage_width_fraction = 0.73 # Slightly narrower left table
+        right_minipage_width_fraction = 0.26  # Slightly wider right table, moved a bit left
         
         # Important: Use \hfill instead of fixed spacing to push right table to the far right
         
