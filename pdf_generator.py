@@ -275,8 +275,9 @@ def extract_table_rows(json_data):
 def generate_minipage(tables):
     """
     Generates LaTeX code for the treatment tables using tabularx.
-    The first "content" column is an 'X' (flexible) column and is made wider.
-    There can be up to 3 additional "extra" columns with a smaller, fixed width.
+    The first "content" (title/description) column is an 'X' (flexible) column
+    and is prioritized to be significantly wider.
+    There can be up to 3 additional "extra" columns with a very narrow, fixed width.
     All tables span the full width of their parent minipage.
     """
     minipage_code = r""
@@ -290,58 +291,59 @@ def generate_minipage(tables):
         col_specs_list = []
         data_keys_for_rows_ordered = []
 
-        # 1. The main descriptive column ("content")
-        # This will be the 'X' column. We'll ensure it gets more space
-        # by making other columns narrower.
-        # Prepending >{\raggedright\arraybackslash} for better text flow in X columns too.
+        # 1. The main descriptive column ("content" / "title" column)
+        # This will be the 'X' column. It will get the lion's share of the space.
         if "content" in columns_in_data:
+            # >{\raggedright\arraybackslash} helps with text flow in the X column.
+            # You can also add \hyphenpenalty=5000 \exhyphenpenalty=5000 if you want to discourage hyphenation
+            # but for a wide column, raggedright is often enough.
             col_specs_list.append(">{\\raggedright\\arraybackslash}X") 
             headers_list.append(f"\\textbf{{{main_column_header}}}")
             data_keys_for_rows_ordered.append("content")
-        else: # Fallback
+        else: # Fallback (should ideally not be hit if 'content' is always present)
             if columns_in_data:
                 first_key = columns_in_data[0]
                 col_specs_list.append(">{\\raggedright\\arraybackslash}X")
                 headers_list.append(f"\\textbf{{{first_key.capitalize()}}}")
                 data_keys_for_rows_ordered.append(first_key)
-            else:
-                col_specs_list.append(">{\\raggedright\\arraybackslash}X") # Default to X if no columns
-                headers_list.append(f"\\textbf{{{main_column_header}}}")
+            else: # No columns at all in data
+                col_specs_list.append(">{\\raggedright\\arraybackslash}X") 
+                headers_list.append(f"\\textbf{{{main_column_header}}}") # Still use the table title as header
 
         # 2. Handle "extra" columns (day, dose, volume, rate, etc.)
-        # Make these narrower to give more space to the X column.
-        # If max 3 extra columns, 1.2cm to 1.5cm might be appropriate.
-        # Let's try 1.3cm. You can adjust this value.
-        extra_col_width = "1.3cm" 
+        # Make these VERY NARROW to maximize space for the X column.
+        # For data like "D3", "2L", "N/A", a small width can work.
+        # Let's try 1.0cm or even 0.8cm.
+        # You will need to test this with your actual data to see if it's too cramped.
+        extra_col_width = "1.0cm" # <--- VERY IMPORTANT: ADJUST THIS VALUE
+                                  # Try 0.8cm, 1.0cm, 1.2cm.
         
-        num_extra_cols = 0
+        # Collect specs for extra columns
         temp_extra_cols_specs = []
         temp_extra_cols_headers = []
         temp_extra_cols_keys = []
 
-        for col_key in columns_in_data:
-            is_main_col = False
-            if data_keys_for_rows_ordered and col_key == data_keys_for_rows_ordered[0]:
-                is_main_col = True
-            
-            if not is_main_col:
-                num_extra_cols += 1
-                temp_extra_cols_specs.append(f">{{\\raggedright\\arraybackslash}}p{{{extra_col_width}}}")
-                temp_extra_cols_headers.append(f"\\textbf{{{col_key.capitalize()}}}")
-                temp_extra_cols_keys.append(col_key)
+        current_main_col_key = data_keys_for_rows_ordered[0] if data_keys_for_rows_ordered else None
 
-        # If there are many extra columns, you might want to shrink extra_col_width further
-        # or use a relative width like L, C, R from array package, or even another X.
-        # For max 3, fixed p{width} is usually fine.
+        for col_key in columns_in_data:
+            if col_key == current_main_col_key: # Skip the main X column's key
+                continue
+            
+            # For these narrow columns, >{\centering\arraybackslash} might also be an option
+            # if the data is very short (like "D5", "2mg").
+            # Raggedright is generally safer for potentially slightly longer text.
+            temp_extra_cols_specs.append(f">{{\\raggedright\\arraybackslash}}p{{{extra_col_width}}}")
+            temp_extra_cols_headers.append(f"\\textbf{{{col_key.capitalize()}}}")
+            temp_extra_cols_keys.append(col_key)
 
         col_specs_list.extend(temp_extra_cols_specs)
         headers_list.extend(temp_extra_cols_headers)
         data_keys_for_rows_ordered.extend(temp_extra_cols_keys)
             
-        final_col_spec = "|" + "|".join(col_specs_list) + "|" if col_specs_list else "|>{\\raggedright\\arraybackslash}X|" # Ensure at least one X column
+        final_col_spec = "|" + "|".join(col_specs_list) + "|" if col_specs_list else "|>{\\raggedright\\arraybackslash}X|"
         
         minipage_code += f"""
-    % Medication table '{main_column_header}' using tabularx (wider title column)
+    % Medication table '{main_column_header}' (PRIORITIZED WIDE TITLE COLUMN)
     \\noindent
     \\begin{{tabularx}}{{\\linewidth}}{{{final_col_spec}}}
         \\hline
@@ -354,12 +356,17 @@ def generate_minipage(tables):
             if data_keys_for_rows_ordered:
                 main_desc_key = data_keys_for_rows_ordered[0]
                 item_description = row_data.get(main_desc_key, '') 
-                row_cells.append(f"{item_num + 1}. {item_description}")
+                row_cells.append(f"{item_num + 1}. {item_description}") # This goes into the X column
 
+                # Data for the narrow extra columns
                 for extra_col_key in data_keys_for_rows_ordered[1:]:
-                    row_cells.append(row_data.get(extra_col_key, ''))
-            else:
-                row_cells.append(f"{item_num + 1}. ")
+                    cell_text = row_data.get(extra_col_key, '')
+                    # Optional: If text in extra columns is very short, you could split it, but
+                    # with p{width} and raggedright, LaTeX should handle wrapping.
+                    # For very short things like "D10", "1mg", it will likely fit.
+                    row_cells.append(cell_text)
+            else: # No columns defined in spec, but row data might exist
+                row_cells.append(f"{item_num + 1}. ") # Default for malformed cases
 
             minipage_code += "        " + " & ".join(row_cells) + r" \\" + "\n        \\hline\n"
         
@@ -461,22 +468,25 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
             print(f"Warning: Failed to copy logo: {e}")
             logo_copy_path = logo_path  # Fall back to original path
 
+        # ---- ADJUST MINIPAGE WIDTHS HERE ----
+        left_minipage_width_fraction = 0.60  # Increased from 0.45
+        right_minipage_width_fraction = 0.30 # Adjusted from 0.32 (0.60 + 0.30 = 0.90)
+                                             # This leaves 0.10 for \hfill and any other spacing
+
         latex_code = rf"""
 \documentclass{{article}}
 \usepackage{{graphicx}}
-\usepackage[a4paper, margin=0.3in]{{geometry}} % Decreased margins
+\usepackage[a4paper, margin=0.3in]{{geometry}} 
 \usepackage{{array}}
 \usepackage{{multirow}}
-\usepackage{{tabularx}} % For dynamic column widths
-\usepackage{{calc}} % For calculation of lengths
-\usepackage[absolute,overlay]{{textpos}} % For absolute positioning
-\setlength{{\TPHorizModule}}{{1mm}} % Set horizontal unit to mm
-\setlength{{\TPVertModule}}{{1mm}} % Set vertical unit to mm
-% Set font size for entire document
+\usepackage{{tabularx}} 
+\usepackage{{calc}} 
+\usepackage[absolute,overlay]{{textpos}} 
+\setlength{{\TPHorizModule}}{{1mm}} 
+\setlength{{\TPVertModule}}{{1mm}} 
 \fontsize{{{font_size}pt}}{{{line_height}pt}}\selectfont
-% Create a special column type for automatic line breaking
 \newcolumntype{{Y}}{{>{{\raggedright\arraybackslash\hspace{{0pt}}\parfillskip=0pt plus 1fil}}p}}
-\begin{{document}}\
+\begin{{document}}
 % Insert logo at the top-left
 \noindent
 \begin{{minipage}}{{0.2\textwidth}} % Adjust width as needed
@@ -510,16 +520,16 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 \vspace{{0.1cm}} % Reduced space
 % Create a two-column layout with fixed positions
 \noindent
-\begin{{minipage}}[t]{{0.45\textwidth}}
-\vspace{{-{adjusted_vspace:.2f}cm}} % Dynamic spacing based on font size
+\begin{{minipage}}[t]{{{left_minipage_width_fraction:.2f}\textwidth}} % MODIFIED WIDTH
+\vspace{{-{adjusted_vspace:.2f}cm}} 
 {left_table}
 \end{{minipage}}%
 \hfill%
-\begin{{minipage}}[t]{{0.32\textwidth}}
-\hspace{{1cm}} % Negative hspace moves content to the left
-    % Date information table - fixed on right
-    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}}
-    \hline
+\begin{{minipage}}[t]{{{right_minipage_width_fraction:.2f}\textwidth}} % MODIFIED WIDTH
+    % \hspace{{1cm}} % You might not need this hspace anymore, or might need to adjust it.
+                     % Test with and without it. Let's remove it for now.
+    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table might need adjustment too
+    \hline                                     % if the minipage becomes too narrow.
     {right_table}
     \end{{tabular}}
 \end{{minipage}}
@@ -590,6 +600,18 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
         print(f"ERROR: Unexpected error in generate_pdf_from_latex: {e}")
         import traceback
         traceback.print_exc()
+        return None
+    
+    # Ensure it returns pdf_path at the end if successful
+    if 'result' in locals() and result.returncode == 0 and os.path.exists(pdf_file_path):
+        print(f"PDF generated successfully at: {pdf_file_path}")
+        return pdf_file_path
+    else:
+        # Attempt to find pdf_file_path if it was created before an error
+        if 'pdf_file_path' in locals() and os.path.exists(pdf_file_path):
+             print(f"PDF may have been generated at: {pdf_file_path}, but an error occurred later.")
+             return pdf_file_path
+        print(f"ERROR: PDF generation failed or an error occurred.")
         return None
 
 # --- Keep the __main__ block for testing ---
