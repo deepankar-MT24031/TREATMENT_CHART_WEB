@@ -27,10 +27,11 @@ def escape_latex(text):
     if not isinstance(text, str):
         return text
 
-    # Temporarily replace newlines with a unique placeholder
-    text = text.replace('\n', '__NEWLINE__')
+    # Use a placeholder that does not contain any LaTeX special characters
+    placeholder = '<<NEWLINE>>'
+    text = text.replace('\n', placeholder)
 
-    # Escape special LaTeX characters (except backslash)
+    # Escape special LaTeX characters (including underscore)
     special_chars = {
         '&': r'\&',
         '%': r'\%',
@@ -52,7 +53,7 @@ def escape_latex(text):
         text = text.replace(char, escape)
 
     # Now replace the placeholder with LaTeX newline
-    text = text.replace('__NEWLINE__', r'\\')
+    text = text.replace(placeholder, r'\\')
 
     return text
 
