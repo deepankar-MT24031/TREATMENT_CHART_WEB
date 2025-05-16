@@ -31,6 +31,9 @@ def escape_latex(text):
     placeholder = '<<NEWLINE>>'
     text = text.replace('\n', placeholder)
 
+    # Now replace the placeholder with LaTeX newline
+    text = text.replace(placeholder, r'\\')
+
     # Escape special LaTeX characters (including underscore)
     special_chars = {
         '&': r'\&',
@@ -51,9 +54,6 @@ def escape_latex(text):
     }
     for char, escape in special_chars.items():
         text = text.replace(char, escape)
-
-    # Now replace the placeholder with LaTeX newline
-    text = text.replace(placeholder, r'\\')
 
     return text
 
