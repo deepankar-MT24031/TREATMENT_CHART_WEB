@@ -420,7 +420,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
         # Calculate line height based on font size
         line_height = font_size + 2
         header_font_size = font_size + 4
-        adjusted_vspace = font_size * 0.15  # Increased upward shift, still dynamic with font size
+        adjusted_vspace = font_size * 0.19  # Increased upward shift, still dynamic with font size
 
         # Get the current directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
