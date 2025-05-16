@@ -19,43 +19,41 @@ def split_string(s,length=10):
 
 
 # @catch_exceptions() # Assuming decorator is defined elsewhere
-def escape_latex(s):
-    if not isinstance(s, str) or not s.strip():
-        return "" # Return empty string for None, empty, or whitespace-only
-    if s is None:
-        return ""
+def escape_latex(text):
+    """
+    Escapes special LaTeX characters in the given text.
+    Also handles newlines by converting them to LaTeX newline commands.
+    """
+    if not isinstance(text, str):
+        return text
 
-    s = s.strip() # Strip whitespace first
-    if not s:
-        return ""
-
-    # 1. Escape literal backslash FIRST to avoid interfering with other escapes
-    # This assumes backslashes in the input JSON are meant to be literal characters
-    temp_s = s.replace("\\", r"\textbackslash{}")
-
-    # 2. Define other replacements (excluding backslash now)
-    replacements = {
-        "&": r"\&",
-        "%": r"\%",
-        "$": r"\$",
-        "#": r"\#",
-        "_": r"\_",  # Correct underscore escape
-        "~": r"\textasciitilde{}",
-        "^": r"\textasciicircum{}",
-        # Generally avoid escaping {}[]() unless they cause specific issues
-        "\"": r"''", # Double quotes -> two single quotes
-        "'": r"'",  # Keep single quote as is (or use ` for left, ' for right if needed)
-        "\n": r" \\ ",  # Preserve line breaks as LaTeX line breaks
+    # First convert newlines to LaTeX newline commands
+    text = text.replace('\n', ' \\\\ ')
+    
+    # Then escape other special characters
+    special_chars = {
+        '&': r'\&',
+        '%': r'\%',
+        '$': r'\$',
+        '#': r'\#',
+        '_': r'\_',
+        '{': r'\{',
+        '}': r'\}',
+        '~': r'\textasciitilde{}',
+        '^': r'\textasciicircum{}',
+        '\\': r'\textbackslash{}',
+        '<': r'\textless{}',
+        '>': r'\textgreater{}',
+        '|': r'\textbar{}',
+        '"': r'\textquotedbl{}',
+        "'": r'\textquotesingle{}',
+        '`': r'\textasciigrave{}'
     }
-
-    # 3. Apply the rest of the replacements
-    for char, escape in replacements.items():
-        # Make sure we don't re-process parts of already inserted escapes
-        # (This simple replace loop can have issues with overlapping patterns,
-        # but let's try it first)
-        temp_s = temp_s.replace(char, escape)
-
-    return temp_s
+    
+    for char, escape in special_chars.items():
+        text = text.replace(char, escape)
+    
+    return text
 
 # --- Assume PyQt5 imports and other helper functions like catch_exceptions, escape_latex, etc. are defined above ---
 
