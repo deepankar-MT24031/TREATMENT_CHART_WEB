@@ -22,19 +22,19 @@ def split_string(s,length=10):
 def escape_latex(text):
     """
     Escapes special LaTeX characters in the given text.
-    Handles newlines by converting them to LaTeX newline commands.
+    Converts real newlines to LaTeX line breaks, but escapes all other backslashes.
     """
     if not isinstance(text, str):
         return text
 
-    # Use a placeholder that does not contain any LaTeX special characters
+    # Step 1: Replace real newlines with a placeholder
     placeholder = '<<NEWLINE>>'
     text = text.replace('\n', placeholder)
 
-    # Now replace the placeholder with LaTeX newline
-    text = text.replace(placeholder, r'\\')
+    # Step 2: Escape all remaining backslashes
+    text = text.replace('\\', r'\textbackslash{}')
 
-    # Escape special LaTeX characters (including underscore)
+    # Step 3: Escape other LaTeX special characters
     special_chars = {
         '&': r'\&',
         '%': r'\%',
@@ -54,6 +54,9 @@ def escape_latex(text):
     }
     for char, escape in special_chars.items():
         text = text.replace(char, escape)
+
+    # Step 4: Replace the placeholder with LaTeX newline
+    text = text.replace(placeholder, r'\\')
 
     return text
 
