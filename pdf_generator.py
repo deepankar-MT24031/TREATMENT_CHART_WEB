@@ -274,8 +274,18 @@ def extract_table_rows(json_data):
 
 def generate_minipage(tables):
     """
-    Generates LaTeX code for the treatment tables, dynamically including only columns that exist in the data, in the order specified by the JSON if present.
+    Generates LaTeX code for the treatment tables, all with the same total width (user wants all tables to align with the widest one).
     """
+    TOTAL_WIDTH_CM = 15
+    NUMBER_COL_CM = 1
+    EXTRA_COL_CM = 2
+    # Find the maximum number of extra columns (excluding 'content')
+    max_extra = 0
+    for table in tables:
+        columns = table["columns"]
+        n_extra = len([col for col in columns if col != 'content'])
+        if n_extra > max_extra:
+            max_extra = n_extra
     minipage_code = r"""
 """
     count = 1
@@ -283,42 +293,42 @@ def generate_minipage(tables):
         table_title = table["title"]
         rows = table["rows"]
         columns = table["columns"]
-        # Always start with content
-        col_spec = "|p{7cm}|"
+        n_extra = len([col for col in columns if col != 'content'])
+        # Always use the max number of extra columns for width calculation
+        content_col_cm = TOTAL_WIDTH_CM - NUMBER_COL_CM - max_extra * EXTRA_COL_CM
+        col_spec = f"|p{{{NUMBER_COL_CM}cm}}|p{{{content_col_cm}cm}}|"
         headers = [table_title]
         col_latex = ["content"]
-        for col in columns:
-            if col == "content":
-                continue
-            if col == "day":
-                col_spec += "p{1cm}|"
-                headers.append("Day")
-            elif col == "dose":
-                col_spec += "p{2cm}|"
-                headers.append("Dose")
-            elif col == "volume":
-                col_spec += "p{2cm}|"
-                headers.append("Volume")
-            elif col == "rate":
-                col_spec += "p{2cm}|"
-                headers.append("Rate")
-            else:
-                col_spec += "p{2cm}|"
+        # Add all possible extra columns in the same order for alignment
+        all_possible = []
+        for t in tables:
+            for col in t["columns"]:
+                if col != 'content' and col not in all_possible:
+                    all_possible.append(col)
+        for col in all_possible:
+            if col in columns:
+                col_spec += f"p{{{EXTRA_COL_CM}cm}}|"
                 headers.append(col.capitalize())
-            col_latex.append(col)
-        # Generate table with dynamic columns
+                col_latex.append(col)
+            else:
+                col_spec += f"p{{{EXTRA_COL_CM}cm}}|"
+                headers.append("")
+                col_latex.append(None)
         minipage_code += f"""
-    % Medication table with dynamic columns
-    \\begin{{tabular}}{{{col_spec}}}
-        \\hline
-        \\textbf{{{headers[0]}}}"""
+    % Medication table with fixed total width
+    \begin{{tabular}}{{{col_spec}}}
+        \hline
+        \textbf{{{headers[0]}}}"
         for header in headers[1:]:
-            minipage_code += f" & \\textbf{{{header}}}"
+            minipage_code += f" & \textbf{{{header}}}"
         minipage_code += r" \\" + "\n        \\hline\n"
         for row in rows:
             minipage_code += f"       {count}. {row.get('content', '')}"
             for col in col_latex[1:]:
-                minipage_code += f" & {row.get(col, '')}"
+                if col:
+                    minipage_code += f" & {row.get(col, '')}"
+                else:
+                    minipage_code += " & "
             minipage_code += r" \\" + "\n        \\hline\n"
             count += 1
         minipage_code += r"""    \end{tabular}
