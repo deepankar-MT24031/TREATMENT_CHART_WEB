@@ -542,28 +542,19 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
     \hline
 \end{{tabular}}
 
-% --- Begin single table with two columns, each with a nested table ---
-
-% Adjusted widths: left column narrower, right column wider
+% --- Begin two minipages with \hfill for right alignment ---
 
 \noindent
-\begin{{tabular}}{{|p{{8.5cm}}|p{{10.1cm}}|}}
-    \hline
-    % LEFT CELL: Nested table(s) for treatments
-    \begin{{minipage}}[t]{{\linewidth}}
-    {left_table}
-    \end{{minipage}}
-    &
-    % RIGHT CELL: Nested table for parameters
-    \begin{{minipage}}[t]{{\linewidth}}
-    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}}
-    \hline
-    {right_table}
-    \end{{tabular}}
-    \end{{minipage}}
-    \\
-    \hline
-\end{{tabular}}
+\begin{minipage}[t]{0.55\textwidth}
+{left_table}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.40\textwidth}
+\begin{tabular}{|p{1.8cm}|p{2.5cm}|}
+\hline
+{right_table}
+\end{tabular}
+\end{minipage}
 
 % Add signature lines at fixed positions from bottom left
 % X=150mm from left, Y=30mm from bottom for JR signature
