@@ -545,16 +545,16 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 % --- Begin two minipages with \hfill for right alignment ---
 
 \noindent
-\begin{minipage}[t]{0.55\textwidth}
+\begin{{minipage}}[t]{{0.55\textwidth}}
 {left_table}
-\end{minipage}%
+\end{{minipage}}%
 \hfill
-\begin{minipage}[t]{0.40\textwidth}
-\begin{tabular}{|p{1.8cm}|p{2.5cm}|}
+\begin{{minipage}}[t]{{0.40\textwidth}}
+\begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}}
 \hline
 {right_table}
-\end{tabular}
-\end{minipage}
+\end{{tabular}}
+\end{{minipage}}
 
 % Add signature lines at fixed positions from bottom left
 % X=150mm from left, Y=30mm from bottom for JR signature
