@@ -54,20 +54,17 @@ q = Query()
 #         print(entries["Name"], entries["uhid"], entries["date"])
 
 def return_database_with_history():
-
-    print("all fione here")
     # Sort entries by date in ascending order
-    to_return_nested_list_for_history=[]
+    to_return_nested_list_for_history = []
     sorted_entries = sorted(
         db.all(),
         key=lambda x: datetime.strptime(x.get('datetime', '01-01-1970T00:00:00'), '%d-%m-%Y %H:%M:%S',)
     )
     if sorted_entries != None:
-        for entries in reversed(sorted_entries):
-            # print(entries["Name"], entries["date"],entries["uhid"],entries["uuid"])
-            to_return_nested_list_for_history.append([entries["Name"], entries["datetime"],entries["uhid"],entries["uuid"]])
-
-        return to_return_nested_list_for_history
+        # Take only the last 100 entries after sorting
+        for entries in reversed(sorted_entries[-100:]):
+            to_return_nested_list_for_history.append([entries["Name"], entries["datetime"], entries["uhid"], entries["uuid"]])
+    return to_return_nested_list_for_history
 
 def return_database_with_query_is_uuid(param_uuid="NA"):
     db = TinyDB('DATABASE/db.json')
