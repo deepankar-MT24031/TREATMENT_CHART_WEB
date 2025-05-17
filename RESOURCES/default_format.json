@@ -150,16 +150,26 @@
             "row_header_description": " "
         },
         "row_9": {
-            "row_header_name": "IVM9",
+            "row_header_name": "IVF",
             "row_header_description": " "
         },
         "row_10": {
-            "row_header_name": "IVM10",
+            "row_header_name": "Feeds",
             "row_header_description": " "
         },
         "row_11": {
-            "row_header_name": "IVM11",
+            "row_header_name": "GIR(mg/kg/min)",
+            "row_header_description": " "
+        },
+        "row_12": {
+            "row_header_name": "K+",
+            "row_header_description": " "
+        },
+        "row_13": {
+            "row_header_name": "eGFR",
             "row_header_description": " "
         }
+        
+        
     }
 } 
