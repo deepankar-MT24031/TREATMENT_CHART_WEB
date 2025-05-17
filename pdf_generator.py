@@ -373,9 +373,9 @@ def generate_minipage(tables):
         
         minipage_code += f"""
     % Medication table '{main_column_header}' (PRIORITIZED WIDE TITLE COLUMN)
-    \\noindent
-    \\begin{{tabularx}}{{\\linewidth}}{{{final_col_spec}}}
-        \\hline
+    \noindent
+    \begin{{tabularx}}{{15cm}}{{{final_col_spec}}}
+        \hline
 """
         if headers_list:
             minipage_code += "        " + " & ".join(headers_list) + r" \\" + "\n        \\hline\n"
