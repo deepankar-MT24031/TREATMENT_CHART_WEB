@@ -48,7 +48,7 @@ EXPOSE 5000
 ENV FLASK_APP=main.py
 ENV FLASK_ENV=development
 ENV FLASK_DEBUG=1
-ENV FLASK_HOST=0.0.0.0
+ENV FLASK_HOST=localhost
 ENV FLASK_PORT=5000
 
 # Command to run the application

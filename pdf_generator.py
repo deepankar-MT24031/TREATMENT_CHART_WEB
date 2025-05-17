@@ -495,13 +495,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
             print(f"Warning: Failed to copy logo: {e}")
             logo_copy_path = logo_path  # Fall back to original path
 
-        # ---- ADJUST MINIPAGE WIDTHS AND POSITIONING HERE ----
-        # Increase the space between the left and right tables
-        left_minipage_width_fraction = 0.73 # Slightly narrower left table
-        right_minipage_width_fraction = 0.26  # Slightly wider right table, moved a bit left
-        
-        # Important: Use \hfill instead of fixed spacing to push right table to the far right
-        
+        # --- Replace minipage layout with a single table with two columns, each with a nested table ---
         latex_code = rf"""
 \documentclass{{article}}
 \usepackage{{graphicx}}
@@ -547,21 +541,27 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
       & \textbf{{SRs:}} \parbox[t]{{6.5cm}}{{{patient_info["sr_names"]}\vspace{{0.3em}}}} \\
     \hline
 \end{{tabular}}
-\vspace{{0.1cm}} % Reduced space
 
-% FIXED LAYOUT: Create a two-column layout with the right table pushed to the right edge
+% --- Begin single table with two columns, each with a nested table ---
+\vspace{{0.1cm}}
 \noindent
-\begin{{minipage}}[t]{{{left_minipage_width_fraction:.2f}\textwidth}} % Left table (treatments)
-\vspace{{-{adjusted_vspace:.2f}cm}} 
-{left_table}
-\end{{minipage}}%
-\hfill % This pushes the right minipage all the way to the right edge
-\begin{{minipage}}[t]{{{right_minipage_width_fraction:.2f}\textwidth}} % Right table (date, time, etc)
-    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table 
+\begin{{tabular}}{{|p{{11.3cm}}|p{{7.3cm}}|}}
+    \hline
+    % LEFT CELL: Nested table(s) for treatments
+    \begin{{minipage}}[t]{{\linewidth}}
+    {left_table}
+    \end{{minipage}}
+    &
+    % RIGHT CELL: Nested table for parameters
+    \begin{{minipage}}[t]{{\linewidth}}
+    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}}
     \hline
     {right_table}
     \end{{tabular}}
-\end{{minipage}}
+    \end{{minipage}}
+    \\
+    \hline
+\end{{tabular}}
 
 % Add signature lines at fixed positions from bottom left
 % X=150mm from left, Y=30mm from bottom for JR signature
