@@ -62,7 +62,7 @@ def return_database_with_history():
     )
     if sorted_entries != None:
         # Take only the last 100 entries after sorting
-        for entries in reversed(sorted_entries[-100:]):
+        for entries in reversed(sorted_entries[-2:]):
             to_return_nested_list_for_history.append([entries["Name"], entries["datetime"], entries["uhid"], entries["uuid"]])
     return to_return_nested_list_for_history
 
