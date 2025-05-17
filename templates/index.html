@@ -999,7 +999,8 @@
         }
 
         function validateUHID(uhid) {
-            return /^\d{9}$/.test(uhid);
+            // Must be non-empty and all digits
+            return /^\d+$/.test(uhid) && uhid.length > 0;
         }
 
         function validateBed(bed) {
@@ -1037,7 +1038,7 @@
                 return false;
             }
 
-            if (!validateField('UHID', uhid, (val) => !val, validateUHID, 'UHID must be exactly 9 digits.')) {
+            if (!validateField('UHID', uhid, (val) => !val, validateUHID, 'UHID must be a non-empty number (digits only).')) {
                 return false;
             }
 
