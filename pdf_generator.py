@@ -98,7 +98,37 @@ def sanitize_filename(filename):
 
 # --- Keep generate_picu_treatment_chart and other extract/generate functions ---
 
-def generate_picu_treatment_chart(heading,subheading,json_data,font_size=9):
+def preprocess_json_text(text):
+    """
+    Preprocesses text to handle backslashes and newlines properly.
+    Only keeps real newlines and replaces all other backslash combinations with underscore.
+    """
+    if not isinstance(text, str):
+        return text
+        
+    # Replace any literal \n with underscore
+    text = text.replace('\\n', '_')
+    
+    # Replace any other backslash combinations with underscore
+    # This will catch things like \t, \r, \b, etc.
+    text = re.sub(r'\\(?!n)', '_', text)
+    
+    return text
+
+def preprocess_json_data(json_data):
+    """
+    Recursively preprocesses all string values in the JSON data.
+    """
+    if isinstance(json_data, dict):
+        return {k: preprocess_json_data(v) for k, v in json_data.items()}
+    elif isinstance(json_data, list):
+        return [preprocess_json_data(item) for item in json_data]
+    elif isinstance(json_data, str):
+        return preprocess_json_text(json_data)
+    else:
+        return json_data
+
+def generate_picu_treatment_chart(heading, subheading, json_data, font_size=9):
     """
     Generates a PICU treatment chart PDF from JSON data.
 
@@ -119,7 +149,11 @@ def generate_picu_treatment_chart(heading,subheading,json_data,font_size=9):
     if isinstance(json_data, str):
         print("Converting JSON string to dictionary...")
         json_data = json.loads(json_data)
-
+    
+    # Preprocess the JSON data
+    print("\n=== Preprocessing JSON Data ===")
+    json_data = preprocess_json_data(json_data)
+    
     print("\n=== Extracting Patient Information ===")
     # Extract patient information
     patient_info = extract_patient_info(json_data)
