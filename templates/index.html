@@ -1499,7 +1499,10 @@
             const tbody = parameterTable.querySelector('tbody');
             tbody.innerHTML = ''; // Clear existing content
             
-            Object.entries(currentData.each_table_row_layout || {}).forEach(([rowKey, rowData]) => {
+            // Sort parameter rows numerically when rendering
+            Object.entries(currentData.each_table_row_layout || {})
+              .sort((a, b) => parseInt(a[0].replace('row_', '')) - parseInt(b[0].replace('row_', '')))
+              .forEach(([rowKey, rowData]) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td class="cell-number">${rowKey.replace('row_', '')}</td>
@@ -2014,7 +2017,10 @@
                     const tbody = parameterTable.querySelector('tbody');
                     tbody.innerHTML = '';
                     
-                    Object.entries(data.each_table_row_layout || {}).forEach(([rowKey, rowData]) => {
+                    // Sort parameter rows numerically when rendering
+                    Object.entries(data.each_table_row_layout || {})
+                      .sort((a, b) => parseInt(a[0].replace('row_', '')) - parseInt(b[0].replace('row_', '')))
+                      .forEach(([rowKey, rowData]) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td class="cell-number">${rowKey.replace('row_', '')}</td>
