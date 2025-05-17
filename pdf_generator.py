@@ -360,7 +360,7 @@ def generate_minipage(tables):
             if col_key == "day":
                 col_width = "0.7cm"
             else:
-                col_width = "1.2cm"  # Reduced from 2.0cm to make main column wider
+                col_width = "2.0cm"
             temp_extra_cols_specs.append(f">{{\\raggedright\\arraybackslash}}p{{{col_width}}}")
             temp_extra_cols_headers.append(f"\\textbf{{{col_key.capitalize()}}}")
             temp_extra_cols_keys.append(col_key)
@@ -373,9 +373,9 @@ def generate_minipage(tables):
         
         minipage_code += f"""
     % Medication table '{main_column_header}' (PRIORITIZED WIDE TITLE COLUMN)
-    \noindent
-    \begin{{tabularx}}{{15cm}}{{{final_col_spec}}}
-        \hline
+    \\noindent
+    \\begin{{tabularx}}{{\\linewidth}}{{{final_col_spec}}}
+        \\hline
 """
         if headers_list:
             minipage_code += "        " + " & ".join(headers_list) + r" \\" + "\n        \\hline\n"
@@ -511,7 +511,6 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 \usepackage{{tabularx}} 
 \usepackage{{calc}} 
 \usepackage[absolute,overlay]{{textpos}} 
-\usepackage{{multicol}}
 \setlength{{\TPHorizModule}}{{1mm}} 
 \setlength{{\TPVertModule}}{{1mm}} 
 \fontsize{{{font_size}pt}}{{{line_height}pt}}\selectfont
@@ -550,15 +549,15 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 \end{{tabular}}
 \vspace{{0.1cm}} % Reduced space
 
-% FIXED LAYOUT: Use minipage columns for compatibility with tabularx
+% FIXED LAYOUT: Create a two-column layout with the right table pushed to the right edge
 \noindent
-\begin{{minipage}}[t]{{0.72\textwidth}} % Left table (treatments)
-\vspace{{-1.5cm}}
+\begin{{minipage}}[t]{{{left_minipage_width_fraction:.2f}\textwidth}} % Left table (treatments)
+\vspace{{-{adjusted_vspace:.2f}cm}} 
 {left_table}
 \end{{minipage}}%
-\hfill
-\begin{{minipage}}[t]{{0.25\textwidth}} % Right table (date, time, etc)
-    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}}
+\hfill % This pushes the right minipage all the way to the right edge
+\begin{{minipage}}[t]{{{right_minipage_width_fraction:.2f}\textwidth}} % Right table (date, time, etc)
+    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table 
     \hline
     {right_table}
     \end{{tabular}}
