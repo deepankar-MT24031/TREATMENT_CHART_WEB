@@ -454,6 +454,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
         # Calculate line height based on font size
         line_height = font_size + 2
         header_font_size = font_size + 4
+        subheader_font_size = font_size + 2  # Smaller than header
         adjusted_vspace = font_size * 0.19  # Increased upward shift, still dynamic with font size
 
         # Get the current directory
@@ -522,9 +523,10 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 \end{{minipage}}\
 \vspace{{-1cm}} % Adjust this value to position the logo at the top
 \hfill
-\fontsize{{{header_font_size}pt}}{{{header_font_size + 2}pt}}\selectfont % Header font size
 \begin{{center}}\
+    \fontsize{{{header_font_size}pt}}{{{header_font_size + 2}pt}}\selectfont % Header font size
     \textbf{{{heading}}} \\
+    \fontsize{{{subheader_font_size}pt}}{{{subheader_font_size + 2}pt}}\selectfont % Subheader font size
     \textbf{{{subheading}}} \\
 \end{{center}}
 \fontsize{{{font_size}pt}}{{{line_height}pt}}\selectfont % Restore main font size
