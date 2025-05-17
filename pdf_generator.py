@@ -511,6 +511,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 \usepackage{{tabularx}} 
 \usepackage{{calc}} 
 \usepackage[absolute,overlay]{{textpos}} 
+\usepackage{{multicol}}
 \setlength{{\TPHorizModule}}{{1mm}} 
 \setlength{{\TPVertModule}}{{1mm}} 
 \fontsize{{{font_size}pt}}{{{line_height}pt}}\selectfont
@@ -549,19 +550,18 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 \end{{tabular}}
 \vspace{{0.1cm}} % Reduced space
 
-% FIXED LAYOUT: Create a two-column layout with the right table pushed to the right edge
+% FIXED LAYOUT: Use parallel columns instead of minipages
+\begin{{multicols}}{{2}}
+\columnsep=20pt
 \noindent
-\begin{{minipage}}[t]{{{left_minipage_width_fraction:.2f}\textwidth}} % Left table (treatments)
-\vspace{{-{adjusted_vspace:.2f}cm}} 
 {left_table}
-\end{{minipage}}%
-\hfill % This pushes the right minipage all the way to the right edge
-\begin{{minipage}}[t]{{{right_minipage_width_fraction:.2f}\textwidth}} % Right table (date, time, etc)
-    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table 
-    \hline
-    {right_table}
-    \end{{tabular}}
-\end{{minipage}}
+\columnbreak
+\noindent
+\begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table 
+\hline
+{right_table}
+\end{{tabular}}
+\end{{multicols}}
 
 % Add signature lines at fixed positions from bottom left
 % X=150mm from left, Y=30mm from bottom for JR signature

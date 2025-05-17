@@ -7,49 +7,55 @@ import sys
 import tempfile # Added for temporary directory
 import shutil   # Added for moving files
 import re
+from datetime import datetime
 
 
+def split_string(s,length=10):
+    if len(s) > length:
+        return '\n'.join(s[i:i+length] for i in range(0, len(s), length))
+    return s
 
 # Replace your escape_latex function with this version
 
+
 # @catch_exceptions() # Assuming decorator is defined elsewhere
-def escape_latex(s):
-    if not isinstance(s, str) or not s.strip():
-        return "" # Return empty string for None, empty, or whitespace-only
-    if s is None:
-        return ""
+def escape_latex(text):
+    """
+    Escapes special LaTeX characters in the given text.
+    Handles newlines by converting them to LaTeX newline commands.
+    """
+    if not isinstance(text, str):
+        return text
 
-    s = s.strip() # Strip whitespace first
-    if not s:
-        return ""
+    # Use a placeholder that does not contain any LaTeX special characters
+    placeholder = '<<NEWLINE>>'
+    text = text.replace('\n', placeholder)
 
-    # 1. Escape literal backslash FIRST to avoid interfering with other escapes
-    # This assumes backslashes in the input JSON are meant to be literal characters
-    temp_s = s.replace("\\", r"\textbackslash{}")
+    # Now replace the placeholder with LaTeX newline
+    text = text.replace(placeholder, r'\\')
 
-    # 2. Define other replacements (excluding backslash now)
-    replacements = {
-        "&": r"\&",
-        "%": r"\%",
-        "$": r"\$",
-        "#": r"\#",
-        "_": r"\_",  # Correct underscore escape
-        "~": r"\textasciitilde{}",
-        "^": r"\textasciicircum{}",
-        # Generally avoid escaping {}[]() unless they cause specific issues
-        "\"": r"''", # Double quotes -> two single quotes
-        "'": r"'",  # Keep single quote as is (or use ` for left, ' for right if needed)
-        "\n": r" \\ ",  # Preserve line breaks as LaTeX line breaks
+    # Escape special LaTeX characters (including underscore)
+    special_chars = {
+        '&': r'\&',
+        '%': r'\%',
+        '$': r'\$',
+        '#': r'\#',
+        '_': r'\_',
+        '{': r'\{',
+        '}': r'\}',
+        '~': r'\textasciitilde{}',
+        '^': r'\textasciicircum{}',
+        '<': r'\textless{}',
+        '>': r'\textgreater{}',
+        '|': r'\textbar{}',
+        '"': r'\textquotedbl{}',
+        "'": r'\textquotesingle{}',
+        '`': r'\textasciigrave{}'
     }
+    for char, escape in special_chars.items():
+        text = text.replace(char, escape)
 
-    # 3. Apply the rest of the replacements
-    for char, escape in replacements.items():
-        # Make sure we don't re-process parts of already inserted escapes
-        # (This simple replace loop can have issues with overlapping patterns,
-        # but let's try it first)
-        temp_s = temp_s.replace(char, escape)
-
-    return temp_s
+    return text
 
 # --- Assume PyQt5 imports and other helper functions like catch_exceptions, escape_latex, etc. are defined above ---
 
@@ -92,7 +98,37 @@ def sanitize_filename(filename):
 
 # --- Keep generate_picu_treatment_chart and other extract/generate functions ---
 
-def generate_picu_treatment_chart(json_data,font_size=9):
+def preprocess_json_text(text):
+    """
+    Preprocesses text to handle backslashes and newlines properly.
+    Only keeps real newlines and replaces all other backslash combinations with underscore.
+    """
+    if not isinstance(text, str):
+        return text
+        
+    # Replace any literal \n with underscore
+    text = text.replace('\\n', '_')
+    
+    # Replace any other backslash combinations with underscore
+    # This will catch things like \t, \r, \b, etc.
+    text = re.sub(r'\\(?!n)', '_', text)
+    
+    return text
+
+def preprocess_json_data(json_data):
+    """
+    Recursively preprocesses all string values in the JSON data.
+    """
+    if isinstance(json_data, dict):
+        return {k: preprocess_json_data(v) for k, v in json_data.items()}
+    elif isinstance(json_data, list):
+        return [preprocess_json_data(item) for item in json_data]
+    elif isinstance(json_data, str):
+        return preprocess_json_text(json_data)
+    else:
+        return json_data
+
+def generate_picu_treatment_chart(heading, subheading, json_data, font_size=9):
     """
     Generates a PICU treatment chart PDF from JSON data.
 
@@ -103,25 +139,57 @@ def generate_picu_treatment_chart(json_data,font_size=9):
     Returns:
         str: Path to the generated PDF file
     """
+    print("\n=== Starting PDF Generation Process ===")
+    print(f"Input parameters:")
+    print(f"- Heading: {heading}")
+    print(f"- Subheading: {subheading}")
+    print(f"- Font size: {font_size}")
+    
     # If json_data is a string, parse it
     if isinstance(json_data, str):
+        print("Converting JSON string to dictionary...")
         json_data = json.loads(json_data)
-
+    
+    # Preprocess the JSON data
+    print("\n=== Preprocessing JSON Data ===")
+    json_data = preprocess_json_data(json_data)
+    
+    print("\n=== Extracting Patient Information ===")
     # Extract patient information
     patient_info = extract_patient_info(json_data)
+    print(f"Extracted patient info: {patient_info}")
 
+    print("\n=== Extracting Treatment Tables ===")
     # Extract treatment tables
     treatment_tables = extract_entry_tables(json_data)
-    minipage_latex = generate_minipage(treatment_tables)
+    print(f"Found {len(treatment_tables)} treatment tables")
 
+    print("\n=== Extracting Table Rows ===")
     # Extract table rows
     table_rows = extract_table_rows(json_data)
-    latex_table = generate_two_column_table(table_rows)
+    print(f"Found {len(table_rows)} table rows")
 
-    # Generate the PDF
-    generate_pdf_from_latex(patient_info, minipage_latex, latex_table, font_size=font_size)
+    print("\n=== Generating PDF ===")
+    # Generate the PDF and get the path
+    pdf_path = generate_pdf_from_latex(
+        heading=heading,
+        subheading=subheading,
+        patient_info=patient_info,
+        treatment_tables=treatment_tables,  # Pass the raw tables, not the LaTeX code
+        table_rows=table_rows,  # Pass the raw rows, not the LaTeX code
+        font_size=font_size
+    )
 
-    return "success"
+    if pdf_path and os.path.exists(pdf_path):
+        print(f"\n=== PDF Generation Successful ===")
+        print(f"PDF generated at: {pdf_path}")
+        print(f"File size: {os.path.getsize(pdf_path)} bytes")
+        return pdf_path
+    else:
+        print("\n=== PDF Generation Failed ===")
+        print(f"PDF path: {pdf_path}")
+        print(f"File exists: {os.path.exists(pdf_path) if pdf_path else False}")
+        return None
 
 
 
@@ -144,11 +212,11 @@ def extract_patient_info(json_data):
         "gender": json_data.get("Sex", ""),
         "bed_number": int(json_data.get("bed_number", 0)) if json_data.get("bed_number", "").isdigit() else 0,
         "uhid": json_data.get("uhid", ""),
-        # REMOVED .replace() calls here:
-        "diagnosis": json_data.get("diagnosis", "").strip(),
-        "consultant_names": json_data.get("consultants", "").strip(), # Added strip
-        "jr_names": json_data.get("jr", "").strip(),                 # Added strip
-        "sr_names": json_data.get("sr", "").strip()                  # Added strip
+        # Updated field names to match frontend capitalization
+        "diagnosis": json_data.get("Diagnosis", "").strip(),
+        "consultant_names": json_data.get("Consultants", "").strip(),
+        "jr_names": json_data.get("JR", "").strip(),
+        "sr_names": json_data.get("SR", "").strip()
     }
 
     # Now, apply escaping using the dedicated function to all string fields
@@ -171,38 +239,44 @@ def extract_patient_info(json_data):
 def extract_entry_tables(json_data):
     """
     Extracts treatment tables from the JSON data and applies LaTeX escaping.
-
-    Args:
-        json_data (dict): The JSON data containing treatment information
-
-    Returns:
-        list: A list of dictionaries representing treatment tables
+    Returns a list of dicts, each with 'title', 'rows', and 'columns' (list of present columns, in order if specified).
     """
-    entry_layout = json_data.get("each_entry_layout", {})
-
+    entries = json_data.get("entries", {})
     tables = []
 
-    for entry_key, entry_data in entry_layout.items():
-        title = escape_latex(entry_data.get("title", "").strip())  # Escape title
+    for entry_key, entry_data in entries.items():
+        title = escape_latex(entry_data.get("title", "").strip())
         subtitles = entry_data.get("subtitles", {})
+
+        # Use columns array from JSON if present, otherwise infer
+        if "columns" in entry_data and isinstance(entry_data["columns"], list):
+            columns = ["content"] + [col for col in entry_data["columns"] if col != "content"]
+        else:
+            # fallback: infer from subtitles
+            present_columns = set(["content"])
+            for subtitle_key, subtitle_data in subtitles.items():
+                for col in ["day", "dose", "volume", "rate"]:
+                    if col in subtitle_data:
+                        present_columns.add(col)
+            columns = list(present_columns)
 
         rows = []
         for subtitle_key, subtitle_data in subtitles.items():
-            content = escape_latex(str(subtitle_data.get("content", "")).strip())
-            day = escape_latex(str(subtitle_data.get("day", "")).strip())
-            dose = escape_latex(str(subtitle_data.get("dose", "")).strip())
-            volume = escape_latex(str(subtitle_data.get("volume", "")).strip())
-
-            if any([content, day, dose, volume]):  # Keep row if any field has data
-                rows.append((content, day, dose, volume))
-
+            row = {"content": escape_latex(str(subtitle_data.get("content", "")).strip())}
+            for col in columns:
+                if col == "content":
+                    continue
+                if col in subtitle_data:
+                    row[col] = escape_latex(str(subtitle_data.get(col, "")).strip())
+            # Only keep row if any field has data
+            if any(row.get(col, "") for col in row):
+                rows.append(row)
         if rows:
             tables.append({
                 "title": title,
-                "first_header": title,  # Use the title dynamically
-                "rows": rows
+                "rows": rows,
+                "columns": columns
             })
-
     return tables
 
 
@@ -217,14 +291,12 @@ def extract_table_rows(json_data):
     Returns:
         list: A list of tuples representing table rows.
     """
-    # Extract the table row layout data
-    table_row_layout = json_data.get("each_table_row_layout", {})
-
-    # Initialize the table_data list
+    # Extract the table row layout data from parameters
+    parameters = json_data.get("parameters", {})
     table_data = []
 
     # Process each row
-    for row_key, row_data in table_row_layout.items():
+    for row_key, row_data in parameters.items():
         row_header_name = escape_latex(row_data.get("row_header_name", "").strip())  # Escape header name
         row_header_description = escape_latex(row_data.get("row_header_description", "").strip())  # Escape description
 
@@ -236,49 +308,103 @@ def extract_table_rows(json_data):
 
 def generate_minipage(tables):
     """
-    Generates LaTeX code for the treatment tables.
-
-    Args:
-        tables (list): A list of dictionaries representing treatment tables
-
-    Returns:
-        str: LaTeX code for the minipage containing treatment tables
+    Generates LaTeX code for the treatment tables using tabularx.
+    The first "content" (title/description) column is an 'X' (flexible) column
+    and is prioritized to be significantly wider.
+    There can be up to 3 additional "extra" columns with a very narrow, fixed width.
+    All tables span the full width of their parent minipage.
     """
-    minipage_code = r"""
-"""
-    count=1
-    # Loop through each table
-    for table in tables:
-        table_title = table["title"]
-        first_header = table["first_header"]
+    minipage_code = r""
+    
+    for table_idx, table in enumerate(tables):
+        main_column_header = table["title"] 
         rows = table["rows"]
+        columns_in_data = table["columns"] 
 
-        # Add table title
+        # --- SKIP TABLES WITH NO COLUMNS OR NO ROWS ---
+        if not columns_in_data or not rows:
+            continue
+                                        
+        headers_list = []
+        col_specs_list = []
+        data_keys_for_rows_ordered = []
+
+        # 1. The main descriptive column ("content" / "title" column)
+        # This will be the 'X' column. It will get the lion's share of the space.
+        if "content" in columns_in_data:
+            col_specs_list.append(">{\\raggedright\\arraybackslash}X") 
+            headers_list.append(f"\\textbf{{{main_column_header}}}")
+            data_keys_for_rows_ordered.append("content")
+        else: # Fallback (should ideally not be hit if 'content' is always present)
+            if columns_in_data:
+                first_key = columns_in_data[0]
+                col_specs_list.append(">{\\raggedright\\arraybackslash}X")
+                headers_list.append(f"\\textbf{{{first_key.capitalize()}}}")
+                data_keys_for_rows_ordered.append(first_key)
+            else: # No columns at all in data
+                col_specs_list.append(">{\\raggedright\\arraybackslash}X") 
+                headers_list.append(f"\\textbf{{{main_column_header}}}") # Still use the table title as header
+
+        # 2. Handle "extra" columns (day, dose, volume, rate, etc.)
+        # 'day' column gets 1.0cm, all others get 2.0cm
+        temp_extra_cols_specs = []
+        temp_extra_cols_headers = []
+        temp_extra_cols_keys = []
+
+        current_main_col_key = data_keys_for_rows_ordered[0] if data_keys_for_rows_ordered else None
+
+        for col_key in columns_in_data:
+            if col_key == current_main_col_key:
+                continue
+            # Special width for 'day', default for others
+            if col_key == "day":
+                col_width = "0.7cm"
+            else:
+                col_width = "2.0cm"
+            temp_extra_cols_specs.append(f">{{\\raggedright\\arraybackslash}}p{{{col_width}}}")
+            temp_extra_cols_headers.append(f"\\textbf{{{col_key.capitalize()}}}")
+            temp_extra_cols_keys.append(col_key)
+
+        col_specs_list.extend(temp_extra_cols_specs)
+        headers_list.extend(temp_extra_cols_headers)
+        data_keys_for_rows_ordered.extend(temp_extra_cols_keys)
+            
+        final_col_spec = "|" + "|".join(col_specs_list) + "|" if col_specs_list else "|>{\\raggedright\\arraybackslash}X|"
+        
         minipage_code += f"""
-    % Medication table
-    \\begin{{tabular}}{{|p{{7cm}}|p{{1cm}}|p{{2cm}}|p{{2cm}}|}}
-        \\hline
-        \\textbf{{{table_title}}} & \\textbf{{Day}} & \\textbf{{Dose}} & \\textbf{{Vol}} \\\\
+    % Medication table '{main_column_header}' (PRIORITIZED WIDE TITLE COLUMN)
+    \\noindent
+    \\begin{{tabularx}}{{\\linewidth}}{{{final_col_spec}}}
         \\hline
 """
+        if headers_list:
+            minipage_code += "        " + " & ".join(headers_list) + r" \\" + "\n        \\hline\n"
 
-        # Add rows dynamically
-        for row in rows:
-            minipage_code += f"       {count}. {row[0]} & {row[1]} & {row[2]} & {row[3]} \\\\\n        \\hline\n"
-            count=count+1
-        count =1
+        for item_num, row_data in enumerate(rows):
+            row_cells = []
+            if data_keys_for_rows_ordered:
+                main_desc_key = data_keys_for_rows_ordered[0]
+                item_description = row_data.get(main_desc_key, '') 
+                row_cells.append(f"{item_num + 1}. {item_description}") # This goes into the X column
 
-        # Close table and add spacing
-        minipage_code += r"""    \end{tabular}
-    \vspace{0.2cm} % Adjusted space
+                # Data for the narrow extra columns
+                for extra_col_key in data_keys_for_rows_ordered[1:]:
+                    cell_text = row_data.get(extra_col_key, '')
+                    row_cells.append(cell_text)
+            else: # No columns defined in spec, but row data might exist
+                row_cells.append(f"{item_num + 1}. ") # Default for malformed cases
+
+            minipage_code += "        " + " & ".join(row_cells) + r" \\" + "\n        \\hline\n"
+        
+        minipage_code += r"""    \end{tabularx}
+    \vspace{0.2cm}
 """
-
     return minipage_code
 
 
 def generate_two_column_table(data):
     """
-    Generates LaTeX code for the two-column table.
+    Generates LaTeX code for the two-column table with improved text wrapping for both label and value.
 
     Args:
         data (list): A list of tuples representing table rows
@@ -288,77 +414,120 @@ def generate_two_column_table(data):
     """
     table_code = r""""""
 
-    # Dynamically adding rows
+    # Dynamically adding rows with text wrapping for BOTH columns
     for row in data:
         label, value = row[0], row[1]
-        table_code += f" {label} & {value} \\\\\n        \\hline\n"
+
+        # Split long text into multiple lines
+        label = split_string(label, length=9)
+        value = split_string(value, length=18)
+
+        if label.lower().strip() == "date":
+            table_code += fr" \textbf" + "{" + f"{label}" + "}" + " & " + r" \textbf" + "{" + f"{value}" + "}" + " \\\\\n        \\hline\n"
+            continue
+
+        # Wrap both the label and value in minipage environments to force wrapping
+        table_code += fr" \begin{{minipage}}[t]{{1.7cm}}\textbf{{{label}}}\end{{minipage}}" + \
+                      f" & \\begin{{minipage}}[t]{{2.3cm}}\\raggedright {value} \\end{{minipage}} \\\\\n        \\hline\n"
 
     return table_code
 
 # sanitize_filename function should be defined above this point
 
 
-def generate_pdf_from_latex(patient_info, stacked_blocks, table_data, font_size=9):
-    """
-    Generates the LaTeX code and calls the function to compile it to PDF.
+def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables, table_rows, font_size=13):
+    try:
+        # Detect pdflatex path
+        if sys.platform == 'win32':
+            pdflatex_path = r"C:\texlive\2023\bin\win32\pdflatex.exe"
+            if not os.path.exists(pdflatex_path):
+                pdflatex_path = r"C:\texlive\2022\bin\win32\pdflatex.exe"
+        else:
+            pdflatex_path = "/usr/local/bin/pdflatex"
+            if not os.path.exists(pdflatex_path):
+                pdflatex_path = "/usr/bin/pdflatex"
 
-    Args:
-        patient_info (dict): A dictionary containing patient information
-        stacked_blocks (str): LaTeX code for the stacked treatment tables
-        table_data (str): LaTeX code for the table data
-        font_size (int): Base font size in pt for the document
-    """
-    current_dir = os.getcwd()
-    output_dir_name = "GENERATED_PDFS"
-    output_dir_path = os.path.join(current_dir, output_dir_name)
+        if not os.path.exists(pdflatex_path):
+            print(f"ERROR: pdflatex not found at {pdflatex_path}")
+            return None
 
-    # --- Define path for the intermediate .tex file (in CWD as per original logic) ---
-    intermediate_tex_filename = os.path.join(current_dir, "document.tex")
-    print(f'Intermediate TeX file path: {intermediate_tex_filename}')
+        # Calculate line height based on font size
+        line_height = font_size + 2
+        header_font_size = font_size + 4
+        subheader_font_size = font_size + 2  # Smaller than header
+        adjusted_vspace = font_size * 0.19  # Increased upward shift, still dynamic with font size
 
-    # --- Define path for the pdflatex executable ---
-    # Adjust this path if your TinyTeX installation is elsewhere relative to your script
-    absolute_path_of_pdflatex_exe = os.path.join(current_dir, "RESOURCES", "Tinytex", "bin", "windows", "pdflatex.exe")
-    # Add logic here for other OS if necessary
+        # Get the current directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Check if pdflatex executable exists before proceeding
-    if not os.path.isfile(absolute_path_of_pdflatex_exe):
-        print(f"ERROR: pdflatex executable not found at:")
-        print(f"'{absolute_path_of_pdflatex_exe}'")
-        print("Please check the RESOURCES/Tinytex path and installation.")
-        # Show QMessageBox in GUI context
-        return # Stop
+        # Create output directory if it doesn't exist
+        output_dir = os.path.join(current_dir, "GENERATED_PDFS")
+        os.makedirs(output_dir, exist_ok=True)
 
-    # --- Generate LaTeX Code ---
-    line_height = int(font_size * 1.2)
-    header_font_size = font_size - 1
-    latex_code = rf"""
+        # Generate a unique filename using timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        base_filename = f"current_{timestamp}"
+        tex_file_path = os.path.join(output_dir, f"{base_filename}.tex")
+        pdf_file_path = os.path.join(output_dir, f"{base_filename}.pdf")
+
+        # Process the tables into LaTeX code
+        left_table = generate_minipage(treatment_tables)
+        right_table = generate_two_column_table(table_rows)
+
+        # Check for logo files
+        website_logo_path = os.path.join(current_dir, "RESOURCES", "website_logo.png")
+        default_logo_path = os.path.join(current_dir, "RESOURCES", "default_AIIMS_LOGO.png")
+        
+        if os.path.exists(website_logo_path):
+            logo_path = website_logo_path  # Use absolute path
+            print("Using website logo")
+        else:
+            logo_path = default_logo_path  # Use absolute path
+            print("Using default logo")
+
+        # Create a copy of the logo in the output directory
+        logo_filename = os.path.basename(logo_path)
+        logo_copy_path = os.path.join(output_dir, logo_filename)
+        try:
+            shutil.copy2(logo_path, logo_copy_path)
+            print(f"Copied logo to: {logo_copy_path}")
+        except Exception as e:
+            print(f"Warning: Failed to copy logo: {e}")
+            logo_copy_path = logo_path  # Fall back to original path
+
+        # ---- ADJUST MINIPAGE WIDTHS AND POSITIONING HERE ----
+        # Increase the space between the left and right tables
+        left_minipage_width_fraction = 0.73 # Slightly narrower left table
+        right_minipage_width_fraction = 0.26  # Slightly wider right table, moved a bit left
+        
+        # Important: Use \hfill instead of fixed spacing to push right table to the far right
+        
+        latex_code = rf"""
 \documentclass{{article}}
 \usepackage{{graphicx}}
-\usepackage[a4paper, margin=0.3in]{{geometry}} % Decreased margins
+\usepackage[a4paper, margin=0.3in]{{geometry}} 
 \usepackage{{array}}
 \usepackage{{multirow}}
-\usepackage{{tabularx}} % For dynamic column widths
-\usepackage{{calc}} % For calculation of lengths
-\usepackage[absolute,overlay]{{textpos}} % For absolute positioning
-\setlength{{\TPHorizModule}}{{1mm}} % Set horizontal unit to mm
-\setlength{{\TPVertModule}}{{1mm}} % Set vertical unit to mm
-% Set font size for entire document
+\usepackage{{tabularx}} 
+\usepackage{{calc}} 
+\usepackage[absolute,overlay]{{textpos}} 
+\setlength{{\TPHorizModule}}{{1mm}} 
+\setlength{{\TPVertModule}}{{1mm}} 
 \fontsize{{{font_size}pt}}{{{line_height}pt}}\selectfont
-% Create a special column type for automatic line breaking
 \newcolumntype{{Y}}{{>{{\raggedright\arraybackslash\hspace{{0pt}}\parfillskip=0pt plus 1fil}}p}}
-\begin{{document}}\
+\begin{{document}}
 % Insert logo at the top-left
 \noindent
 \begin{{minipage}}{{0.2\textwidth}} % Adjust width as needed
-    \includegraphics[width=2cm]{{RESOURCES/AIIMS_LOGO.png}} % Adjust width as needed
+    \includegraphics[width=2cm]{{{logo_filename}}} % Use just the filename
 \end{{minipage}}\
 \vspace{{-1cm}} % Adjust this value to position the logo at the top
 \hfill
-\fontsize{{{header_font_size}pt}}{{{header_font_size + 2}pt}}\selectfont % Header font size
 \begin{{center}}\
-    \textbf{{DEPARTMENT OF PEDIATRICS}} \\
-    \textbf{{MCB PICU TREATMENT CHART}} \\
+    \fontsize{{{header_font_size}pt}}{{{header_font_size + 2}pt}}\selectfont % Header font size
+    \textbf{{{heading}}} \\
+    \fontsize{{{subheader_font_size}pt}}{{{subheader_font_size + 2}pt}}\selectfont % Subheader font size
+    \textbf{{{subheading}}} \\
 \end{{center}}
 \fontsize{{{font_size}pt}}{{{line_height}pt}}\selectfont % Restore main font size
 % Keep original upper tables unchanged
@@ -366,35 +535,31 @@ def generate_pdf_from_latex(patient_info, stacked_blocks, table_data, font_size=
     \hline
     \textbf{{Name:}} {patient_info["patient_name"]} & \textbf{{Age:}} {patient_info["years"]} years {patient_info["months"]} months & \textbf{{Gender:}} {patient_info["gender"]} & \textbf{{Bed:}} {patient_info["bed_number"]} & \textbf{{UHID:}} {patient_info["uhid"]} \\
     \hline
-    \multicolumn{{5}}{{|p{{19cm}}|}}{{\textbf{{Diagnosis:}} {patient_info["diagnosis"]} }}\\
+    \multicolumn{{5}}{{|p{{19cm}}|}}{{\textbf{{Diagnosis:}} \parbox[t]{{18cm}}{{{patient_info["diagnosis"]}\vspace{{0.3em}}}}}} \\
     \hline
 \end{{tabular}}
 \\
 \\
 \noindent\begin{{tabular}}{{|p{{11.3cm}}|p{{7.3cm}}|}}
      \hline
-    \textbf{{Consultant:}} {patient_info["consultant_names"]}      & \textbf{{JRs:}} {patient_info["jr_names"]} \\
+    \textbf{{Consultant:}} \parbox[t]{{10.5cm}}{{{patient_info["consultant_names"]}\vspace{{0.3em}}}}      & \textbf{{JRs:}} \parbox[t]{{6.5cm}}{{{patient_info["jr_names"]}\vspace{{0.3em}}}} \\
     \cline{{2-2}}
-      & \textbf{{SRs:}} {patient_info["sr_names"]} \\
+      & \textbf{{SRs:}} \parbox[t]{{6.5cm}}{{{patient_info["sr_names"]}\vspace{{0.3em}}}} \\
     \hline
 \end{{tabular}}
 \vspace{{0.1cm}} % Reduced space
-% Create a two-column layout with fixed positions
+
+% FIXED LAYOUT: Create a two-column layout with the right table pushed to the right edge
 \noindent
-\begin{{minipage}}[t]{{0.45\textwidth}}
-\vspace{{-2cm}} % Adjust this value to position the content above the image
-
-    {stacked_blocks} % Replace with your stacked blocks\
-
+\begin{{minipage}}[t]{{{left_minipage_width_fraction:.2f}\textwidth}} % Left table (treatments)
+\vspace{{-{adjusted_vspace:.2f}cm}} 
+{left_table}
 \end{{minipage}}%
-\hfill%
-\begin{{minipage}}[t]{{0.32\textwidth}}
-
-\hspace{{1cm}} % Negative hspace moves content to the left
-    % Date information table - fixed on right\\
-    \begin{{tabular}}{{|Y{{1.8cm}}|Y{{2.5cm}}|}}
+\hfill % This pushes the right minipage all the way to the right edge
+\begin{{minipage}}[t]{{{right_minipage_width_fraction:.2f}\textwidth}} % Right table (date, time, etc)
+    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table 
     \hline
-    {table_data}
+    {right_table}
     \end{{tabular}}
 \end{{minipage}}
 
@@ -411,230 +576,111 @@ def generate_pdf_from_latex(patient_info, stacked_blocks, table_data, font_size=
 
 \end{{document}}
 """
-    # --- Write LaTeX code to the intermediate .tex file ---
-    try:
-        print(f"Writing LaTeX code to {intermediate_tex_filename}...")
-        with open(intermediate_tex_filename, "w", encoding="utf-8") as f:
-            f.write(latex_code)
-        print("Finished writing .tex file.")
-    except Exception as e:
-        print(f"Error writing {intermediate_tex_filename}: {e}")
-        # Show QMessageBox
-        return # Stop
+        # --- Write LaTeX code to the intermediate .tex file ---
+        try:
+            print("\n=== Writing LaTeX File ===")
+            print(f"Writing to: {tex_file_path}")
+            with open(tex_file_path, "w", encoding="utf-8") as f:
+                f.write(latex_code)
+            print("LaTeX file written successfully")
+        except Exception as e:
+            print(f"ERROR: Failed to write LaTeX file: {e}")
+            return None
 
-    # --- Prepare the Final PDF Path using the required convention ---
-    try:
-        # Ensure the output directory exists
-        os.makedirs(output_dir_path, exist_ok=True)
+        # --- Compile LaTeX to PDF ---
+        try:
+            print("\n=== Compiling LaTeX to PDF ===")
+            print(f"Using pdflatex at: {pdflatex_path}")
+            print(f"Compiling: {tex_file_path}")
+            print(f"Output will be: {pdf_file_path}")
 
-        # Sanitize name and uhid (using the defined function)
-        name = sanitize_filename(patient_info.get("patient_name", "UnknownName"))
-        uhid = sanitize_filename(patient_info.get("uhid", "NoUHID"))
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        final_pdf_filename = f"{name}_{uhid}_{timestamp}.pdf"
-        generated_pdf_location_with_name = os.path.join(output_dir_path, final_pdf_filename)
-        print(f"Final PDF path target: {generated_pdf_location_with_name}")
-    except Exception as e:
-        print(f"Error preparing final PDF path: {e}")
-        # Show QMessageBox
-        return # Stop
-
-    # --- Call the function to compile the .tex file to the final PDF location ---
-    print("<========= Calling from_latex_to_pdf ========>")
-    from_latex_to_pdf(
-        tex_filename=intermediate_tex_filename,
-        pdf_address=generated_pdf_location_with_name,
-        absolute_path_of_pdflatex_exe=absolute_path_of_pdflatex_exe
-    )
-    print("<========= Returned from from_latex_to_pdf ========>")
-
-    # --- Cleanup intermediate .tex file (optional, but good practice) ---
-    try:
-        if os.path.exists(intermediate_tex_filename):
-            # Check if the PDF was actually created before deleting the source .tex
-            if os.path.exists(generated_pdf_location_with_name):
-                 print(f"Cleaning up intermediate file: {intermediate_tex_filename}")
-                 #os.remove(intermediate_tex_filename) # Uncomment to delete .tex file on success
-            else:
-                 print(f"Keeping intermediate file {intermediate_tex_filename} as PDF generation failed.")
-    except Exception as e:
-        print(f"Warning: Could not clean up intermediate file {intermediate_tex_filename}: {e}")
-
-
-def from_latex_to_pdf(tex_filename, pdf_address, absolute_path_of_pdflatex_exe):
-    """
-    Compiles a given .tex file to a PDF at the specified address using a direct
-    pdflatex executable path and a temporary directory for intermediate files.
-
-    Args:
-        tex_filename (str): Full path to the input .tex file.
-        pdf_address (str): Full desired path for the output PDF file.
-        absolute_path_of_pdflatex_exe (str): Full path to the pdflatex executable.
-    """
-    print(f"--- Inside from_latex_to_pdf ---")
-    print(f"  Input TeX: {tex_filename}")
-    print(f"  Output PDF Target: {pdf_address}")
-    print(f"  pdflatex Exe: {absolute_path_of_pdflatex_exe}")
-
-    # Ensure the target directory for the final PDF exists
-    pdf_output_directory = os.path.dirname(pdf_address)
-    try:
-        os.makedirs(pdf_output_directory, exist_ok=True)
-    except Exception as e:
-        print(f"ERROR: Could not create target directory '{pdf_output_directory}': {e}")
-        # Show QMessageBox in GUI context if needed
-        return # Stop if we can't even make the output dir
-
-    # Use a temporary directory for the compilation process
-    try:
-        with tempfile.TemporaryDirectory() as tempdir:
-            print(f"  Created temporary directory: {tempdir}")
-
-            # Define the expected path of the PDF *within* the temporary directory
-            # pdflatex will use the basename of the input .tex file by default
-            temp_pdf_basename = os.path.splitext(os.path.basename(tex_filename))[0] + ".pdf"
-            temp_pdf_path = os.path.join(tempdir, temp_pdf_basename)
-            temp_log_path = os.path.join(tempdir, os.path.splitext(temp_pdf_basename)[0] + ".log")
-
-            # Prepare the command for subprocess
-            # Input tex_filename is outside tempdir, but output goes *into* tempdir
-            cmd = [
-                absolute_path_of_pdflatex_exe,
-                "-output-directory=" + tempdir,  # Crucial: direct output here
-                "-interaction=nonstopmode",      # Prevent interactive prompts
-                #"-halt-on-error",              # Optional: stop immediately on error
-                tex_filename                     # The input .tex file (full path)
-            ]
-
-            # Run the pdflatex command
-            print(f"  Running command: {' '.join(cmd)}")
-            process = subprocess.run(
-                cmd,
+            # Run pdflatex with full path and proper error handling
+            result = subprocess.run(
+                [pdflatex_path, "-jobname", base_filename, "-interaction=nonstopmode", tex_file_path],
+                cwd=output_dir,  # Set working directory to output_dir
                 capture_output=True,
-                text=True,
-                check=False, # Check manually
-                encoding='utf-8',
-                errors='replace'
-            )
+                text=True
+            ) 
 
-            # --- Check Compilation Results ---
-            if process.returncode == 0 and os.path.exists(temp_pdf_path):
-                print(f"  LaTeX compilation successful (Exit Code 0).")
-                # Move the generated PDF from temp dir to the final destination
-                try:
-                    print(f"  Moving temporary PDF '{temp_pdf_path}' to '{pdf_address}'")
-                    shutil.move(temp_pdf_path, pdf_address)
-                    print(f"  SUCCESS! PDF file saved to: '{pdf_address}'")
+            # Print compilation output for debugging
+            print("\n=== pdflatex Output ===")
+            print(result.stdout)
+            if result.stderr:
+                print("\n=== pdflatex Errors ===")
+                print(result.stderr)
 
-                    # Attempt to open the final PDF file
-                    try:
-                        print("  Attempting to open PDF...")
-                        os.startfile(pdf_address) # Windows specific
-                    except AttributeError:
-                        print(f"  (Cannot auto-open on this OS. File at: {pdf_address})")
-                        # Add code for 'open' (macOS) or 'xdg-open' (Linux) if needed
-                    except Exception as open_e:
-                        print(f"  (Error trying to open file '{pdf_address}': {open_e})")
+            if result.returncode != 0:
+                print(f"ERROR: pdflatex compilation failed with return code {result.returncode}")
+                return None
 
-                except Exception as move_e:
-                    print(f"  ERROR: Failed to move temporary PDF '{temp_pdf_path}' to '{pdf_address}': {move_e}")
-                    # Attempt to provide logs even if move failed
-                    print("\n  --- pdflatex STDOUT (from failed move context) ---")
-                    print(process.stdout if process.stdout else "[No STDOUT]")
-                    print("\n  --- pdflatex STDERR (from failed move context) ---")
-                    print(process.stderr if process.stderr else "[No STDERR]")
-                    if os.path.exists(temp_log_path):
-                        try:
-                            with open(temp_log_path, 'r', encoding='utf-8', errors='replace') as logfile:
-                                print("\n  --- LOG FILE (from failed move context) ---")
-                                print(logfile.read())
-                                print("  -----------------------------------------")
-                        except Exception as log_read_e:
-                             print(f"  (Could not read log file '{temp_log_path}': {log_read_e})")
+            # Check if PDF was generated
+            if not os.path.exists(pdf_file_path):
+                print(f"ERROR: PDF file not found at {pdf_file_path}")
+                return None
 
+            print(f"PDF generated successfully at: {pdf_file_path}")
+            return pdf_file_path
 
-            else:
-                # Compilation failed or PDF not found in temp directory
-                print("\n  --- PDF GENERATION FAILED ---")
-                print(f"  pdflatex exited with code: {process.returncode}")
-                if not os.path.exists(temp_pdf_path):
-                    print(f"  Output PDF file '{temp_pdf_path}' was NOT found in the temporary directory.")
-                    print(f"  Content of temp dir: {os.listdir(tempdir)}")
-
-
-                # Print captured output for debugging
-                print("\n  --- pdflatex STDOUT ---")
-                print(process.stdout if process.stdout else "[No STDOUT]")
-                print("\n  --- pdflatex STDERR ---")
-                print(process.stderr if process.stderr else "[No STDERR]")
-
-                # Attempt to read and print the log file
-                if os.path.exists(temp_log_path):
-                    try:
-                        with open(temp_log_path, 'r', encoding='utf-8', errors='replace') as logfile:
-                            print("\n  --- LOG FILE ---")
-                            print(logfile.read())
-                            print("  ----------------")
-                    except Exception as log_e:
-                        print(f"  (Could not read log file '{temp_log_path}': {log_e})")
-                else:
-                    print(f"  Log file '{temp_log_path}' not found.")
-                # Show QMessageBox in GUI context
-
-    except FileNotFoundError:
-         # This might happen if absolute_path_of_pdflatex_exe is invalid *despite* the check in the caller
-         # Or if the input tex_filename doesn't exist when subprocess tries to access it.
-         print(f"ERROR: FileNotFoundError during subprocess execution.")
-         print(f"  Check pdflatex path: '{absolute_path_of_pdflatex_exe}'")
-         print(f"  Check input TeX file path: '{tex_filename}'")
+        except Exception as e:
+            print(f"ERROR: Failed to compile LaTeX: {e}")
+            return None
 
     except Exception as e:
-        print(f"\n--- An unexpected Python error occurred within from_latex_to_pdf ---")
+        print(f"ERROR: Unexpected error in generate_pdf_from_latex: {e}")
         import traceback
         traceback.print_exc()
-        # Show QMessageBox in GUI context
-
-    finally:
-        print("--- Exiting from_latex_to_pdf ---")
-
+        return None
+    
+    # Ensure it returns pdf_path at the end if successful
+    if 'result' in locals() and result.returncode == 0 and os.path.exists(pdf_file_path):
+        print(f"PDF generated successfully at: {pdf_file_path}")
+        return pdf_file_path
+    else:
+        # Attempt to find pdf_file_path if it was created before an error
+        if 'pdf_file_path' in locals() and os.path.exists(pdf_file_path):
+             print(f"PDF may have been generated at: {pdf_file_path}, but an error occurred later.")
+             return pdf_file_path
+        print(f"ERROR: PDF generation failed or an error occurred.")
+        return None
 
 # --- Keep the __main__ block for testing ---
 if __name__ == "__main__":
     # Example with JSON data as a dictionary
     json_data = {
-    "uuid": "ddb19471-364d-4e32-ac66-39e7055e5a24",
-    "datetime": "23-03-2025 14:49:56",
-    "date": "23-03-2025",
-    "default_Bed_count": 16,
-    "default_Sex_count": 3,
-    "default_Entries_count": 5,
-    "default_table_rows_count": 5,
-    "each_sex_value_names": {
-        "Sex_1_name": "Male",
-        "Sex_2_name": "Female",
-        "Sex_3_name": "Other"
-    },
-    "Name": "Test Patient<Name>", # Example with potentially invalid chars
-    "Age_year": "78",
-    "Age_month": "98",
-    "Sex": "Male",
-    "uhid": "UHID/123*ABC", # Example with potentially invalid chars
-    "bed_number": "4",
-    "diagnosis": "Diagnosis with \\backslash and _underscore.",
-    "consultants": "Dr. One & Dr. Two",
-    "jr": "Dr. Three",
-    "sr": "Dr. Four",
-    "each_entry_layout": {
-        "entry_1": {
-            "title": "Respiratory support",
-            "subtitles": { "subtitle_1": { "content": "O2 via NC", "day": "D3", "dose": "2L", "volume": "N/A" }}
+        "uuid": "ddb19471-364d-4e32-ac66-39e7055e5a24",
+        "datetime": "23-03-2025 14:49:56",
+        "date": "23-03-2025",
+        "default_Bed_count": 16,
+        "default_Sex_count": 3,
+        "default_Entries_count": 5,
+        "default_table_rows_count": 5,
+        "each_sex_value_names": {
+            "Sex_1_name": "Male",
+            "Sex_2_name": "Female",
+            "Sex_3_name": "Other"
         },
-         "entry_6": { "title": "Other Medications", "subtitles": { "subtitle_3": { "content": "Med X", "day": "D3", "dose": "20mg", "volume": "3ml"}}}
-    },
-    "each_table_row_layout": {
-        "row_1": { "row_header_name": "Date", "row_header_description": time.strftime("%Y/%m/%d") },
-        "row_2": { "row_header_name": "Weight", "row_header_description": "12 kg" }
+        "Name": "Test Patient<Name>",  # Example with potentially invalid chars
+        "Age_year": "78",
+        "Age_month": "98",
+        "Sex": "Male",
+        "uhid": "UHID/123*ABC",  # Example with potentially invalid chars
+        "bed_number": "4",
+        "diagnosis": "Diagnosis with \\backslash and _underscore.",
+        "consultants": "Dr. One & Dr. Two",
+        "jr": "Dr. Three",
+        "sr": "Dr. Four",
+        "each_entry_layout": {
+            "entry_1": {
+                "title": "Respiratory support",
+                "subtitles": {"subtitle_1": {"content": "O2 via NC", "day": "D3", "dose": "2L", "volume": "N/A"}}
+            },
+            "entry_6": {"title": "Other Medications",
+                        "subtitles": {"subtitle_3": {"content": "Med X", "day": "D3", "dose": "20mg", "volume": "3ml"}}}
+        },
+        "each_table_row_layout": {
+            "row_1": {"row_header_name": "Date", "row_header_description": time.strftime("%Y/%m/%d")},
+            "row_2": {"row_header_name": "Weight", "row_header_description": "12 kg"}
+        }
     }
-}
 
-    generate_picu_treatment_chart(json_data, font_size=10) # Example font size
+    generate_picu_treatment_chart('HELLO','WORLD',json_data, font_size=8) # Example font size
