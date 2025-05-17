@@ -360,7 +360,7 @@ def generate_minipage(tables):
             if col_key == "day":
                 col_width = "0.7cm"
             else:
-                col_width = "2.0cm"
+                col_width = "1.2cm"  # Reduced from 2.0cm to make main column wider
             temp_extra_cols_specs.append(f">{{\\raggedright\\arraybackslash}}p{{{col_width}}}")
             temp_extra_cols_headers.append(f"\\textbf{{{col_key.capitalize()}}}")
             temp_extra_cols_keys.append(col_key)
