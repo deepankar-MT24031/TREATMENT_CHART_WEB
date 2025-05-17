@@ -557,7 +557,7 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 {left_table}
 \columnbreak
 \noindent
-\hspace*{{5cm}}% extra space to push right table further right
+\hspace*{{4.5cm}}% extra space to push right table further right
 \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table 
 \hline
 {right_table}
