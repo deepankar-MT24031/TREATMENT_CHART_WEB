@@ -550,19 +550,19 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 \end{{tabular}}
 \vspace{{0.1cm}} % Reduced space
 
-% FIXED LAYOUT: Use parallel columns instead of minipages
-\begin{{multicols}}{{2}}
-\columnsep=60pt
+% FIXED LAYOUT: Use minipage columns for compatibility with tabularx
 \noindent
+\begin{{minipage}}[t]{{0.72\textwidth}} % Left table (treatments)
+\vspace{{-1.5cm}}
 {left_table}
-\columnbreak
-\noindent
-\hspace*{{4.5cm}}% extra space to push right table further right
-\begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}} % The widths INSIDE this table 
-\hline
-{right_table}
-\end{{tabular}}
-\end{{multicols}}
+\end{{minipage}}%
+\hfill
+\begin{{minipage}}[t]{{0.25\textwidth}} % Right table (date, time, etc)
+    \begin{{tabular}}{{|p{{1.8cm}}|p{{2.5cm}}|}}
+    \hline
+    {right_table}
+    \end{{tabular}}
+\end{{minipage}}
 
 % Add signature lines at fixed positions from bottom left
 % X=150mm from left, Y=30mm from bottom for JR signature
