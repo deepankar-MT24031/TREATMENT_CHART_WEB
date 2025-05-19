@@ -227,24 +227,45 @@ def process_json_data(json_input_str_or_dict):
         "port": "5432"
     }
 
+    print("\n=== PostgreSQL Connection Parameters ===")
+    print(f"Database: {db_params['dbname']}")
+    print(f"Host: {db_params['host']}")
+    print(f"Port: {db_params['port']}")
+    print(f"User: {db_params['user']}")
+
     conn = None
     cur = None
 
     try:
+        print("\n=== Attempting Database Connection ===")
         conn = psycopg2.connect(**db_params)
         cur = conn.cursor()
+        print("✓ Successfully connected to PostgreSQL database")
 
+        print("\n=== Starting Data Insertion Process ===")
+        print("1. Inserting/Updating Patient Record...")
         patient_pk_uuid = insert_patient(cur, data)
+        print(f"✓ Patient record processed with UUID: {patient_pk_uuid}")
+
+        print("\n2. Inserting Diagnosis Record...")
         diagnosis_pk_id = insert_diagnosis(cur, data, patient_pk_uuid)
+        print(f"✓ Diagnosis record created with ID: {diagnosis_pk_id}")
 
         each_entry_layout_data = data.get("each_entry_layout", {})
         each_table_row_layout_data = data.get("each_table_row_layout", {})
+        
+        print("\n3. Inserting Observation Record...")
         observation_pk_id = insert_observation(cur, data, diagnosis_pk_id,
                                                each_entry_layout_data, each_table_row_layout_data)
+        print(f"✓ Observation record created with ID: {observation_pk_id}")
 
+        print("\n4. Archiving Layout Data...")
         insert_extra_table_layouts(cur, data, observation_pk_id)
+        print("✓ Layout data archived successfully")
 
         if each_entry_layout_data:
+            print("\n5. Processing Treatment Details...")
+            treatment_count = 0
             for entry_key, entry_value in each_entry_layout_data.items():
                 title = entry_value.get("title", "").strip().lower()
                 subtitles_dict = entry_value.get("subtitles")
@@ -255,37 +276,68 @@ def process_json_data(json_input_str_or_dict):
                 if not subtitle_data:
                     continue
                 
+                print(f"\n   Processing treatment: {title}")
                 if title == "respiratory support":
                     insert_respiratory_support(cur, observation_pk_id, subtitle_data)
+                    treatment_count += 1
                 elif title == "sedation, analgesia, and neuromuscular blockade":
                     insert_sedation(cur, observation_pk_id, subtitle_data)
+                    treatment_count += 1
                 elif title == "inotropes and anti-hypertensives":
                     insert_inotropes(cur, observation_pk_id, subtitle_data)
+                    treatment_count += 1
                 elif title == "antimicrobials":
                     insert_antimicrobials(cur, observation_pk_id, subtitle_data)
+                    treatment_count += 1
                 elif title == "iv fluid":
                     insert_iv_fluid(cur, observation_pk_id, subtitle_data)
+                    treatment_count += 1
                 elif title == "feeds":
                     insert_feeds(cur, observation_pk_id, subtitle_data)
+                    treatment_count += 1
                 elif title == "other medications":
                     insert_other_medications(cur, observation_pk_id, subtitle_data)
+                    treatment_count += 1
+            print(f"✓ Processed {treatment_count} treatment records")
 
+        print("\n=== Committing Transaction ===")
         conn.commit()
-        print("Data inserted successfully!")
+        print("✓ All changes committed successfully!")
+        print("\n=== Data Insertion Complete ===")
+        print(f"Summary:")
+        print(f"- Patient UUID: {patient_pk_uuid}")
+        print(f"- Diagnosis ID: {diagnosis_pk_id}")
+        print(f"- Observation ID: {observation_pk_id}")
 
     except psycopg2.Error as e:
-        if conn: conn.rollback()
-        print(f"Database error: {e}")
-        if hasattr(cur, 'query') and cur.query: print(f"Failed query: {cur.query}")
+        if conn: 
+            print("\n=== Rolling Back Transaction ===")
+            conn.rollback()
+            print("✓ Transaction rolled back due to error")
+        print(f"\n❌ Database error: {e}")
+        if hasattr(cur, 'query') and cur.query: 
+            print(f"Failed query: {cur.query}")
     except ValueError as ve:
-        if conn: conn.rollback()
-        print(f"Data validation error: {ve}")
+        if conn: 
+            print("\n=== Rolling Back Transaction ===")
+            conn.rollback()
+            print("✓ Transaction rolled back due to validation error")
+        print(f"\n❌ Data validation error: {ve}")
     except Exception as e:
-        if conn: conn.rollback()
-        print(f"An unexpected error occurred: {e}")
+        if conn: 
+            print("\n=== Rolling Back Transaction ===")
+            conn.rollback()
+            print("✓ Transaction rolled back due to unexpected error")
+        print(f"\n❌ An unexpected error occurred: {e}")
     finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        if cur: 
+            print("\n=== Closing Database Cursor ===")
+            cur.close()
+            print("✓ Cursor closed")
+        if conn: 
+            print("\n=== Closing Database Connection ===")
+            conn.close()
+            print("✓ Connection closed")
 
 # --- Example Usage ---
 if __name__ == "__main__":
