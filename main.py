@@ -221,15 +221,35 @@ def download_pdf():
 
                     # Sync with external database
                     try:
-                        print("\n=== Syncing with External Database ===")
+                        print("\n=== External Database Sync Process ===")
+                        print("1. Importing external database handler...")
                         from external_database_handler import process_json_data
+                        print("✓ External database handler imported successfully")
+
+                        print("\n2. Preparing data for external database...")
+                        print(f"- UUID: {uuid}")
+                        print(f"- Patient Name: {json_data.get('Name', 'N/A')}")
+                        print(f"- UHID: {json_data.get('uhid', 'N/A')}")
+                        print(f"- Treatment Entries: {len(json_data.get('each_entry_layout', {}))}")
+                        print(f"- Observation Parameters: {len(json_data.get('each_table_row_layout', {}))}")
+
+                        print("\n3. Initiating external database sync...")
                         process_json_data(json_data)
-                        print("Successfully synced with external database")
+                        print("✓ External database sync completed successfully")
+                        print("\n=== External Database Sync Summary ===")
+                        print("✓ Local database updated")
+                        print("✓ External database synchronized")
+                        print("✓ PDF generated and ready for download")
                     except Exception as e:
-                        print(f"Warning: Failed to sync with external database: {str(e)}")
+                        print("\n❌ External Database Sync Failed")
+                        print(f"Error details: {str(e)}")
+                        print("Continuing with PDF download despite sync failure...")
                         # Continue with PDF download even if external DB sync fails
                     
                     # Send the PDF file
+                    print("\n=== Sending PDF to User ===")
+                    print(f"PDF path: {pdf_path}")
+                    print(f"File size: {os.path.getsize(pdf_path)} bytes")
                     return send_file(pdf_path, as_attachment=True, download_name=os.path.basename(pdf_path))
                 else:
                     raise ValueError("UUID not found in JSON data")
