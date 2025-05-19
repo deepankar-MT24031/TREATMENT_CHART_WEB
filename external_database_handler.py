@@ -220,11 +220,11 @@ def process_json_data(json_input_str_or_dict):
         raise TypeError("Input must be a JSON string or a Python dictionary.")
 
     db_params = {
-        "dbname": "mydb",      # From POSTGRES_DB in docker-compose
-        "user": "admin",       # From POSTGRES_USER in docker-compose
-        "password": "admin",   # From POSTGRES_PASSWORD in docker-compose
-        "host": "treatment_chart_db",  # Docker container name instead of localhost
-        "port": "5432"         # Port exposed by the container
+        "dbname": "mydb",
+        "user": "admin",
+        "password": "admin",
+        "host": "172.17.0.2",  # PostgreSQL container's IP address
+        "port": "5432"
     }
 
     print("\n=== PostgreSQL Connection Parameters ===")
