@@ -170,44 +170,79 @@ def insert_extra_table_layouts(cur, data, fk_observation_id):
 def insert_respiratory_support(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
+    print(f"\n=== Inserting Respiratory Support ===")
+    print(f"Content: {content}")
+    print(f"Rate: {subtitle_data.get('rate')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.respiratory_support (observation_id, content, rate, volume) VALUES (%s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("rate"), subtitle_data.get("volume")))
+    print("✓ Respiratory support record saved")
 
 def insert_sedation(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
+    print(f"\n=== Inserting Sedation ===")
+    print(f"Content: {content}")
+    print(f"Dose: {subtitle_data.get('dose')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.sedation (observation_id, content, dose, volume) VALUES (%s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("dose"), subtitle_data.get("volume")))
+    print("✓ Sedation record saved")
 
 def insert_inotropes(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
+    print(f"\n=== Inserting Inotropes ===")
+    print(f"Content: {content}")
+    print(f"Dose: {subtitle_data.get('dose')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.inotropes (observation_id, content, dose, volume) VALUES (%s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("dose"), subtitle_data.get("volume")))
+    print("✓ Inotropes record saved")
 
 def insert_antimicrobials(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
+    print(f"\n=== Inserting Antimicrobials ===")
+    print(f"Content: {content}")
+    print(f"Day: {subtitle_data.get('day')}")
+    print(f"Dose: {subtitle_data.get('dose')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.antimicrobials (observation_id, content, day, dose, volume) VALUES (%s, %s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("day"), subtitle_data.get("dose"), subtitle_data.get("volume")))
+    print("✓ Antimicrobials record saved")
 
 def insert_iv_fluid(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
+    print(f"\n=== Inserting IV Fluid ===")
+    print(f"Content: {content}")
+    print(f"Rate: {subtitle_data.get('rate')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.iv_fluid (observation_id, content, rate, volume) VALUES (%s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("rate"), subtitle_data.get("volume")))
+    print("✓ IV fluid record saved")
 
 def insert_feeds(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
+    print(f"\n=== Inserting Feeds ===")
+    print(f"Content: {content}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.feeds (observation_id, content, volume) VALUES (%s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("volume")))
+    print("✓ Feeds record saved")
 
 def insert_other_medications(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
+    print(f"\n=== Inserting Other Medications ===")
+    print(f"Content: {content}")
+    print(f"Dose: {subtitle_data.get('dose')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.other_medications (observation_id, content, dose, volume) VALUES (%s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("dose"), subtitle_data.get("volume")))
+    print("✓ Other medications record saved")
 
 
 # --- Main Processing Logic ---
