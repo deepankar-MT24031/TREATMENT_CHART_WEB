@@ -254,6 +254,23 @@ def process_json_data(json_input_str_or_dict):
     else:
         raise TypeError("Input must be a JSON string or a Python dictionary.")
 
+    print("\n=== Input Data Structure ===")
+    print("Keys in input data:", list(data.keys()))
+    
+    # Transform parameters to each_table_row_layout if needed
+    if "parameters" in data and "each_table_row_layout" not in data:
+        print("\n=== Transforming parameters to each_table_row_layout ===")
+        data["each_table_row_layout"] = data.pop("parameters")
+        print("Transformed parameters to each_table_row_layout")
+        print("New keys:", list(data.keys()))
+    
+    # Transform entries to each_entry_layout if needed
+    if "entries" in data and "each_entry_layout" not in data:
+        print("\n=== Transforming entries to each_entry_layout ===")
+        data["each_entry_layout"] = data.pop("entries")
+        print("Transformed entries to each_entry_layout")
+        print("New keys:", list(data.keys()))
+
     db_params = {
         "dbname": "mydb",
         "user": "admin",
