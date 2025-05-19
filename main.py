@@ -208,8 +208,8 @@ def download_pdf():
                             'JR': json_data.get('JR', ''),
                             'SR': json_data.get('SR', ''),
                             'print_time': current_time,
-                            'each_entry_layout': json_data.get('each_entry_layout', {}),
-                            'each_table_row_layout': json_data.get('each_table_row_layout', {})
+                            'each_entry_layout': json_data.get('entries', {}),
+                            'each_table_row_layout': json_data.get('parameters', {})
                         }
                         db_data['_default'][str(len(db_data['_default']) + 1)] = new_entry
                         print(f"Added new entry to db.json: {new_entry}")
