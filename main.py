@@ -8,7 +8,7 @@ from json_generator import create_json_file
 from pdf_generator import generate_picu_treatment_chart
 from io import BytesIO
 from reportlab.pdfgen import canvas
-from database_handler import create_entry, return_database_with_history, search_entries, return_database_with_query_is_uuid  # Import the history function and search_entries
+from internal_database_handler import create_entry, return_database_with_history, search_entries, return_database_with_query_is_uuid  # Import the history function and search_entries
 import requests
 import shutil
 
