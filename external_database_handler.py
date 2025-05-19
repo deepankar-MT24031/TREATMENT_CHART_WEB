@@ -258,7 +258,7 @@ def process_json_data(json_input_str_or_dict):
         "dbname": "mydb",
         "user": "admin",
         "password": "admin",
-        "host": "172.17.0.2",
+        "host": "172.25.0.2",
         "port": "5432"
     }
 
