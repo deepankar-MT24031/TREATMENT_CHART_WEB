@@ -208,52 +208,39 @@ def download_pdf():
                             'JR': json_data.get('JR', ''),
                             'SR': json_data.get('SR', ''),
                             'print_time': current_time,
-                            'each_entry_layout': json_data.get('entries', {}),
-                            'each_table_row_layout': json_data.get('parameters', {})
+                            'each_entry_layout': json_data.get('each_entry_layout', {}),
+                            'each_table_row_layout': json_data.get('each_table_row_layout', {})
                         }
-                        
-                        # Get the next available ID
-                        next_id = str(max([int(k) for k in db_data['_default'].keys()]) + 1) if db_data['_default'] else '1'
-                        
-                        # Add the new entry
-                        db_data['_default'][next_id] = new_entry
-                        print(f"Added new entry with ID {next_id}: {new_entry}")
+                        db_data['_default'][str(len(db_data['_default']) + 1)] = new_entry
+                        print(f"Added new entry to db.json: {new_entry}")
                     
                     # Save updated db.json
-                    print(f"Saving updated db.json to: {db_path}")
                     with open(db_path, 'w') as f:
-                        json.dump(db_data, f, indent=2)
-                    print(f"Successfully saved updated db.json")
+                        json.dump(db_data, f, indent=4)
+                    print("Successfully updated db.json")
+
+                    # Sync with external database
+                    try:
+                        print("\n=== Syncing with External Database ===")
+                        from external_database_handler import process_json_data
+                        process_json_data(json_data)
+                        print("Successfully synced with external database")
+                    except Exception as e:
+                        print(f"Warning: Failed to sync with external database: {str(e)}")
+                        # Continue with PDF download even if external DB sync fails
                     
-                    # Verify the update
-                    with open(db_path, 'r') as f:
-                        updated_db = json.load(f)
-                    print(f"Verified db.json content after update: {updated_db}")
+                    # Send the PDF file
+                    return send_file(pdf_path, as_attachment=True, download_name=os.path.basename(pdf_path))
                 else:
-                    print("Warning: No UUID found in JSON data, skipping db.json update")
-            except Exception as db_error:
-                print(f"Warning: Failed to update db.json: {db_error}")
-                import traceback
-                traceback.print_exc()
-
-            # Return the PDF file
-            return send_file(
-                pdf_path,
-                as_attachment=True,
-                download_name=os.path.basename(pdf_path),
-                mimetype='application/pdf'
-            )
+                    raise ValueError("UUID not found in JSON data")
+            except Exception as e:
+                print(f"Error updating db.json: {str(e)}")
+                return str(e), 500
         else:
-            print("\n=== PDF Generation Failed ===")
-            print(f"Generated PDF not found at: {pdf_path}")
-            print(f"Directory contents: {os.listdir(pdf_dir)}")
-            return jsonify({"error": "Failed to generate PDF"}), 500
-
+            raise ValueError("PDF generation failed")
     except Exception as e:
-        print(f"ERROR in download_pdf: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        print(f"Error in download route: {str(e)}")
+        return str(e), 500
 
 
 @app.route('/get_entries')
