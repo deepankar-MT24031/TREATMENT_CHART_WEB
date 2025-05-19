@@ -148,16 +148,14 @@ def insert_observation(cur, data, fk_diagnosis_id, each_table_row_layout_data):
         print(f"  `observation.extra_metric` stored as NULL (or default empty JSON).")
     return observation_pk_id
 
-# MODIFIED FUNCTION
 def insert_extra_table_layouts(cur, data, fk_observation_id):
     """
     Archives ONLY the original `each_entry_layout` into the extra_table.
     """
     each_entry_layout_data = data.get("each_entry_layout") 
     
-    if each_entry_layout_data: # Check if there is any data to store
+    if each_entry_layout_data: 
         try:
-            # The json_content will now directly be the each_entry_layout_data
             json_content_for_extra_table = json.dumps(each_entry_layout_data)
             cur.execute("""
                 INSERT INTO treatment_chart.extra_table (observation_id, json_content)
@@ -167,16 +165,17 @@ def insert_extra_table_layouts(cur, data, fk_observation_id):
         except TypeError as te:
             print(f"Error serializing `each_entry_layout` to JSON for extra_table: {te}")
     else:
-        # If you want to insert a row with NULL or empty JSON even if each_entry_layout is missing,
-        # you would handle that here. For now, it simply does nothing.
         print(f"`each_entry_layout` not found or empty. No record inserted into extra_table.")
 
 
-# --- Detail Table Insertion Functions --- (These remain unchanged)
+# --- Detail Table Insertion Functions ---
 def insert_respiratory_support(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
     print(f"\n=== Inserting Respiratory Support ===")
+    print(f"Content: {content}")
+    print(f"Rate: {subtitle_data.get('rate')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.respiratory_support (observation_id, content, rate, volume) VALUES (%s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("rate"), subtitle_data.get("volume")))
     print("✓ Respiratory support record saved")
@@ -185,6 +184,9 @@ def insert_sedation(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
     print(f"\n=== Inserting Sedation ===")
+    print(f"Content: {content}")
+    print(f"Dose: {subtitle_data.get('dose')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.sedation (observation_id, content, dose, volume) VALUES (%s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("dose"), subtitle_data.get("volume")))
     print("✓ Sedation record saved")
@@ -193,6 +195,9 @@ def insert_inotropes(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
     print(f"\n=== Inserting Inotropes ===")
+    print(f"Content: {content}")
+    print(f"Dose: {subtitle_data.get('dose')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.inotropes (observation_id, content, dose, volume) VALUES (%s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("dose"), subtitle_data.get("volume")))
     print("✓ Inotropes record saved")
@@ -201,6 +206,10 @@ def insert_antimicrobials(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
     print(f"\n=== Inserting Antimicrobials ===")
+    print(f"Content: {content}")
+    print(f"Day: {subtitle_data.get('day')}")
+    print(f"Dose: {subtitle_data.get('dose')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.antimicrobials (observation_id, content, day, dose, volume) VALUES (%s, %s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("day"), subtitle_data.get("dose"), subtitle_data.get("volume")))
     print("✓ Antimicrobials record saved")
@@ -209,6 +218,9 @@ def insert_iv_fluid(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
     print(f"\n=== Inserting IV Fluid ===")
+    print(f"Content: {content}")
+    print(f"Rate: {subtitle_data.get('rate')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.iv_fluid (observation_id, content, rate, volume) VALUES (%s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("rate"), subtitle_data.get("volume")))
     print("✓ IV fluid record saved")
@@ -217,6 +229,8 @@ def insert_feeds(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
     print(f"\n=== Inserting Feeds ===")
+    print(f"Content: {content}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.feeds (observation_id, content, volume) VALUES (%s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("volume")))
     print("✓ Feeds record saved")
@@ -225,9 +239,35 @@ def insert_other_medications(cur, fk_observation_id, subtitle_data):
     content = subtitle_data.get("content","").strip()
     if not content: return
     print(f"\n=== Inserting Other Medications ===")
+    print(f"Content: {content}")
+    print(f"Dose: {subtitle_data.get('dose')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     cur.execute("INSERT INTO treatment_chart.other_medications (observation_id, content, dose, volume) VALUES (%s, %s, %s, %s);",
                 (fk_observation_id, content, subtitle_data.get("dose"), subtitle_data.get("volume")))
     print("✓ Other medications record saved")
+
+# --- NEW FUNCTION ---
+def insert_supportive_care(cur, fk_observation_id, subtitle_data):
+    """Inserts a supportive care record."""
+    content = subtitle_data.get("content","").strip()
+    if not content: return # Do not insert if content is empty
+    
+    print(f"\n=== Inserting Supportive Care ===")
+    print(f"Content: {content}")
+    print(f"Rate: {subtitle_data.get('rate')}")       # As per table schema
+    print(f"Volume: {subtitle_data.get('volume')}")   # As per table schema
+    
+    cur.execute("""
+        INSERT INTO treatment_chart.supportive_care (observation_id, content, rate, volume) 
+        VALUES (%s, %s, %s, %s);
+    """,(
+        fk_observation_id, 
+        content, 
+        subtitle_data.get("rate"),      # Will be NULL if not in JSON
+        subtitle_data.get("volume")     # Will be NULL if not in JSON
+    ))
+    print("✓ Supportive care record saved")
+# --- END NEW FUNCTION ---
 
 
 # --- Main Processing Logic ---
@@ -258,7 +298,7 @@ def process_json_data(json_input_str_or_dict):
         "dbname": "mydb",
         "user": "admin",
         "password": "admin",
-        "host": "treatment_chart_db",
+        "host": "treatment_chart_db", # Changed for Docker internal networking
         "port": "5432"
     }
 
@@ -295,8 +335,7 @@ def process_json_data(json_input_str_or_dict):
         print(f"✓ Observation record created with ID: {observation_pk_id}")
 
         print("\n4. Archiving `each_entry_layout` Data (into extra_table)...")
-        insert_extra_table_layouts(cur, data, observation_pk_id) # Call is the same, function behavior changed
-        # The print message from inside the function will reflect the change
+        insert_extra_table_layouts(cur, data, observation_pk_id) 
 
         if each_entry_layout_data: 
             print("\n5. Processing Treatment Details...")
@@ -308,7 +347,7 @@ def process_json_data(json_input_str_or_dict):
                     continue
                 
                 subtitle_data = subtitles_dict.get("subtitle_1", {})
-                if not subtitle_data: # or not subtitle_data.get("content","").strip():
+                if not subtitle_data: 
                     continue
                 
                 print(f"\n   Processing treatment: {title}")
@@ -333,6 +372,11 @@ def process_json_data(json_input_str_or_dict):
                 elif title == "other medications":
                     insert_other_medications(cur, observation_pk_id, subtitle_data)
                     treatment_count += 1
+                # --- MODIFIED PART: Call insert_supportive_care ---
+                elif title == "supportive care":
+                    insert_supportive_care(cur, observation_pk_id, subtitle_data)
+                    treatment_count += 1
+                # --- END MODIFIED PART ---
             print(f"✓ Processed {treatment_count} treatment records")
 
         print("\n=== Committing Transaction ===")
@@ -377,46 +421,49 @@ def process_json_data(json_input_str_or_dict):
 # --- Example Usage ---
 if __name__ == "__main__":
     json_data_from_user = {
-        'uuid': '5d2e870f-1915-4c1a-83b3-d18ba4bf4123', 
-        'datetime': '19-05-2025 06:34:57', 
-        'Name': 'duma', 
-        'Age_year': '4', 'Age_month': '5', 'Sex': 'Other', 'uhid': '123456789', 
-        'Diagnosis': 'Flu Test', 
-        'Consultants': 'Dr. X',
-        'each_entry_layout': { # This will be stored in extra_table
-            'entry_1': {'title': 'Respiratory support', 'subtitles': {'subtitle_1': {'content': 'some oxygen for duma'}}}, 
-            'entry_A4': {'title': 'Supportive care', 'subtitles': {'subtitle_1': {'content': 'Warm blanket and rest'}}} 
+        'uuid': 'patient-app-uuid-001', 
+        'Name': 'Duma Cat', 
+        'Age_year': '4', 'Age_month': '5', 'Sex': 'Other', 'uhid': 'UHID-DUMA-001', 
+        'Diagnosis': 'Acute Feline Boredom', 
+        'Consultants': 'Dr. Whiskers',
+        'each_entry_layout': { 
+            'entry_1': {'title': 'Respiratory support', 'subtitles': {'subtitle_1': {'content': 'Oxygen PRN', 'rate': '2L/min', 'volume': 'N/A'}}}, 
+            'entry_sc1': { # This entry will now be processed into the supportive_care table
+                'title': 'Supportive care', 
+                'subtitles': {
+                    'subtitle_1': {
+                        'content': 'Warm blanket and gentle petting', 
+                        'rate': 'Continuous', # Example 'rate' for supportive care
+                        'volume': 'As tolerated'  # Example 'volume'
+                    }
+                }
+            },
+            'entry_med1': {'title': 'Other Medications', 'subtitles': {'subtitle_1': {'content': 'Catnip 5mg', 'dose': '1 pinch', 'volume': 'PO'}}}
         }, 
-        'each_table_row_layout': { # This will be stored in observation.extra_metric
-            'row_1': {'row_header_name': 'Date', 'row_header_description': '16-10-2025'}, 
-            'row_2': {'row_header_name': 'Time', 'row_header_description': 'xyztime for duma'}, 
+        'each_table_row_layout': { 
+            'row_1': {'row_header_name': 'Date', 'row_header_description': '2023-10-27'}, 
+            'row_2': {'row_header_name': 'Time', 'row_header_description': '10:00 AM'}, 
+            'row_3': {'row_header_name': 'Weight', 'row_header_description': '5 kg'}
         }
     }
     process_json_data(json_data_from_user)
 
-    print("\n--- Processing another example (no each_entry_layout) ---")
-    json_data_no_entry_layout = {
-        "uuid": "app-uuid-no-entry-005",
-        "Name": "Patient No Entry",
-        "uhid": "UHID-NO-ENTRY-005",
-        "Diagnosis": "Routine Check",
-        # "each_entry_layout": {}, # Missing or empty
+    print("\n--- Processing another example (supportive care with only content) ---")
+    json_data_supportive_only_content = {
+        "uuid": "patient-app-uuid-002",
+        "Name": "Patient SupportOnly",
+        "uhid": "UHID-SUPPORT-002",
+        "Diagnosis": "Mild Discomfort",
+        "each_entry_layout": {
+             "entry_sc2": {
+                "title": "Supportive care",
+                "subtitles": {"subtitle_1": {"content": "Rest and fluids"}} 
+                # Rate and Volume will be NULL in the DB for this entry
+            }
+        },
         "each_table_row_layout": {
-            "row_P1": { "row_header_name": "Date", "row_header_description": "2023-12-01" },
-            "row_P2": { "row_header_name": "Weight", "row_header_description": "65 kg" }
+            "row_X1": { "row_header_name": "Date", "row_header_description": "2023-11-10" },
+            "row_X2": { "row_header_name": "Time", "row_header_description": "09:00 AM" }
         }
     }
-    process_json_data(json_data_no_entry_layout)
-    
-    print("\n--- Processing example with empty each_entry_layout ---")
-    json_data_empty_entry_layout = {
-        "uuid": "app-uuid-empty-entry-006",
-        "Name": "Patient Empty Entry",
-        "uhid": "UHID-EMPTY-ENTRY-006",
-        "Diagnosis": "Follow-up",
-        "each_entry_layout": {}, # Empty dictionary
-        "each_table_row_layout": {
-            "row_Q1": { "row_header_name": "Date", "row_header_description": "2023-12-05" }
-        }
-    }
-    process_json_data(json_data_empty_entry_layout)
+    process_json_data(json_data_supportive_only_content)
