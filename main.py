@@ -147,6 +147,8 @@ def download_pdf():
 
         # Generate PDF
         print("\n=== Generating PDF ===")
+        print("JSON DATA->>>>>>>>",json_data)
+        print("\n\n\n\n\n")
         print("Calling generate_picu_treatment_chart...")
         pdf_path = generate_picu_treatment_chart(heading, subheading, json_data, font_size)
         print("Finished generate_picu_treatment_chart")
