@@ -1,6 +1,29 @@
+# START OF FILE external_database_handler.py
+
 import psycopg2
 import json
 from datetime import datetime as dt
+import hashlib
+import re # For robust space normalization
+
+# --- Helper Function for Text Normalization ---
+def normalize_diagnosis_text(text_raw):
+    """Normalizes diagnosis text for consistent hashing."""
+    if not text_raw:
+        return "n/a" # Default for empty or None, already lowercase
+    
+    # 1. Convert to lowercase
+    text = text_raw.lower()
+    # 2. Strip leading/trailing whitespace
+    text = text.strip()
+    # 3. Replace multiple internal spaces with a single space
+    text = re.sub(r'\s+', ' ', text)
+    
+    if not text: # If text was only whitespace and became empty
+        return "n/a"
+    return text
+# --- End Helper Function ---
+
 
 # --- Database Interaction Functions ---
 
@@ -34,23 +57,67 @@ def insert_patient(cur, data):
 
 def insert_diagnosis(cur, data, fk_patient_uuid):
     """
-    Inserts a diagnosis record and returns its diagnosis_id (PK).
+    Inserts a new diagnosis record if a diagnosis with the same normalized text
+    (case-insensitive, space-normalized hash) doesn't already exist for the patient.
+    Otherwise, returns the existing diagnosis_id.
+    Returns its diagnosis_id (PK).
     """
-    diagnosis_text = data.get("Diagnosis") or data.get("diagnosis") or "N/A"
+    new_diagnosis_text_raw = data.get("Diagnosis") or data.get("diagnosis")
+    
+    # Normalize the incoming diagnosis text
+    new_diagnosis_text_normalized = normalize_diagnosis_text(new_diagnosis_text_raw)
+
+    # Calculate the hash of the normalized diagnosis text
+    new_diagnosis_hash = hashlib.sha256(new_diagnosis_text_normalized.encode('utf-8')).hexdigest()
+    print(f"  Incoming diagnosis for patient {fk_patient_uuid}: '{new_diagnosis_text_raw}' (Normalized & Hashed As: '{new_diagnosis_text_normalized}', Hash: {new_diagnosis_hash})")
+
+    # Fetch existing diagnosis_id and diagnosis_text for this patient
     cur.execute("""
-        INSERT INTO treatment_chart.diagnosis (patient_uuid, diagnosis_text, consultants, jr, sr)
-        VALUES (%s, %s, %s, %s, %s)
-        RETURNING diagnosis_id;
-    """, (
-        fk_patient_uuid, 
-        diagnosis_text,
-        data.get("Consultants") or data.get("consultants"),
-        data.get("JR") or data.get("jr"),
-        data.get("SR") or data.get("sr")
-    ))
-    diagnosis_pk_id = cur.fetchone()[0]
-    print(f"Diagnosis PK (DB-generated): {diagnosis_pk_id}, linked to Patient PK: {fk_patient_uuid}")
-    return diagnosis_pk_id
+        SELECT diagnosis_id, diagnosis_text
+        FROM treatment_chart.diagnosis
+        WHERE patient_uuid = %s;
+    """, (fk_patient_uuid,))
+    existing_diagnoses_for_patient = cur.fetchall()
+
+    found_diagnosis_pk_id = None
+    if existing_diagnoses_for_patient:
+        print(f"  Found {len(existing_diagnoses_for_patient)} existing diagnoses for patient {fk_patient_uuid}. Checking hashes (normalized)...")
+        for D_pk_id, D_text_from_db_raw in existing_diagnoses_for_patient:
+            # Normalize text from DB for comparison
+            D_text_from_db_normalized = normalize_diagnosis_text(D_text_from_db_raw)
+
+            existing_entry_hash = hashlib.sha256(D_text_from_db_normalized.encode('utf-8')).hexdigest()
+            # print(f"    - Comparing with DB entry: '{D_text_from_db_raw}' (Normalized as: '{D_text_from_db_normalized}', Hash: {existing_entry_hash})") # For detailed debugging
+            if existing_entry_hash == new_diagnosis_hash:
+                found_diagnosis_pk_id = D_pk_id
+                print(f"  MATCH FOUND: Reusing existing Diagnosis PK: {found_diagnosis_pk_id} for patient {fk_patient_uuid} (Original DB Text: '{D_text_from_db_raw}')")
+                break
+
+    if found_diagnosis_pk_id:
+        return found_diagnosis_pk_id
+    else:
+        if existing_diagnoses_for_patient:
+             print(f"  NO MATCH: No existing diagnosis for patient {fk_patient_uuid} matched the hash. Inserting new.")
+        else:
+             print(f"  NO EXISTING DIAGNOSES: No prior diagnoses for patient {fk_patient_uuid}. Inserting new.")
+
+        # Store the ORIGINAL raw text (or "N/A" if it was truly empty/None initially)
+        text_to_store = new_diagnosis_text_raw if new_diagnosis_text_raw and new_diagnosis_text_raw.strip() else "N/A"
+
+        cur.execute("""
+            INSERT INTO treatment_chart.diagnosis (patient_uuid, diagnosis_text, consultants, jr, sr)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING diagnosis_id;
+        """, (
+            fk_patient_uuid,
+            text_to_store,
+            data.get("Consultants") or data.get("consultants"),
+            data.get("JR") or data.get("jr"),
+            data.get("SR") or data.get("sr")
+        ))
+        diagnosis_pk_id = cur.fetchone()[0]
+        print(f"  NEW Diagnosis PK (DB-generated): {diagnosis_pk_id}, linked to Patient PK: {fk_patient_uuid} for text '{text_to_store}'")
+        return diagnosis_pk_id
 
 
 def insert_observation(cur, data, fk_diagnosis_id, each_table_row_layout_data):
@@ -140,7 +207,7 @@ def insert_observation(cur, data, fk_diagnosis_id, each_table_row_layout_data):
     result = cur.fetchone()
     observation_pk_id = result[0]
     created_at_timestamp = result[1]
-    print(f"Observation PK (DB-generated): {observation_pk_id}, Created At (DB): {created_at_timestamp}")
+    print(f"Observation PK (DB-generated): {observation_pk_id}, Linked to Diagnosis PK: {fk_diagnosis_id}, Created At (DB): {created_at_timestamp}")
     print(f"  Prescription Date: {prescription_date_val}, Prescription Time: {prescription_time_val}")
     if extra_metric_json_content:
         print(f"  Stored `each_table_row_layout_data` as JSON in observation.extra_metric.")
@@ -246,7 +313,6 @@ def insert_other_medications(cur, fk_observation_id, subtitle_data):
                 (fk_observation_id, content, subtitle_data.get("dose"), subtitle_data.get("volume")))
     print("✓ Other medications record saved")
 
-# --- NEW FUNCTION ---
 def insert_supportive_care(cur, fk_observation_id, subtitle_data):
     """Inserts a supportive care record."""
     content = subtitle_data.get("content","").strip()
@@ -254,8 +320,8 @@ def insert_supportive_care(cur, fk_observation_id, subtitle_data):
     
     print(f"\n=== Inserting Supportive Care ===")
     print(f"Content: {content}")
-    print(f"Rate: {subtitle_data.get('rate')}")       # As per table schema
-    print(f"Volume: {subtitle_data.get('volume')}")   # As per table schema
+    print(f"Rate: {subtitle_data.get('rate')}")
+    print(f"Volume: {subtitle_data.get('volume')}")
     
     cur.execute("""
         INSERT INTO treatment_chart.supportive_care (observation_id, content, rate, volume) 
@@ -263,11 +329,10 @@ def insert_supportive_care(cur, fk_observation_id, subtitle_data):
     """,(
         fk_observation_id, 
         content, 
-        subtitle_data.get("rate"),      # Will be NULL if not in JSON
-        subtitle_data.get("volume")     # Will be NULL if not in JSON
+        subtitle_data.get("rate"),
+        subtitle_data.get("volume")
     ))
     print("✓ Supportive care record saved")
-# --- END NEW FUNCTION ---
 
 
 # --- Main Processing Logic ---
@@ -322,9 +387,9 @@ def process_json_data(json_input_str_or_dict):
         patient_pk_uuid = insert_patient(cur, data)
         print(f"✓ Patient record processed with UUID: {patient_pk_uuid}")
 
-        print("\n2. Inserting Diagnosis Record...")
+        print("\n2. Inserting/Finding Diagnosis Record...")
         diagnosis_pk_id = insert_diagnosis(cur, data, patient_pk_uuid)
-        print(f"✓ Diagnosis record created with ID: {diagnosis_pk_id}")
+        print(f"✓ Diagnosis record processed with ID: {diagnosis_pk_id}")
 
         each_entry_layout_data = data.get("each_entry_layout", {}) 
         each_table_row_layout_data = data.get("each_table_row_layout", {})
@@ -372,11 +437,9 @@ def process_json_data(json_input_str_or_dict):
                 elif title == "other medications":
                     insert_other_medications(cur, observation_pk_id, subtitle_data)
                     treatment_count += 1
-                # --- MODIFIED PART: Call insert_supportive_care ---
                 elif title == "supportive care":
                     insert_supportive_care(cur, observation_pk_id, subtitle_data)
                     treatment_count += 1
-                # --- END MODIFIED PART ---
             print(f"✓ Processed {treatment_count} treatment records")
 
         print("\n=== Committing Transaction ===")
@@ -420,50 +483,120 @@ def process_json_data(json_input_str_or_dict):
 
 # --- Example Usage ---
 if __name__ == "__main__":
-    json_data_from_user = {
-        'uuid': 'patient-app-uuid-001', 
-        'Name': 'Duma Cat', 
-        'Age_year': '4', 'Age_month': '5', 'Sex': 'Other', 'uhid': 'UHID-DUMA-001', 
-        'Diagnosis': 'Acute Feline Boredom', 
+    # First run for patient 1, diagnosis A
+    json_data_patient1_diagA_obs1 = {
+        'uuid': 'patient-app-uuid-P1',
+        'Name': 'Patient Alpha',
+        'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1',
+        'Diagnosis': 'Common Cold', # Diagnosis A
+        'Consultants': 'Dr. One',
+        'each_table_row_layout': {
+            'row_1': {'row_header_name': 'Date', 'row_header_description': '2024-01-01'},
+            'row_2': {'row_header_name': 'Time', 'row_header_description': '09:00 AM'}
+        }
+    }
+    print("\n\n--- Processing Patient 1, Diagnosis A, Observation 1 ---")
+    process_json_data(json_data_patient1_diagA_obs1)
+
+    # Second run for patient 1, SAME diagnosis A (different spacing/casing), new observation
+    json_data_patient1_diagA_obs2 = {
+        'uuid': 'patient-app-uuid-P1',
+        'Name': 'Patient Alpha',
+        'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1',
+        'Diagnosis': '  common   cold  ', # Diagnosis A, different casing and spacing
+        'Consultants': 'Dr. One',
+        'each_table_row_layout': {
+            'row_1': {'row_header_name': 'Date', 'row_header_description': '2024-01-02'},
+            'row_2': {'row_header_name': 'Time', 'row_header_description': '10:00 AM'}
+        }
+    }
+    print("\n\n--- Processing Patient 1, Diagnosis A (again, normalized), Observation 2 ---")
+    process_json_data(json_data_patient1_diagA_obs2)
+
+    # Third run for patient 1, DIFFERENT diagnosis B, new observation
+    json_data_patient1_diagB_obs1 = {
+        'uuid': 'patient-app-uuid-P1',
+        'Name': 'Patient Alpha',
+        'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1',
+        'Diagnosis': 'Mild Fever', # Diagnosis B
+        'Consultants': 'Dr. Two',
+        'each_table_row_layout': {
+            'row_1': {'row_header_name': 'Date', 'row_header_description': '2024-01-03'},
+            'row_2': {'row_header_name': 'Time', 'row_header_description': '11:00 AM'}
+        }
+    }
+    print("\n\n--- Processing Patient 1, Diagnosis B, Observation 1 ---")
+    process_json_data(json_data_patient1_diagB_obs1)
+
+    # Fourth run for DIFFERENT patient 2, with a diagnosis text SAME as P1's Diag A
+    json_data_patient2_diagA_obs1 = {
+        'uuid': 'patient-app-uuid-P2',
+        'Name': 'Patient Beta',
+        'Age_year': '20', 'Age_month': '2', 'Sex': 'F', 'uhid': 'UHID-P2',
+        'Diagnosis': 'Common Cold', # Diagnosis A text, but for a different patient
+        'Consultants': 'Dr. Three',
+        'each_table_row_layout': {
+            'row_1': {'row_header_name': 'Date', 'row_header_description': '2024-01-04'},
+            'row_2': {'row_header_name': 'Time', 'row_header_description': '12:00 PM'}
+        }
+    }
+    print("\n\n--- Processing Patient 2, Diagnosis A text (normalized), Observation 1 ---")
+    process_json_data(json_data_patient2_diagA_obs1)
+    
+    # Fifth run: Patient 1, "Supportive Care" example
+    json_data_supportive_example = {
+        'uuid': 'patient-app-uuid-P1', 
+        'Name': 'Patient Alpha', 
+        'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1', 
+        'Diagnosis': 'General Malaise', # A new diagnosis for P1
         'Consultants': 'Dr. Whiskers',
         'each_entry_layout': { 
-            'entry_1': {'title': 'Respiratory support', 'subtitles': {'subtitle_1': {'content': 'Oxygen PRN', 'rate': '2L/min', 'volume': 'N/A'}}}, 
-            'entry_sc1': { # This entry will now be processed into the supportive_care table
+            'entry_sc1': {
                 'title': 'Supportive care', 
                 'subtitles': {
                     'subtitle_1': {
                         'content': 'Warm blanket and gentle petting', 
-                        'rate': 'Continuous', # Example 'rate' for supportive care
-                        'volume': 'As tolerated'  # Example 'volume'
+                        'rate': 'Continuous',
+                        'volume': 'As tolerated'
                     }
                 }
-            },
-            'entry_med1': {'title': 'Other Medications', 'subtitles': {'subtitle_1': {'content': 'Catnip 5mg', 'dose': '1 pinch', 'volume': 'PO'}}}
+            }
         }, 
         'each_table_row_layout': { 
-            'row_1': {'row_header_name': 'Date', 'row_header_description': '2023-10-27'}, 
-            'row_2': {'row_header_name': 'Time', 'row_header_description': '10:00 AM'}, 
-            'row_3': {'row_header_name': 'Weight', 'row_header_description': '5 kg'}
+            'row_A1': {'row_header_name': 'Date', 'row_header_description': '2024-01-05'}, 
+            'row_A2': {'row_header_name': 'Time', 'row_header_description': '01:00 PM'}
         }
     }
-    process_json_data(json_data_from_user)
+    print("\n\n--- Processing Patient 1, New Diagnosis 'General Malaise', with Supportive Care ---")
+    process_json_data(json_data_supportive_example)
 
-    print("\n--- Processing another example (supportive care with only content) ---")
-    json_data_supportive_only_content = {
-        "uuid": "patient-app-uuid-002",
-        "Name": "Patient SupportOnly",
-        "uhid": "UHID-SUPPORT-002",
-        "Diagnosis": "Mild Discomfort",
-        "each_entry_layout": {
-             "entry_sc2": {
-                "title": "Supportive care",
-                "subtitles": {"subtitle_1": {"content": "Rest and fluids"}} 
-                # Rate and Volume will be NULL in the DB for this entry
-            }
-        },
-        "each_table_row_layout": {
-            "row_X1": { "row_header_name": "Date", "row_header_description": "2023-11-10" },
-            "row_X2": { "row_header_name": "Time", "row_header_description": "09:00 AM" }
+    # Sixth run: Example with empty/None diagnosis
+    json_data_empty_diag = {
+        'uuid': 'patient-app-uuid-P3',
+        'Name': 'Patient Gamma',
+        'Age_year': '5', 'Age_month': '0', 'Sex': 'O', 'uhid': 'UHID-P3',
+        'Diagnosis': None, # Empty/None diagnosis, should become "N/A"
+        'Consultants': 'Dr. X',
+        'each_table_row_layout': {
+            'row_B1': {'row_header_name': 'Date', 'row_header_description': '2024-01-06'},
+            'row_B2': {'row_header_name': 'Time', 'row_header_description': '02:00 PM'}
         }
     }
-    process_json_data(json_data_supportive_only_content)
+    print("\n\n--- Processing Patient 3, Empty Diagnosis (should default to N/A) ---")
+    process_json_data(json_data_empty_diag)
+
+    json_data_whitespace_diag = {
+        'uuid': 'patient-app-uuid-P4',
+        'Name': 'Patient Delta',
+        'Age_year': '7', 'Age_month': '0', 'Sex': 'F', 'uhid': 'UHID-P4',
+        'Diagnosis': '   ', # Whitespace-only diagnosis, should become "N/A"
+        'Consultants': 'Dr. Y',
+        'each_table_row_layout': {
+            'row_C1': {'row_header_name': 'Date', 'row_header_description': '2024-01-07'},
+            'row_C2': {'row_header_name': 'Time', 'row_header_description': '03:00 PM'}
+        }
+    }
+    print("\n\n--- Processing Patient 4, Whitespace-only Diagnosis (should default to N/A) ---")
+    process_json_data(json_data_whitespace_diag)
+
+# END OF FILE external_database_handler.py
