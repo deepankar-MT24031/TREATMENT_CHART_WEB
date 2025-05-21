@@ -33,15 +33,32 @@ def insert_patient(cur, data):
     if not application_uuid_from_json:
         raise ValueError("Application UUID (from JSON 'uuid' field) is missing but required.")
 
+    # Get bed number from JSON data. Assume key "Bed_Number" or "bed_number".
+    # The database column 'bed_number' is type 'integer'.
+    bed_number_raw = data.get("Bed_Number", data.get("bed_number")) # Try "Bed_Number" then "bed_number"
+    bed_number_val = None
+    if bed_number_raw is not None and str(bed_number_raw).strip() != "": # Check if not None and not an empty/whitespace string
+        try:
+            bed_number_val = int(bed_number_raw)
+        except ValueError:
+            print(f"Warning: Bed_Number '{bed_number_raw}' is not a valid integer. Storing bed_number as NULL.")
+            # bed_number_val remains None, which psycopg2 will convert to SQL NULL
+    else:
+        # If bed_number_raw is None or an empty string, it will be stored as NULL
+        # print(f"Info: Bed_Number is missing or empty. Storing bed_number as NULL.") # Optional: for debugging
+        pass
+
+
     cur.execute("""
-        INSERT INTO treatment_chart.patient (uhid, name, age_in_months, age_in_years, sex, application_uuid)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO treatment_chart.patient (uhid, name, age_in_months, age_in_years, sex, application_uuid, bed_number)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (uhid) DO UPDATE SET
             name = EXCLUDED.name,
             age_in_months = EXCLUDED.age_in_months,
             age_in_years = EXCLUDED.age_in_years,
             sex = EXCLUDED.sex,
-            application_uuid = EXCLUDED.application_uuid
+            application_uuid = EXCLUDED.application_uuid,
+            bed_number = EXCLUDED.bed_number  -- Update bed_number on conflict
         RETURNING uuid;
     """, (
         data.get("uhid"),
@@ -49,10 +66,11 @@ def insert_patient(cur, data):
         data.get("Age_month"),
         data.get("Age_year"),
         data.get("Sex"),
-        application_uuid_from_json
+        application_uuid_from_json,
+        bed_number_val # Pass the (potentially None) integer value
     ))
     patient_pk_uuid = cur.fetchone()[0] 
-    print(f"Patient PK (DB-generated or existing): {patient_pk_uuid} (App UUID from JSON: {application_uuid_from_json})")
+    print(f"Patient PK (DB-generated or existing): {patient_pk_uuid} (App UUID from JSON: {application_uuid_from_json}), Bed Number in DB: {bed_number_val}")
     return patient_pk_uuid
 
 def insert_diagnosis(cur, data, fk_patient_uuid):
@@ -488,6 +506,7 @@ if __name__ == "__main__":
         'uuid': 'patient-app-uuid-P1',
         'Name': 'Patient Alpha',
         'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1',
+        'Bed_Number': '101', # Added bed number
         'Diagnosis': 'Common Cold', # Diagnosis A
         'Consultants': 'Dr. One',
         'each_table_row_layout': {
@@ -498,11 +517,12 @@ if __name__ == "__main__":
     print("\n\n--- Processing Patient 1, Diagnosis A, Observation 1 ---")
     process_json_data(json_data_patient1_diagA_obs1)
 
-    # Second run for patient 1, SAME diagnosis A (different spacing/casing), new observation
+    # Second run for patient 1, SAME diagnosis A (different spacing/casing), new observation, different bed number
     json_data_patient1_diagA_obs2 = {
-        'uuid': 'patient-app-uuid-P1',
-        'Name': 'Patient Alpha',
+        'uuid': 'patient-app-uuid-P1', # Same patient
+        'Name': 'Patient Alpha', # Name might be updated if different, but uhid is key
         'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1',
+        'Bed_Number': '102', # Updated bed number
         'Diagnosis': '  common   cold  ', # Diagnosis A, different casing and spacing
         'Consultants': 'Dr. One',
         'each_table_row_layout': {
@@ -510,14 +530,15 @@ if __name__ == "__main__":
             'row_2': {'row_header_name': 'Time', 'row_header_description': '10:00 AM'}
         }
     }
-    print("\n\n--- Processing Patient 1, Diagnosis A (again, normalized), Observation 2 ---")
+    print("\n\n--- Processing Patient 1, Diagnosis A (again, normalized), Observation 2, Updated Bed ---")
     process_json_data(json_data_patient1_diagA_obs2)
 
-    # Third run for patient 1, DIFFERENT diagnosis B, new observation
+    # Third run for patient 1, DIFFERENT diagnosis B, new observation, invalid bed number
     json_data_patient1_diagB_obs1 = {
         'uuid': 'patient-app-uuid-P1',
         'Name': 'Patient Alpha',
         'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1',
+        'Bed_Number': 'A-205', # Invalid bed number, should store NULL
         'Diagnosis': 'Mild Fever', # Diagnosis B
         'Consultants': 'Dr. Two',
         'each_table_row_layout': {
@@ -525,7 +546,7 @@ if __name__ == "__main__":
             'row_2': {'row_header_name': 'Time', 'row_header_description': '11:00 AM'}
         }
     }
-    print("\n\n--- Processing Patient 1, Diagnosis B, Observation 1 ---")
+    print("\n\n--- Processing Patient 1, Diagnosis B, Observation 1, Invalid Bed ---")
     process_json_data(json_data_patient1_diagB_obs1)
 
     # Fourth run for DIFFERENT patient 2, with a diagnosis text SAME as P1's Diag A
@@ -533,6 +554,7 @@ if __name__ == "__main__":
         'uuid': 'patient-app-uuid-P2',
         'Name': 'Patient Beta',
         'Age_year': '20', 'Age_month': '2', 'Sex': 'F', 'uhid': 'UHID-P2',
+        'Bed_Number': '201', # Bed number for P2
         'Diagnosis': 'Common Cold', # Diagnosis A text, but for a different patient
         'Consultants': 'Dr. Three',
         'each_table_row_layout': {
@@ -543,11 +565,12 @@ if __name__ == "__main__":
     print("\n\n--- Processing Patient 2, Diagnosis A text (normalized), Observation 1 ---")
     process_json_data(json_data_patient2_diagA_obs1)
     
-    # Fifth run: Patient 1, "Supportive Care" example
+    # Fifth run: Patient 1, "Supportive Care" example, Bed_Number might be empty string
     json_data_supportive_example = {
         'uuid': 'patient-app-uuid-P1', 
         'Name': 'Patient Alpha', 
         'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1', 
+        'Bed_Number': '', # Empty string bed number, should store NULL
         'Diagnosis': 'General Malaise', # A new diagnosis for P1
         'Consultants': 'Dr. Whiskers',
         'each_entry_layout': { 
@@ -567,14 +590,15 @@ if __name__ == "__main__":
             'row_A2': {'row_header_name': 'Time', 'row_header_description': '01:00 PM'}
         }
     }
-    print("\n\n--- Processing Patient 1, New Diagnosis 'General Malaise', with Supportive Care ---")
+    print("\n\n--- Processing Patient 1, New Diagnosis 'General Malaise', with Supportive Care, Empty Bed ---")
     process_json_data(json_data_supportive_example)
 
-    # Sixth run: Example with empty/None diagnosis
-    json_data_empty_diag = {
+    # Sixth run: Example with empty/None diagnosis, no Bed_Number field
+    json_data_empty_diag_no_bed = {
         'uuid': 'patient-app-uuid-P3',
         'Name': 'Patient Gamma',
         'Age_year': '5', 'Age_month': '0', 'Sex': 'O', 'uhid': 'UHID-P3',
+        # Bed_Number field is missing, should store NULL
         'Diagnosis': None, # Empty/None diagnosis, should become "N/A"
         'Consultants': 'Dr. X',
         'each_table_row_layout': {
@@ -582,13 +606,14 @@ if __name__ == "__main__":
             'row_B2': {'row_header_name': 'Time', 'row_header_description': '02:00 PM'}
         }
     }
-    print("\n\n--- Processing Patient 3, Empty Diagnosis (should default to N/A) ---")
-    process_json_data(json_data_empty_diag)
+    print("\n\n--- Processing Patient 3, Empty Diagnosis, No Bed Number Field (should default to N/A for diagnosis, NULL for bed) ---")
+    process_json_data(json_data_empty_diag_no_bed)
 
     json_data_whitespace_diag = {
         'uuid': 'patient-app-uuid-P4',
         'Name': 'Patient Delta',
         'Age_year': '7', 'Age_month': '0', 'Sex': 'F', 'uhid': 'UHID-P4',
+        'Bed_Number': '303',
         'Diagnosis': '   ', # Whitespace-only diagnosis, should become "N/A"
         'Consultants': 'Dr. Y',
         'each_table_row_layout': {
