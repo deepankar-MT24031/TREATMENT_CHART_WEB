@@ -28,6 +28,57 @@ def normalize_diagnosis_text(text_raw):
 # --- Database Interaction Functions ---
 
 def insert_patient(cur, data):
+    """
+    Inserts or updates a patient record, updating last_updated timestamp,
+    and returns the patient's PK uuid and the last_updated timestamp.
+    """
+    application_uuid_from_json = data.get("uuid")
+    if not application_uuid_from_json:
+        raise ValueError("Application UUID (from JSON 'uuid' field) is missing but required.")
+
+    bed_number_raw = data.get("Bed_Number", data.get("bed_number"))
+    bed_number_val = None
+    if bed_number_raw is not None and str(bed_number_raw).strip() != "":
+        try:
+            bed_number_val = int(bed_number_raw)
+        except ValueError:
+            print(f"Warning: Bed_Number '{bed_number_raw}' is not a valid integer. Storing bed_number as NULL.")
+    else:
+        pass # bed_number_val remains None
+
+    # The last_updated column will be set by the database using CURRENT_TIMESTAMP
+    cur.execute("""
+        INSERT INTO treatment_chart.patient
+            (uhid, name, age_in_months, age_in_years, sex, application_uuid, bed_number, last_updated)
+        VALUES
+            (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+        ON CONFLICT (uhid) DO UPDATE SET
+            name = EXCLUDED.name,
+            age_in_months = EXCLUDED.age_in_months,
+            age_in_years = EXCLUDED.age_in_years,
+            sex = EXCLUDED.sex,
+            application_uuid = EXCLUDED.application_uuid,
+            bed_number = EXCLUDED.bed_number,
+            last_updated = CURRENT_TIMESTAMP -- Explicitly update on conflict
+        RETURNING uuid, last_updated; -- Return the UUID and the new last_updated timestamp
+    """, (
+        data.get("uhid"),
+        data.get("Name"),
+        data.get("Age_month"),
+        data.get("Age_year"),
+        data.get("Sex"),
+        application_uuid_from_json,
+        bed_number_val
+        # No need to pass last_updated from Python, DB handles it.
+    ))
+    result = cur.fetchone()
+    patient_pk_uuid = result[0]
+    last_updated_ts = result[1] # The timestamp set by the database
+
+    print(f"Patient PK (DB-generated or existing): {patient_pk_uuid} (App UUID from JSON: {application_uuid_from_json}), Bed Number in DB: {bed_number_val}, Last Updated: {last_updated_ts}")
+    return patient_pk_uuid # Keep returning only patient_pk_uuid if other parts of your code expect that
+    # Or, if useful, you could return both: return patient_pk_uuid, last_updated_ts
+    # For now, let's assume the rest of the script only needs patient_pk_uuid from this function.
     """Inserts or updates a patient record and returns the patient's PK uuid."""
     application_uuid_from_json = data.get("uuid") 
     if not application_uuid_from_json:
