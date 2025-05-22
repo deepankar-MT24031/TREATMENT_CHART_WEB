@@ -30,7 +30,7 @@ def normalize_diagnosis_text(text_raw):
 def insert_patient(cur, data):
     """
     Inserts or updates a patient record, updating last_updated timestamp,
-    and returns the patient's PK uuid and the last_updated timestamp.
+    and returns the patient's PK uuid.
     """
     application_uuid_from_json = data.get("uuid")
     if not application_uuid_from_json:
@@ -47,6 +47,7 @@ def insert_patient(cur, data):
         pass # bed_number_val remains None
 
     # The last_updated column will be set by the database using CURRENT_TIMESTAMP
+    # or the trigger. Explicitly setting it here for clarity and consistency.
     cur.execute("""
         INSERT INTO treatment_chart.patient
             (uhid, name, age_in_months, age_in_years, sex, application_uuid, bed_number, last_updated)
@@ -69,66 +70,18 @@ def insert_patient(cur, data):
         data.get("Sex"),
         application_uuid_from_json,
         bed_number_val
-        # No need to pass last_updated from Python, DB handles it.
     ))
     result = cur.fetchone()
     patient_pk_uuid = result[0]
     last_updated_ts = result[1] # The timestamp set by the database
 
     print(f"Patient PK (DB-generated or existing): {patient_pk_uuid} (App UUID from JSON: {application_uuid_from_json}), Bed Number in DB: {bed_number_val}, Last Updated: {last_updated_ts}")
-    return patient_pk_uuid # Keep returning only patient_pk_uuid if other parts of your code expect that
-    # Or, if useful, you could return both: return patient_pk_uuid, last_updated_ts
-    # For now, let's assume the rest of the script only needs patient_pk_uuid from this function.
-    """Inserts or updates a patient record and returns the patient's PK uuid."""
-    application_uuid_from_json = data.get("uuid") 
-    if not application_uuid_from_json:
-        raise ValueError("Application UUID (from JSON 'uuid' field) is missing but required.")
-
-    # Get bed number from JSON data. Assume key "Bed_Number" or "bed_number".
-    # The database column 'bed_number' is type 'integer'.
-    bed_number_raw = data.get("Bed_Number", data.get("bed_number")) # Try "Bed_Number" then "bed_number"
-    bed_number_val = None
-    if bed_number_raw is not None and str(bed_number_raw).strip() != "": # Check if not None and not an empty/whitespace string
-        try:
-            bed_number_val = int(bed_number_raw)
-        except ValueError:
-            print(f"Warning: Bed_Number '{bed_number_raw}' is not a valid integer. Storing bed_number as NULL.")
-            # bed_number_val remains None, which psycopg2 will convert to SQL NULL
-    else:
-        # If bed_number_raw is None or an empty string, it will be stored as NULL
-        # print(f"Info: Bed_Number is missing or empty. Storing bed_number as NULL.") # Optional: for debugging
-        pass
-
-
-    cur.execute("""
-        INSERT INTO treatment_chart.patient (uhid, name, age_in_months, age_in_years, sex, application_uuid, bed_number)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (uhid) DO UPDATE SET
-            name = EXCLUDED.name,
-            age_in_months = EXCLUDED.age_in_months,
-            age_in_years = EXCLUDED.age_in_years,
-            sex = EXCLUDED.sex,
-            application_uuid = EXCLUDED.application_uuid,
-            bed_number = EXCLUDED.bed_number  -- Update bed_number on conflict
-        RETURNING uuid;
-    """, (
-        data.get("uhid"),
-        data.get("Name"),
-        data.get("Age_month"),
-        data.get("Age_year"),
-        data.get("Sex"),
-        application_uuid_from_json,
-        bed_number_val # Pass the (potentially None) integer value
-    ))
-    patient_pk_uuid = cur.fetchone()[0] 
-    print(f"Patient PK (DB-generated or existing): {patient_pk_uuid} (App UUID from JSON: {application_uuid_from_json}), Bed Number in DB: {bed_number_val}")
-    return patient_pk_uuid
+    return patient_pk_uuid # Return only patient_pk_uuid as per original script's expectation for this function's return
 
 def insert_diagnosis(cur, data, fk_patient_uuid):
     """
-    Inserts a new diagnosis record if a diagnosis with the same normalized text
-    (case-insensitive, space-normalized hash) doesn't already exist for the patient.
-    Otherwise, returns the existing diagnosis_id.
+    Inserts a new diagnosis record or updates an existing one (if matched by hash)
+    to refresh its last_updated timestamp and consultant details.
     Returns its diagnosis_id (PK).
     """
     new_diagnosis_text_raw = data.get("Diagnosis") or data.get("diagnosis")
@@ -154,16 +107,37 @@ def insert_diagnosis(cur, data, fk_patient_uuid):
         for D_pk_id, D_text_from_db_raw in existing_diagnoses_for_patient:
             # Normalize text from DB for comparison
             D_text_from_db_normalized = normalize_diagnosis_text(D_text_from_db_raw)
-
             existing_entry_hash = hashlib.sha256(D_text_from_db_normalized.encode('utf-8')).hexdigest()
-            # print(f"    - Comparing with DB entry: '{D_text_from_db_raw}' (Normalized as: '{D_text_from_db_normalized}', Hash: {existing_entry_hash})") # For detailed debugging
             if existing_entry_hash == new_diagnosis_hash:
                 found_diagnosis_pk_id = D_pk_id
-                print(f"  MATCH FOUND: Reusing existing Diagnosis PK: {found_diagnosis_pk_id} for patient {fk_patient_uuid} (Original DB Text: '{D_text_from_db_raw}')")
+                print(f"  MATCH FOUND: Will update existing Diagnosis PK: {found_diagnosis_pk_id} for patient {fk_patient_uuid} (Original DB Text: '{D_text_from_db_raw}')")
                 break
 
     if found_diagnosis_pk_id:
-        return found_diagnosis_pk_id
+        # Update the last_updated timestamp and consultant details for the existing diagnosis.
+        # The DB trigger will also set last_updated, but explicit set here is fine.
+        print(f"  Updating existing Diagnosis PK: {found_diagnosis_pk_id} to refresh its timestamp and consultants.")
+        cur.execute("""
+            UPDATE treatment_chart.diagnosis
+            SET 
+                consultants = %s,
+                jr = %s,
+                sr = %s,
+                last_updated = CURRENT_TIMESTAMP 
+            WHERE diagnosis_id = %s
+            RETURNING diagnosis_id, last_updated;
+        """, (
+            data.get("Consultants") or data.get("consultants"),
+            data.get("JR") or data.get("jr"),
+            data.get("SR") or data.get("sr"),
+            found_diagnosis_pk_id
+        ))
+        updated_result = cur.fetchone()
+        # diagnosis_id will be the same, but we get the new last_updated
+        updated_diagnosis_id = updated_result[0]
+        updated_diagnosis_ts = updated_result[1]
+        print(f"  Diagnosis PK {updated_diagnosis_id} updated. New last_updated: {updated_diagnosis_ts}")
+        return updated_diagnosis_id
     else:
         if existing_diagnoses_for_patient:
              print(f"  NO MATCH: No existing diagnosis for patient {fk_patient_uuid} matched the hash. Inserting new.")
@@ -173,9 +147,10 @@ def insert_diagnosis(cur, data, fk_patient_uuid):
         # Store the ORIGINAL raw text (or "N/A" if it was truly empty/None initially)
         text_to_store = new_diagnosis_text_raw if new_diagnosis_text_raw and new_diagnosis_text_raw.strip() else "N/A"
 
+        # last_updated will be set by CURRENT_TIMESTAMP on insert.
         cur.execute("""
-            INSERT INTO treatment_chart.diagnosis (patient_uuid, diagnosis_text, consultants, jr, sr)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO treatment_chart.diagnosis (patient_uuid, diagnosis_text, consultants, jr, sr, last_updated)
+            VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
             RETURNING diagnosis_id;
         """, (
             fk_patient_uuid,
@@ -453,7 +428,7 @@ def process_json_data(json_input_str_or_dict):
 
         print("\n=== Starting Data Insertion Process ===")
         print("1. Inserting/Updating Patient Record...")
-        patient_pk_uuid = insert_patient(cur, data)
+        patient_pk_uuid = insert_patient(cur, data) # This now returns only the UUID
         print(f"✓ Patient record processed with UUID: {patient_pk_uuid}")
 
         print("\n2. Inserting/Finding Diagnosis Record...")
@@ -557,9 +532,9 @@ if __name__ == "__main__":
         'uuid': 'patient-app-uuid-P1',
         'Name': 'Patient Alpha',
         'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1',
-        'Bed_Number': '101', # Added bed number
-        'Diagnosis': 'Common Cold', # Diagnosis A
-        'Consultants': 'Dr. One',
+        'Bed_Number': '101', 
+        'Diagnosis': 'Common Cold', 
+        'Consultants': 'Dr. One', 'JR': 'Jr. A', 'SR': 'Sr. X',
         'each_table_row_layout': {
             'row_1': {'row_header_name': 'Date', 'row_header_description': '2024-01-01'},
             'row_2': {'row_header_name': 'Time', 'row_header_description': '09:00 AM'}
@@ -569,19 +544,20 @@ if __name__ == "__main__":
     process_json_data(json_data_patient1_diagA_obs1)
 
     # Second run for patient 1, SAME diagnosis A (different spacing/casing), new observation, different bed number
+    # Consultant details might change or stay the same for the SAME diagnosis if re-confirmed
     json_data_patient1_diagA_obs2 = {
-        'uuid': 'patient-app-uuid-P1', # Same patient
-        'Name': 'Patient Alpha', # Name might be updated if different, but uhid is key
+        'uuid': 'patient-app-uuid-P1', 
+        'Name': 'Patient Alpha', 
         'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1',
-        'Bed_Number': '102', # Updated bed number
-        'Diagnosis': '  common   cold  ', # Diagnosis A, different casing and spacing
-        'Consultants': 'Dr. One',
+        'Bed_Number': '102', 
+        'Diagnosis': '  common   cold  ', 
+        'Consultants': 'Dr. Uno', 'JR': 'Jr. B', 'SR': 'Sr. Y', # Updated consultants for the same diagnosis
         'each_table_row_layout': {
             'row_1': {'row_header_name': 'Date', 'row_header_description': '2024-01-02'},
             'row_2': {'row_header_name': 'Time', 'row_header_description': '10:00 AM'}
         }
     }
-    print("\n\n--- Processing Patient 1, Diagnosis A (again, normalized), Observation 2, Updated Bed ---")
+    print("\n\n--- Processing Patient 1, Diagnosis A (again, normalized, updated consultants), Observation 2, Updated Bed ---")
     process_json_data(json_data_patient1_diagA_obs2)
 
     # Third run for patient 1, DIFFERENT diagnosis B, new observation, invalid bed number
@@ -589,9 +565,9 @@ if __name__ == "__main__":
         'uuid': 'patient-app-uuid-P1',
         'Name': 'Patient Alpha',
         'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1',
-        'Bed_Number': 'A-205', # Invalid bed number, should store NULL
-        'Diagnosis': 'Mild Fever', # Diagnosis B
-        'Consultants': 'Dr. Two',
+        'Bed_Number': 'A-205', 
+        'Diagnosis': 'Mild Fever', 
+        'Consultants': 'Dr. Two', 'JR': 'Jr. C', 'SR': 'Sr. Z',
         'each_table_row_layout': {
             'row_1': {'row_header_name': 'Date', 'row_header_description': '2024-01-03'},
             'row_2': {'row_header_name': 'Time', 'row_header_description': '11:00 AM'}
@@ -605,8 +581,8 @@ if __name__ == "__main__":
         'uuid': 'patient-app-uuid-P2',
         'Name': 'Patient Beta',
         'Age_year': '20', 'Age_month': '2', 'Sex': 'F', 'uhid': 'UHID-P2',
-        'Bed_Number': '201', # Bed number for P2
-        'Diagnosis': 'Common Cold', # Diagnosis A text, but for a different patient
+        'Bed_Number': '201', 
+        'Diagnosis': 'Common Cold', 
         'Consultants': 'Dr. Three',
         'each_table_row_layout': {
             'row_1': {'row_header_name': 'Date', 'row_header_description': '2024-01-04'},
@@ -621,8 +597,8 @@ if __name__ == "__main__":
         'uuid': 'patient-app-uuid-P1', 
         'Name': 'Patient Alpha', 
         'Age_year': '10', 'Age_month': '1', 'Sex': 'M', 'uhid': 'UHID-P1', 
-        'Bed_Number': '', # Empty string bed number, should store NULL
-        'Diagnosis': 'General Malaise', # A new diagnosis for P1
+        'Bed_Number': '', 
+        'Diagnosis': 'General Malaise', 
         'Consultants': 'Dr. Whiskers',
         'each_entry_layout': { 
             'entry_sc1': {
@@ -649,8 +625,7 @@ if __name__ == "__main__":
         'uuid': 'patient-app-uuid-P3',
         'Name': 'Patient Gamma',
         'Age_year': '5', 'Age_month': '0', 'Sex': 'O', 'uhid': 'UHID-P3',
-        # Bed_Number field is missing, should store NULL
-        'Diagnosis': None, # Empty/None diagnosis, should become "N/A"
+        'Diagnosis': None, 
         'Consultants': 'Dr. X',
         'each_table_row_layout': {
             'row_B1': {'row_header_name': 'Date', 'row_header_description': '2024-01-06'},
@@ -665,7 +640,7 @@ if __name__ == "__main__":
         'Name': 'Patient Delta',
         'Age_year': '7', 'Age_month': '0', 'Sex': 'F', 'uhid': 'UHID-P4',
         'Bed_Number': '303',
-        'Diagnosis': '   ', # Whitespace-only diagnosis, should become "N/A"
+        'Diagnosis': '   ', 
         'Consultants': 'Dr. Y',
         'each_table_row_layout': {
             'row_C1': {'row_header_name': 'Date', 'row_header_description': '2024-01-07'},
