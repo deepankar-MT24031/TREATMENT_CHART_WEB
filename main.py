@@ -109,32 +109,55 @@ def load_settings():
 @app.route('/safe_icu_config', methods=['GET'])
 def safe_icu_config():
     """
-    Provides configuration for the Safe-ICU button, 
-    currently with a hardcoded URL.
+    Provides configuration for the Safe-ICU button,
+    fetching IP and port from settings.json with fallbacks.
     """
+    default_ip = "127.0.0.1"  # Default fallback IP
+    default_port = "8000"     # Default fallback Port
+    protocol = "http"         # Default protocol
+
+    current_ip = default_ip
+    current_port = default_port
+
+    settings_file_path = 'settings.json'
+
     try:
-        # For now, hardcode the IP and port.
-        # In the future, you might fetch this from settings.json or another config
-        hardcoded_ip = "192.168.1.153"  # Example IP, replace with your target
-        hardcoded_port = "5000"        # Example Port, replace with your target
-        
-        # You can return just IP and port, or the full URL
-        # Option 1: Return IP and Port
-        # return jsonify({
-        #     "ip": hardcoded_ip,
-        #     "port": hardcoded_port,
-        #     "protocol": "http" # or "https"
-        # })
+        if os.path.exists(settings_file_path):
+            with open(settings_file_path, 'r') as f:
+                settings_data = json.load(f)
+            
+            # Fetch from "safe_icu_ip_settings" key (corrected from your example "safe_icu_ip_setings")
+            safe_icu_settings = settings_data.get("safe_icu_ip_settings") # Use .get for safer access
+            
+            if safe_icu_settings and isinstance(safe_icu_settings, dict):
+                current_ip = safe_icu_settings.get("host", default_ip)
+                current_port = str(safe_icu_settings.get("port", default_port)) # Ensure port is a string
+                # You could also add a "protocol" field in your safe_icu_ip_settings if needed
+                # protocol = safe_icu_settings.get("protocol", protocol) 
+            else:
+                print(f"Warning: 'safe_icu_ip_settings' key not found or not a dictionary in {settings_file_path}. Using defaults.")
+        else:
+            print(f"Warning: {settings_file_path} not found. Using default Safe-ICU IP/Port.")
 
-        # Option 2: Return full URL (simpler for the frontend for now)
-        full_url = f"http://{hardcoded_ip}:{hardcoded_port}"
-        return jsonify({
-            "url": full_url
-        })
-
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode {settings_file_path}. File might be corrupted. Using defaults.")
     except Exception as e:
-        print(f"Error in /safe_icu_config route: {str(e)}")
-        return jsonify({"error": "Could not retrieve Safe-ICU configuration", "details": str(e)}), 500
+        print(f"An unexpected error occurred while reading settings for Safe-ICU: {str(e)}. Using defaults.")
+
+    # Construct the full URL
+    # Ensure IP and Port are not empty before constructing, though defaults should prevent this
+    if not current_ip:
+        current_ip = default_ip
+    if not current_port:
+        current_port = default_port
+        
+    full_url = f"{protocol}://{current_ip}:{current_port}"
+    
+    print(f"Safe-ICU config returning URL: {full_url}") # For logging/debugging
+
+    return jsonify({
+        "url": full_url
+    })
 
 @app.route('/download', methods=['POST'])
 def download_pdf():
