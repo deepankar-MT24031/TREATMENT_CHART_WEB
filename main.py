@@ -106,6 +106,35 @@ def load_settings():
             }
         }
 
+@app.route('/safe_icu_config', methods=['GET'])
+def safe_icu_config():
+    """
+    Provides configuration for the Safe-ICU button, 
+    currently with a hardcoded URL.
+    """
+    try:
+        # For now, hardcode the IP and port.
+        # In the future, you might fetch this from settings.json or another config
+        hardcoded_ip = "192.168.1.100"  # Example IP, replace with your target
+        hardcoded_port = "8080"        # Example Port, replace with your target
+        
+        # You can return just IP and port, or the full URL
+        # Option 1: Return IP and Port
+        # return jsonify({
+        #     "ip": hardcoded_ip,
+        #     "port": hardcoded_port,
+        #     "protocol": "http" # or "https"
+        # })
+
+        # Option 2: Return full URL (simpler for the frontend for now)
+        full_url = f"http://{hardcoded_ip}:{hardcoded_port}"
+        return jsonify({
+            "url": full_url
+        })
+
+    except Exception as e:
+        print(f"Error in /safe_icu_config route: {str(e)}")
+        return jsonify({"error": "Could not retrieve Safe-ICU configuration", "details": str(e)}), 500
 
 @app.route('/download', methods=['POST'])
 def download_pdf():

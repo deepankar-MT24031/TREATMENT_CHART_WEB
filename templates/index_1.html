@@ -31,7 +31,7 @@
 
         .settings {
             background-color: #e6e6e6;
-            /* padding: 5px 10px; */ /* Will be handled by inline style for flex */
+            padding: 5px 10px;
             border-bottom: 1px solid #ccc;
         }
 
@@ -606,12 +606,13 @@
 </head>
 <body>
     <div class="container">
-        <!-- MODIFIED: settings bar HTML for Safe-ICU and Settings buttons -->
         <div class="settings" style="display: flex; justify-content: space-between; align-items: center; padding: 5px 10px;">
+            <!-- New Safe-ICU Button on the left -->
             <button id="safe-icu-btn" class="button" style="font-size: 0.9em; padding: 3px 8px; background-color: #d0e0f0; border-color: #a0b0c0;">Safe-ICU</button>
+
+            <!-- Existing Settings Button on the right -->
             <button id="settings-btn" style="background:none;border:none;font-size:1.1em;cursor:pointer;padding:0;color:#333;">⚙️ Settings</button>
         </div>
-        <!-- END MODIFIED settings bar -->
         <div class="tabs">
             <div class="tab active" data-tab="search">Search</div>
             <div class="tab" data-tab="edit">Edit</div>
@@ -891,7 +892,7 @@
                 <div></div>
                 <div style="display: flex; justify-content: center; flex: 1;">
                     <button class="footer-button" id="print-button">Print</button>
-                    <button class="footer-button">DDI</button> <!-- This is the DDI button -->
+                    <button class="footer-button">DDI</button>
                 </div>
                 <div></div>
             </div>
@@ -1279,7 +1280,7 @@
             });
         }
 
-        // This is one of the DOMContentLoaded listeners. We'll add the Safe-ICU logic here.
+        // Initialize event listeners when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             // Load initial search data
             fetch('/get_entries')
@@ -1314,91 +1315,75 @@
                     console.error('Error fetching entries:', error);
                 });
 
-            // Add event listener for form submission (Print button)
-            const printButton = document.getElementById('print-button');
-            if (printButton) {
-                printButton.addEventListener('click', function(event) {
-                    event.preventDefault(); // Prevent default action
-                    if (validateForm()) {
-                        downloadTextFile();
-                    }
-                });
-            }
-            
-            // --- START: ADDED Safe-ICU Button Listener ---
-            const safeIcuButton = document.getElementById('safe-icu-btn');
-            if (safeIcuButton) {
-                safeIcuButton.addEventListener('click', function() {
-                    // Fetch the Safe-ICU configuration from the backend
-                    fetch('/safe_icu_config')
-                        .then(response => {
-                            if (!response.ok) {
-                                // If response is not OK, try to parse error from backend
-                                return response.json().then(errData => {
-                                    let errorMessage = 'Server error';
-                                    if (errData && errData.error) {
-                                        errorMessage = errData.error;
-                                        if (errData.details) {
-                                            errorMessage += `\nDetails: ${errData.details}`;
-                                        }
-                                    } else {
-                                        errorMessage = `Server error: ${response.status}`;
-                                    }
-                                    throw new Error(errorMessage);
-                                });
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            if (data.url) {
-                                const safeIcuUrl = data.url;
-                                console.log('Opening Safe-ICU URL:', safeIcuUrl);
-                                const newTab = window.open(safeIcuUrl, '_blank');
-                                if (newTab) {
-                                    newTab.focus();
-                                } else {
-                                    alert('Could not open Safe-ICU. Please ensure pop-ups are not blocked for this site.');
-                                }
-                            } else if (data.error) {
-                                 alert('Error fetching Safe-ICU configuration: ' + data.error + (data.details ? `\nDetails: ${data.details}` : ''));
-                            }
-                            else {
-                                alert('Safe-ICU URL not found in configuration from server.');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error fetching Safe-ICU configuration:', error);
-                            alert('Failed to fetch Safe-ICU configuration: ' + error.message);
-                        });
-                });
-            }
-            // --- END: ADDED Safe-ICU Button Listener ---
-
-        }); // End of this DOMContentLoaded
+            // Add event listener for form submission
+            document.getElementById('print-button').addEventListener('click', function(event) {
+                event.preventDefault(); // Prevent default action
+                if (validateForm()) {
+                    downloadTextFile();
+                }
+            });
+        });
     </script>
 
     <script>
         // Add functionality to the search button
-        // Note: This querySelector might conflict if there are other elements with class "search-button" before this one.
-        // It's better to give specific IDs or more precise selectors.
-        const searchFormSearchButton = document.querySelector('#search-tab .search-buttons .search-button:first-child');
-        if (searchFormSearchButton) {
-            searchFormSearchButton.addEventListener('click', function() {
-                const name = document.getElementById('search-name').value;
-                const date = document.getElementById('search-date').value;
-                const uhid = document.getElementById('search-uuid').value;
+        document.querySelector('.search-button').addEventListener('click', function() {
+            const name = document.getElementById('search-name').value;
+            const date = document.getElementById('search-date').value;
+            const uhid = document.getElementById('search-uuid').value;
 
-                fetch('/search', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        name: name,
-                        date: date,
-                        uhid: uhid
-                    })
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    date: date,
+                    uhid: uhid
                 })
+            })
+            .then(response => response.json())
+            .then(entries => {
+                const tbody = document.querySelector('.search-results table tbody');
+                tbody.innerHTML = '';
+                
+                if (entries && entries.length > 0) {
+                    entries.forEach((entry, index) => {
+                        const row = document.createElement('tr');
+                        row.className = 'search-result-row';
+                        row.setAttribute('data-uuid', entry[3]);
+                        row.innerHTML = `
+                            <td style="text-align: center;">${index + 1}</td>
+                            <td>${entry[0]}</td>
+                            <td>${entry[1]}</td>
+                            <td>${entry[2]}</td>
+                            <td style="display: none;">${entry[3]}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center;">No entries found</td>
+                        </tr>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error performing search:', error);
+            });
+        });
+
+        // Add functionality to the reset button
+        document.querySelectorAll('.search-button')[1].addEventListener('click', function() {
+            // Clear search inputs
+            document.getElementById('search-name').value = '';
+            document.getElementById('search-date').value = '';
+            document.getElementById('search-uuid').value = '';
+
+            // Fetch all entries
+            fetch('/get_entries')
                 .then(response => response.json())
                 .then(entries => {
                     const tbody = document.querySelector('.search-results table tbody');
@@ -1427,56 +1412,9 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error performing search:', error);
+                    console.error('Error fetching entries:', error);
                 });
-            });
-        }
-
-
-        // Add functionality to the reset button in search form
-        const searchFormResetButton = document.querySelector('#search-tab .search-buttons .search-button:last-child');
-        if (searchFormResetButton) {
-            searchFormResetButton.addEventListener('click', function() {
-                // Clear search inputs
-                document.getElementById('search-name').value = '';
-                document.getElementById('search-date').value = '';
-                document.getElementById('search-uuid').value = '';
-
-                // Fetch all entries
-                fetch('/get_entries')
-                    .then(response => response.json())
-                    .then(entries => {
-                        const tbody = document.querySelector('.search-results table tbody');
-                        tbody.innerHTML = '';
-                        
-                        if (entries && entries.length > 0) {
-                            entries.forEach((entry, index) => {
-                                const row = document.createElement('tr');
-                                row.className = 'search-result-row';
-                                row.setAttribute('data-uuid', entry[3]);
-                                row.innerHTML = `
-                                    <td style="text-align: center;">${index + 1}</td>
-                                    <td>${entry[0]}</td>
-                                    <td>${entry[1]}</td>
-                                    <td>${entry[2]}</td>
-                                    <td style="display: none;">${entry[3]}</td>
-                                `;
-                                tbody.appendChild(row);
-                            });
-                        } else {
-                            tbody.innerHTML = `
-                                <tr>
-                                    <td colspan="5" style="text-align: center;">No entries found</td>
-                                </tr>
-                            `;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching entries:', error);
-                    });
-            });
-        }
-
+        });
 
         // Tab switching functionality
         document.querySelectorAll('.tab').forEach(tab => {
@@ -1492,11 +1430,7 @@
                     content.classList.remove('active');
                 });
 
-                const targetTabContent = document.getElementById(tabId + '-tab');
-                if (targetTabContent) {
-                    targetTabContent.classList.add('active');
-                }
-
+                document.getElementById(tabId + '-tab').classList.add('active');
 
                 // If switching to search tab, refresh the entries
                 if (tabId === 'search') {
@@ -1540,94 +1474,94 @@
             });
         });
 
-        // This is another DOMContentLoaded listener. Consolidate if possible.
+        // Add this at the beginning of your script section
         document.addEventListener('DOMContentLoaded', function() {
             // Get the default data from the server
-            // Ensure these template variables are correctly passed from Flask if used this way
-            // Or fetch them if they are dynamic per request.
-            let defaultData, currentData;
-            try {
-                 defaultData = JSON.parse('{{ default_data|tojson|safe }}');
-                 currentData = JSON.parse('{{ current_data|tojson|safe }}');
-            } catch(e) {
-                console.warn("Could not parse default_data or current_data from template. Fetching default format.");
-                 fetch('/default_format')
-                    .then(res => res.json())
-                    .then(data => {
-                        defaultData = data;
-                        currentData = data; // Use default as current initially
-                        populateMedicationTablesAndParameters(defaultData, currentData);
-                    })
-                    .catch(err => console.error("Failed to fetch default_format for table population", err));
-                return; // Exit early, populateMedicationTablesAndParameters will be called in .then
-            }
+            const defaultData = JSON.parse('{{ default_data|tojson|safe }}');
+            const currentData = JSON.parse('{{ current_data|tojson|safe }}');
             
-            populateMedicationTablesAndParameters(defaultData, currentData);
-
-            function populateMedicationTablesAndParameters(defaultData, currentData) {
-                // Populate medication tables
-                const medicationsContainer = document.getElementById('medications-container');
-                // console.log('DEBUG: RAW currentData.each_entry_layout', JSON.stringify(currentData.each_entry_layout, null, 2));
-                medicationsContainer.innerHTML = ''; // Clear existing content
+            // Populate medication tables
+            const medicationsContainer = document.getElementById('medications-container');
+            console.log('DEBUG: RAW currentData.each_entry_layout', JSON.stringify(currentData.each_entry_layout, null, 2));
+            medicationsContainer.innerHTML = ''; // Clear existing content
+            
+            // Create tables from each_entry_layout
+            Object.entries(currentData.each_entry_layout).forEach(([entryKey, entryData], index) => {
+                // Create table container
+                const tableContainer = createTableWithDynamicColumns(entryData, index, entryKey);
+                medicationsContainer.appendChild(tableContainer);
                 
-                // Create tables from each_entry_layout
-                if (currentData && currentData.each_entry_layout) {
-                    Object.entries(currentData.each_entry_layout).forEach(([entryKey, entryData], index) => {
-                        // Create table container
-                        const tableContainer = createTableWithDynamicColumns(entryData, index, entryKey);
-                        medicationsContainer.appendChild(tableContainer);
-                        
-                        // Add "Add Row" button
-                        const addRowButton = document.createElement('button');
-                        addRowButton.className = 'button add-row';
-                        addRowButton.textContent = 'Add Row';
-                        medicationsContainer.appendChild(addRowButton);
-                    });
-                }
-                
-                // Populate parameter table
-                const parameterTable = document.getElementById('parameter-table');
-                const tbody = parameterTable.querySelector('tbody');
-                tbody.innerHTML = ''; // Clear existing content
-                
-                // Sort parameter rows numerically when rendering
-                if (currentData && currentData.each_table_row_layout) {
-                    Object.entries(currentData.each_table_row_layout || {})
-                      .sort((a, b) => parseInt(a[0].replace('row_', '')) - parseInt(b[0].replace('row_', '')))
-                      .forEach(([rowKey, rowData]) => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="cell-number">${rowKey.replace('row_', '')}</td>
-                            <td class="cell-description">
-                                <input type="text" class="editable" value="${rowData.row_header_name || ''}">
-                            </td>
-                            <td class="cell-value">
-                                <input type="text" class="editable" value="${rowData.row_header_description || ''}">
-                            </td>
+                // Add "Add Row" button
+                const addRowButton = document.createElement('button');
+                addRowButton.className = 'button add-row';
+                addRowButton.textContent = 'Add Row';
+                medicationsContainer.appendChild(addRowButton);
+            });
+            
+            // Populate parameter table
+            const parameterTable = document.getElementById('parameter-table');
+            const tbody = parameterTable.querySelector('tbody');
+            tbody.innerHTML = ''; // Clear existing content
+            
+            // Sort parameter rows numerically when rendering
+            Object.entries(currentData.each_table_row_layout || {})
+              .sort((a, b) => parseInt(a[0].replace('row_', '')) - parseInt(b[0].replace('row_', '')))
+              .forEach(([rowKey, rowData]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="cell-number">${rowKey.replace('row_', '')}</td>
+                    <td class="cell-description">
+                        <input type="text" class="editable" value="${rowData.row_header_name || ''}">
+                    </td>
+                    <td class="cell-value">
+                        <input type="text" class="editable" value="${rowData.row_header_description || ''}">
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Add event listeners after populating tables
+            addInputListeners();
+            
+            // Add event listeners for add row buttons
+            document.querySelectorAll('.add-row').forEach(button => {
+                button.addEventListener('click', function() {
+                    const tableContainer = this.previousElementSibling;
+                    const table = tableContainer.querySelector('tbody');
+                    if (table) {
+                        const rowCount = table.querySelectorAll('tr').length + 1;
+                        const newRow = document.createElement('tr');
+                        newRow.innerHTML = `
+                            <td class="cell-number">${rowCount}</td>
+                            <td class="cell-description"><input type="text" class="editable" value="New Entry"></td>
+                            <td class="cell-day"><input type="text" class="editable" value="1"></td>
+                            <td class="cell-dose"><input type="text" class="editable" value="0"></td>
+                            <td class="cell-volume"><input type="text" class="editable" value="0"></td>
                         `;
-                        tbody.appendChild(row);
-                    });
-                }
-                
-                // Add event listeners after populating tables
-                addInputListeners();
-                addRowButtonListeners(); // Moved here to ensure buttons exist
-                
-                // Remove Add Box button if present (this ID seems to have been removed)
-                // const addBoxBtn = document.getElementById('add-box-footer');
-                // if (addBoxBtn) addBoxBtn.remove();
-            }
-
+                        table.appendChild(newRow);
+                        
+                        // Add listeners to the new inputs
+                        const newInputs = newRow.querySelectorAll('input.editable');
+                        newInputs.forEach(input => {
+                            input.removeEventListener('input', handleInputChange);
+                            input.addEventListener('input', handleInputChange);
+                        });
+                    }
+                });
+            });
+            
+            // Remove Add Box button if present
+            const addBoxBtn = document.getElementById('add-box-footer');
+            if (addBoxBtn) addBoxBtn.remove();
         });
-
 
         // Add event listeners to all input fields in medication tables
         function addInputListeners() {
-            // console.log('Adding input listeners to all tables');
+            console.log('Adding input listeners to all tables');
             const medicationTables = document.querySelectorAll('#medications-container .table-container');
             
             medicationTables.forEach(tableContainer => {
-                const inputs = tableContainer.querySelectorAll('input.editable, input.header-editable');
+                const inputs = tableContainer.querySelectorAll('input.editable');
                 inputs.forEach(input => {
                     // Remove any existing listeners to prevent duplicates
                     input.removeEventListener('input', handleInputChange);
@@ -1651,35 +1585,31 @@
         }
 
         // Handle input changes with debounce
-        const handleInputChange = debounce(function(event) {
-            // console.log('Input changed, checking for empty rows', event.target);
-            // For now, cleaning rows only on content change, not header change.
-            if (event.target.classList.contains('editable')) {
-                 cleanEmptyRows();
-            }
+        const handleInputChange = debounce(function() {
+            console.log('Input changed, checking for empty rows');
+            cleanEmptyRows();
         }, 300);
 
         // Add functionality to clean empty rows
         function cleanEmptyRows() {
-            // console.log('Cleaning empty rows');
+            console.log('Cleaning empty rows');
             const medicationTables = document.querySelectorAll('#medications-container .table-container');
             
             medicationTables.forEach(tableContainer => {
                 const table = tableContainer.querySelector('table');
-                if (!table) return;
                 const rows = table.querySelectorAll('tbody tr');
                 
                 rows.forEach((row, index) => {
-                    const inputs = row.querySelectorAll('input.editable');
-                    let allEmpty = true;
-                    inputs.forEach(input => {
-                        if (input.value.trim() !== "") {
-                            allEmpty = false;
-                        }
-                    });
+                    const content = row.querySelector('td.cell-description input').value.trim();
+                    const day = row.querySelector('td.cell-day input').value.trim();
+                    const dose = row.querySelector('td.cell-dose input').value.trim();
+                    const volume = row.querySelector('td.cell-volume input').value.trim();
                     
-                    if (allEmpty) {
-                        // console.log('Removing empty row:', row);
+                    console.log('Row values:', { content, day, dose, volume });
+                    
+                    // If all fields are empty, remove the row
+                    if (!content && !day && !dose && !volume) {
+                        console.log('Removing empty row:', row);
                         row.remove();
                     }
                 });
@@ -1687,49 +1617,26 @@
                 // Update row numbers after removing empty rows
                 const remainingRows = table.querySelectorAll('tbody tr');
                 remainingRows.forEach((row, index) => {
-                    const numberCell = row.querySelector('td.cell-number');
-                    if(numberCell) numberCell.textContent = index + 1;
+                    row.querySelector('td.cell-number').textContent = index + 1;
                 });
             });
         }
 
-        // Function to handle add row button click (declaration, listener attachment moved)
+        // Function to handle add row button click
         function handleAddRow() {
-            // console.log('Add row button clicked');
+            console.log('Add row button clicked');
             const tableContainer = this.previousElementSibling;
-            if (!tableContainer) return;
             const table = tableContainer.querySelector('tbody');
             if (table) {
                 const rowCount = table.querySelectorAll('tr').length + 1;
-                
-                // Determine columns from the header of this specific table
-                const headerRow = tableContainer.querySelector('thead tr');
-                if (!headerRow) return;
-
-                let rowHtml = `<td class="cell-number" style="width:25px;">${rowCount}</td>`;
-                const headerCells = Array.from(headerRow.querySelectorAll('th'));
-                headerCells.forEach((th, idx) => {
-                    if (idx === 0) return; // Skip number column header itself
-
-                    const classList = th.classList;
-                    let cellClass = '';
-                    if (classList.contains('cell-description')) cellClass = 'cell-description';
-                    else if (classList.contains('cell-day')) cellClass = 'cell-day';
-                    else if (classList.contains('cell-dose')) cellClass = 'cell-dose';
-                    else if (classList.contains('cell-volume')) cellClass = 'cell-volume';
-                    else if (classList.contains('cell-rate')) cellClass = 'cell-rate';
-                    else { // For other dynamically added columns from layout
-                        const thText = th.textContent.trim().toLowerCase().replace(/\s+/g, '_');
-                        if(thText) cellClass = `cell-${thText}`;
-                    }
-                    
-                    if (cellClass) {
-                         rowHtml += `<td class="${cellClass}"><input type="text" class="editable"></td>`;
-                    }
-                });
-
                 const newRow = document.createElement('tr');
-                newRow.innerHTML = rowHtml;
+                newRow.innerHTML = `
+                    <td class="cell-number">${rowCount}</td>
+                    <td class="cell-description"><input type="text" class="editable" value="New Entry"></td>
+                    <td class="cell-day"><input type="text" class="editable" value="1"></td>
+                    <td class="cell-dose"><input type="text" class="editable" value="0"></td>
+                    <td class="cell-volume"><input type="text" class="editable" value="0"></td>
+                `;
                 table.appendChild(newRow);
                 
                 // Add listeners to the new inputs
@@ -1740,198 +1647,346 @@
             }
         }
 
-        // Function to add event listeners to add row buttons (declaration, listener attachment moved)
+        // Function to add event listeners to add row buttons
         function addRowButtonListeners() {
-            document.querySelectorAll('#medications-container .add-row').forEach(button => {
-                // Simple re-attachment; consider cloneNode if issues persist with duplicate listeners
-                button.removeEventListener('click', handleAddRow); // Remove old before adding new
+            // Remove all existing listeners first
+            document.querySelectorAll('.add-row').forEach(button => {
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+            });
+
+            // Add new listeners
+            document.querySelectorAll('.add-row').forEach(button => {
                 button.addEventListener('click', handleAddRow);
             });
         }
 
-        // This is another DOMContentLoaded. Consolidate where possible.
+        // Update the DOMContentLoaded event listener
         document.addEventListener('DOMContentLoaded', function() {
-            // Initial setup of add row button listeners (already handled by the other DOMContentLoaded)
-            // addRowButtonListeners(); // Call this after tables are populated
+            // Initial setup of add row button listeners
+            addRowButtonListeners();
 
             // Add parameter/cell functionality
-            const addParameterButton = document.getElementById('add-parameter');
-            if (addParameterButton) {
-                addParameterButton.addEventListener('click', addNewParameter);
-            }
-
+            document.getElementById('add-parameter').addEventListener('click', addNewParameter);
 
             // DDI button functionality
-            const ddiButton = document.querySelector('.footer-button:nth-child(2)'); // DDI is the second button in the footer
+            const ddiButton = document.querySelector('.footer-button:nth-child(2)');
             const ddiModalOverlay = document.getElementById('ddi-modal-overlay');
             const closeDdiModal = document.getElementById('close-ddi-modal');
-            const mainContainerForBlur = document.querySelector('.container');
 
+            ddiButton.addEventListener('click', handleDDIClick);
 
-            if (ddiButton) {
-                 ddiButton.addEventListener('click', handleDDIClick); // handleDDIClick is now defined
-            }
+            // Add close button functionality
+            closeDdiModal.addEventListener('click', function() {
+                ddiModalOverlay.style.display = 'none';
+            });
 
+            // Add overlay click functionality
+            ddiModalOverlay.addEventListener('click', function(e) {
+                if (e.target === ddiModalOverlay) {
+                    ddiModalOverlay.style.display = 'none';
+                }
+            });
 
-            if (closeDdiModal) {
-                closeDdiModal.addEventListener('click', function() {
-                    if (ddiModalOverlay) ddiModalOverlay.style.display = 'none';
-                    if (mainContainerForBlur) mainContainerForBlur.classList.remove('modal-blur');
-                });
-            }
-
-            if (ddiModalOverlay) {
-                ddiModalOverlay.addEventListener('click', function(e) {
-                    if (e.target === ddiModalOverlay) {
-                        ddiModalOverlay.style.display = 'none';
-                        if (mainContainerForBlur) mainContainerForBlur.classList.remove('modal-blur');
+            // Add click handlers to search result rows
+            // Add click handler for existing rows
+            document.querySelectorAll('.search-result-row').forEach(row => {
+                row.addEventListener('click', function() {
+                    const uuid = this.getAttribute('data-uuid');
+                    if (uuid) {
+                        loadEntryData(uuid);
                     }
                 });
-            }
+            });
 
-            // Add click handlers to search result rows (for loading entry data)
-            const searchResultsContainer = document.querySelector('.search-results');
-            if (searchResultsContainer) {
-                searchResultsContainer.addEventListener('click', function(e) {
-                    const row = e.target.closest('.search-result-row');
-                    if (row) {
-                        const uuid = row.getAttribute('data-uuid');
-                        if (uuid) {
-                            loadEntryData(uuid);
-                        }
+            // Add click handler for dynamically added rows
+            document.querySelector('.search-results').addEventListener('click', function(e) {
+                const row = e.target.closest('.search-result-row');
+                if (row) {
+                    const uuid = row.getAttribute('data-uuid');
+                    if (uuid) {
+                        loadEntryData(uuid);
                     }
-                });
-            }
+                }
+            });
         });
 
         // Update: determine columns to show per-table based on all subtitle keys, with extensive logging
         function determineColumnsToShow(entryData, entryKey) {
-            // Always show content (description)
-            let columns = ['content']; 
-            if (entryData && Array.isArray(entryData.columns)) {
-                // If columns array exists and is not empty, use it (excluding 'content' if present)
-                const definedCols = entryData.columns.filter(col => col && col.trim() !== '' && col.trim().toLowerCase() !== 'content');
-                if (definedCols.length > 0) {
-                    columns = ['content', ...definedCols];
+            // Always show content
+            let columns = ['content'];
+            if (Array.isArray(entryData.columns)) {
+                // If columns is empty, just use content
+                if (entryData.columns.length > 0) {
+                    columns = ['content', ...entryData.columns.filter(col => col !== 'content')];
                 }
-            } else if (entryData && entryData.subtitles) {
-                // Fallback: infer from subtitles if entryData.columns is not defined or empty
-                Object.values(entryData.subtitles).forEach(subtitle => {
+            } else {
+                // fallback: infer from subtitles as before
+                Object.values(entryData.subtitles || {}).forEach(subtitle => {
                     Object.keys(subtitle).forEach(key => {
-                        if (key && key.trim() !== '' && key.toLowerCase() !== 'content' && !columns.includes(key.toLowerCase())) {
-                            columns.push(key.toLowerCase());
-                        }
+                        if (key !== 'content' && !columns.includes(key)) columns.push(key);
                     });
                 });
             }
-            // console.log('DEBUG: Columns for', entryKey, columns);
+            console.log('DEBUG: Columns for', entryKey, columns);
             return columns;
         }
 
         // Update the table creation function
         function createTableWithDynamicColumns(entryData, tableIndex, entryKey) {
-            const columnsToShow = determineColumnsToShow(entryData, entryKey);
-            // console.log('DEBUG: entryKey', entryKey, 'entryData', entryData);
-            // console.log('DEBUG: columns to show for table', tableIndex, columnsToShow);
+            const columns = determineColumnsToShow(entryData, entryKey);
+            console.log('DEBUG: entryKey', entryKey, 'entryData', entryData);
+            console.log('DEBUG: columns to show for table', tableIndex, columns);
             const tableContainer = document.createElement('div');
             tableContainer.className = 'table-container';
             
             const table = document.createElement('table');
             table.style.tableLayout = 'fixed';
-            table.style.width = '100%'; // Ensure table takes full width of its container
-            
-            if (columnsToShow.length === 1 && columnsToShow[0] === 'content') { // Only description
+            table.style.width = '100%';
+            if (columns.length === 1) {
                 table.classList.add('two-col-table');
             }
-
             // Create colgroup based on visible columns
             const colgroup = document.createElement('colgroup');
-            let colgroupHtml = '<col style="width:25px !important; min-width:25px !important; max-width:25px !important;">'; // Number column
-
-            if (columnsToShow.length === 1 && columnsToShow[0] === 'content') { // Only Number and Description
-                 colgroupHtml += '<col style="width:auto;">'; // Description column takes rest
+            if (columns.length === 1) {
+                // Only number and description columns
+                colgroup.innerHTML = `
+                    <col style="width:25px;">
+                    <col style="width:auto;">
+                `;
             } else {
-                 colgroupHtml += '<col style="width:200px; min-width:200px;">'; // Description column fixed width
-                 for (let i = 1; i < columnsToShow.length; i++) { // Start i=1 because columnsToShow[0] is 'content' (description)
-                    colgroupHtml += '<col style="width:80px; min-width:80px;">'; // Other columns
-                 }
+                let colgroupHtml = '<col style="width:25px;">';
+                colgroupHtml += '<col style="width:auto;">'; // title/content column
+                for (let i = 1; i < columns.length; i++) {
+                    colgroupHtml += '<col style="width:80px; min-width:80px;">';
+                }
+                colgroup.innerHTML = colgroupHtml;
             }
-            colgroup.innerHTML = colgroupHtml;
             table.appendChild(colgroup);
 
             // Create header row
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
-            let headerHtml = `<th class="cell-number" style="width:25px;"></th>`; // Number column header
-            
-            // Description column header (always present as columnsToShow[0] is 'content')
-            headerHtml += 
-                `<th class="cell-description">
+            let headerHtml = `
+                <th class="cell-number" style="width:25px;"></th>
+                <th class="cell-description">
                     <input type="text" class="header-editable" value="${entryData.title || ''}">
-                </th>`;
-
-            columnsToShow.slice(1).forEach(colKey => { // Iterate over columns other than 'content'
-                let label = colKey.charAt(0).toUpperCase() + colKey.slice(1); // Capitalize
-                headerHtml += `<th class="cell-${colKey.toLowerCase().replace(/\s+/g, '_')}">${label}</th>`;
+                </th>
+            `;
+            columns.forEach(col => {
+                if (col === 'content') return;
+                let label = col.charAt(0).toUpperCase() + col.slice(1); // Capitalize
+                headerHtml += `<th class="cell-${col}">${label}</th>`;
             });
             headerRow.innerHTML = headerHtml;
             thead.appendChild(headerRow);
             table.appendChild(thead);
 
+            // Log the actual header cells after rendering
+            setTimeout(() => {
+                const ths = Array.from(headerRow.querySelectorAll('th')).map(th => th.textContent.trim());
+                console.log('DEBUG: Rendered header cells for', entryKey, ths);
+                // Debug: log the computed width of the number column
+                const numberCol = table.querySelector('colgroup col');
+                const numberTh = table.querySelector('th.cell-number');
+                const numberTd = table.querySelector('td.cell-number');
+                if (numberCol) {
+                    console.log('DEBUG: Table', tableIndex, 'number <col> width:', numberCol.style.width, 'offsetWidth:', numberCol.offsetWidth);
+                }
+                if (numberTh) {
+                    console.log('DEBUG: Table', tableIndex, 'number <th> computed width:', getComputedStyle(numberTh).width);
+                }
+                if (numberTd) {
+                    console.log('DEBUG: Table', tableIndex, 'number <td> computed width:', getComputedStyle(numberTd).width);
+                }
+            }, 0);
 
             // Create tbody
             const tbody = document.createElement('tbody');
-            if (entryData.subtitles) {
-                Object.entries(entryData.subtitles).forEach(([subtitleKey, subtitleData], index) => {
-                    const row = document.createElement('tr');
-                    let rowHtml = `<td class="cell-number" style="width:25px;">${index + 1}</td>`; // Number cell
-                    
-                    // Description cell
-                    rowHtml += `<td class="cell-description"><input type="text" class="editable" value="${subtitleData.content || ''}"></td>`;
-
-                    columnsToShow.slice(1).forEach(colKey => { // Iterate for other columns
-                        rowHtml += `<td class="cell-${colKey.toLowerCase().replace(/\s+/g, '_')}"><input type="text" class="editable" value="${subtitleData[colKey] || ''}"></td>`;
-                    });
-                    row.innerHTML = rowHtml;
-                    tbody.appendChild(row);
+            Object.entries(entryData.subtitles || {}).forEach(([subtitleKey, subtitleData], index) => {
+                const row = document.createElement('tr');
+                let rowHtml = `
+                    <td class="cell-number" style="width:25px;">${index + 1}</td>
+                    <td class="cell-description"><input type="text" class="editable" value="${subtitleData.content || ''}"></td>
+                `;
+                columns.forEach(col => {
+                    if (col === 'content') return;
+                    rowHtml += `<td class="cell-${col}"><input type="text" class="editable" value="${subtitleData[col] || ''}"></td>`;
                 });
-            }
+                row.innerHTML = rowHtml;
+                tbody.appendChild(row);
+            });
             table.appendChild(tbody);
             
             tableContainer.appendChild(table);
 
             // Debug: log colgroup, header, and first row column counts
-            // setTimeout(() => {
-            //     const colCount = table.querySelectorAll('colgroup col').length;
-            //     const thCount = table.querySelectorAll('thead th').length;
-            //     const firstRow = table.querySelector('tbody tr');
-            //     const tdCount = firstRow ? firstRow.querySelectorAll('td').length : 0;
-            //     console.log(`DEBUG: Table ${tableIndex} (${entryKey}) - colgroup cols: ${colCount}, header ths: ${thCount}, first row tds: ${tdCount}`);
-            // }, 0);
+            setTimeout(() => {
+                const colCount = table.querySelectorAll('colgroup col').length;
+                const thCount = table.querySelectorAll('thead th').length;
+                const firstRow = table.querySelector('tbody tr');
+                const tdCount = firstRow ? firstRow.querySelectorAll('td').length : 0;
+                console.log(`DEBUG: Table ${tableIndex} - colgroup cols: ${colCount}, header ths: ${thCount}, first row tds: ${tdCount}`);
+            }, 0);
 
             return tableContainer;
         }
 
+        // Update the addNewBox function
+        function addNewBox() {
+            const container = document.getElementById('medications-container');
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'table-container';
+            
+            const table = document.createElement('table');
+            table.style.tableLayout = 'fixed';
+            
+            // Get the default data structure from the first entry
+            const defaultData = JSON.parse('{{ default_data|tojson|safe }}');
+            const firstEntry = Object.values(defaultData.each_entry_layout)[0];
+            const columns = determineColumnsToShow(firstEntry);
+            
+            // Create colgroup based on visible columns
+            const colgroup = document.createElement('colgroup');
+            colgroup.innerHTML = `
+                <col style="width: 25px;">
+                <col style="width: 200px;">
+                ${columns.day ? '<col style="width: 80px;">' : ''}
+                ${columns.dose ? '<col style="width: 80px;">' : ''}
+                ${columns.volume ? '<col style="width: 80px;">' : ''}
+                ${columns.rate ? '<col style="width: 80px;">' : ''}
+            `;
+            table.appendChild(colgroup);
+
+            // Create header row with only visible columns
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `
+                <th class="cell-number" style="width:25px;"></th>
+                <th class="cell-description">
+                    <input type="text" class="header-editable" placeholder="Enter title">
+                </th>
+                ${columns.day ? '<th class="cell-day">Day</th>' : ''}
+                ${columns.dose ? '<th class="cell-dose">Dose</th>' : ''}
+                ${columns.volume ? '<th class="cell-volume">Volume</th>' : ''}
+                ${columns.rate ? '<th class="cell-rate">Rate</th>' : ''}
+            `;
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Create tbody with initial row
+            const tbody = document.createElement('tbody');
+            const initialRow = document.createElement('tr');
+            initialRow.innerHTML = `
+                <td class="cell-number" style="width:25px;">1</td>
+                <td class="cell-description"><input type="text" class="editable"></td>
+                ${columns.day ? '<td class="cell-day"><input type="text" class="editable"></td>' : ''}
+                ${columns.dose ? '<td class="cell-dose"><input type="text" class="editable"></td>' : ''}
+                ${columns.volume ? '<td class="cell-volume"><input type="text" class="editable"></td>' : ''}
+                ${columns.rate ? '<td class="cell-rate"><input type="text" class="editable"></td>' : ''}
+            `;
+            tbody.appendChild(initialRow);
+            table.appendChild(tbody);
+            
+            tableContainer.appendChild(table);
+            container.appendChild(tableContainer);
+            
+            // Add "Add Row" button
+            const addRowButton = document.createElement('button');
+            addRowButton.className = 'button add-row';
+            addRowButton.textContent = 'Add Row';
+            container.appendChild(addRowButton);
+
+            // Add input listeners to the new inputs
+            const newInputs = tableContainer.querySelectorAll('input.editable');
+            newInputs.forEach(input => {
+                input.addEventListener('input', handleInputChange);
+            });
+        }
+
+        // Update handleAddRow to use the same column structure
+        function handleAddRow() {
+            const tableContainer = this.previousElementSibling;
+            const table = tableContainer.querySelector('tbody');
+            if (table) {
+                const rowCount = table.querySelectorAll('tr').length + 1;
+                const headerRow = tableContainer.querySelector('thead tr');
+                const columns = {
+                    day: !!headerRow.querySelector('.cell-day'),
+                    dose: !!headerRow.querySelector('.cell-dose'),
+                    volume: !!headerRow.querySelector('.cell-volume'),
+                    rate: !!headerRow.querySelector('.cell-rate')
+                };
+
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td class="cell-number" style="width:25px;">${rowCount}</td>
+                    <td class="cell-description"><input type="text" class="editable"></td>
+                    ${columns.day ? '<td class="cell-day"><input type="text" class="editable"></td>' : ''}
+                    ${columns.dose ? '<td class="cell-dose"><input type="text" class="editable"></td>' : ''}
+                    ${columns.volume ? '<td class="cell-volume"><input type="text" class="editable"></td>' : ''}
+                    ${columns.rate ? '<td class="cell-rate"><input type="text" class="editable"></td>' : ''}
+                `;
+                table.appendChild(newRow);
+                
+                // Add listeners to the new inputs
+                const newInputs = newRow.querySelectorAll('input.editable');
+                newInputs.forEach(input => {
+                    input.addEventListener('input', handleInputChange);
+                });
+            }
+        }
+
+        // Update the cleanEmptyRows function
+        function cleanEmptyRows() {
+            console.log('Cleaning empty rows');
+            const medicationTables = document.querySelectorAll('#medications-container .table-container');
+            
+            medicationTables.forEach(tableContainer => {
+                const table = tableContainer.querySelector('table');
+                const rows = table.querySelectorAll('tbody tr');
+                
+                rows.forEach((row, index) => {
+                    const inputs = row.querySelectorAll('input.editable');
+                    let hasContent = false;
+                    
+                    inputs.forEach(input => {
+                        if (input.value.trim()) {
+                            hasContent = true;
+                        }
+                    });
+                    
+                    if (!hasContent) {
+                        console.log('Removing empty row:', row);
+                        row.remove();
+                    }
+                });
+                
+                // Update row numbers after removing empty rows
+                const remainingRows = table.querySelectorAll('tbody tr');
+                remainingRows.forEach((row, index) => {
+                    row.querySelector('td.cell-number').textContent = index + 1;
+                });
+            });
+        }
 
         // Update the loadEntryData function to use dynamic columns
         function loadEntryData(uuid) {
-            // console.log('Loading entry with UUID:', uuid);
+            console.log('Loading entry with UUID:', uuid);
             fetch(`/get_entry/${uuid}`)
                 .then(response => {
-                    // console.log('Response status:', response.status);
+                    console.log('Response status:', response.status);
                     return response.json();
                 })
                 .then(data => {
-                    // console.log('Received data for loadEntryData:', data);
+                    console.log('Received data:', data);
                     if (data.error) {
                         alert(data.error);
                         return;
                     }
 
                     // Switch to edit tab
-                    const editTabButton = document.querySelector('.tab[data-tab="edit"]');
-                    if (editTabButton) editTabButton.click();
-
+                    document.querySelector('.tab[data-tab="edit"]').click();
 
                     // Fill form fields
                     document.getElementById('name-to-be-taken').value = data.Name || '';
@@ -1939,7 +1994,7 @@
                     document.getElementById('age-months-to-be-taken').value = data.Age_month || '';
                     document.getElementById('sex-select').value = data.Sex || '';
                     document.getElementById('bed-select').value = data.bed_number || '';
-                    document.getElementById('uuid-input').value = data.uhid || ''; // UHID from DB goes to uuid-input on form
+                    document.getElementById('uuid-input').value = data.uhid || '';
                     document.getElementById('diagnosis-input').value = data.Diagnosis || '';
                     document.getElementById('consultants-input').value = data.Consultants || '';
                     document.getElementById('jr-input').value = data.JR || '';
@@ -1950,10 +2005,7 @@
                     medicationsContainer.innerHTML = '';
 
                     // Create medication tables from entries with dynamic columns
-                    // The backend sends `each_entry_layout` for PDF, but DDI expects `entries`
-                    // Ensure the key is consistent or handled. Assuming `data.each_entry_layout` for loading.
-                    const entriesToLoad = data.each_entry_layout || data.entries || {};
-                    Object.entries(entriesToLoad).forEach(([entryKey, entryData], index) => {
+                    Object.entries(data.each_entry_layout || {}).forEach(([entryKey, entryData], index) => {
                         const tableContainer = createTableWithDynamicColumns(entryData, index, entryKey);
                         medicationsContainer.appendChild(tableContainer);
                         
@@ -1969,10 +2021,8 @@
                     const tbody = parameterTable.querySelector('tbody');
                     tbody.innerHTML = '';
                     
-                    // The backend sends `each_table_row_layout` for PDF, DDI expects `parameters`
-                    // Ensure consistency. Assuming `data.each_table_row_layout` for loading.
-                    const parametersToLoad = data.each_table_row_layout || data.parameters || {};
-                    Object.entries(parametersToLoad)
+                    // Sort parameter rows numerically when rendering
+                    Object.entries(data.each_table_row_layout || {})
                       .sort((a, b) => parseInt(a[0].replace('row_', '')) - parseInt(b[0].replace('row_', '')))
                       .forEach(([rowKey, rowData]) => {
                         const row = document.createElement('tr');
@@ -1991,7 +2041,6 @@
                     // Reattach all event listeners
                     addRowButtonListeners();
                     addInputListeners();
-                    checkExistingParameterRows(); // For date fields in newly loaded parameters
                 })
                 .catch(error => {
                     console.error('Error loading entry:', error);
@@ -2016,23 +2065,7 @@
             // Add input listeners to the new inputs
             const newInputs = newRow.querySelectorAll('input.editable');
             newInputs.forEach(input => {
-                input.addEventListener('input', handleInputChange); // For general input handling
-                // For date field detection on parameter name change
-                if (input.closest('td').cellIndex === 1) { // If it's the parameter name input
-                    input.addEventListener('input', function(e) {
-                        const row = e.target.closest('tr');
-                        const valueCellInput = row.querySelector('td:nth-child(3) input');
-                        if (isDateParameter(e.target.value)) {
-                            valueCellInput.classList.add('date-field');
-                            valueCellInput.setAttribute('data-date-field', 'true');
-                            valueCellInput.setAttribute('placeholder', 'Click to select date');
-                        } else {
-                            valueCellInput.classList.remove('date-field');
-                            valueCellInput.removeAttribute('data-date-field');
-                            valueCellInput.removeAttribute('placeholder');
-                        }
-                    });
-                }
+                input.addEventListener('input', handleInputChange);
             });
         }
 
@@ -2045,76 +2078,78 @@
             const calendarModal = document.getElementById('calendar-modal-overlay');
             const closeCalendarBtn = document.getElementById('close-calendar-modal');
             
-            if (calendarModal) {
-                calendarModal.addEventListener('click', function(e) {
-                    if (e.target === calendarModal) {
-                        closeCalendar();
-                    }
-                });
-            }
-            if (closeCalendarBtn) {
-                 closeCalendarBtn.addEventListener('click', closeCalendar);
-            }
+            // Close calendar on overlay click
+            calendarModal.addEventListener('click', function(e) {
+                if (e.target === calendarModal) {
+                    closeCalendar();
+                }
+            });
+
+            // Close calendar on button click
+            closeCalendarBtn.addEventListener('click', closeCalendar);
         }
 
         // Function to check if a parameter name indicates a date field
         function isDateParameter(paramName) {
             if (!paramName) return false;
             const dateKeywords = ['date', 'dob', 'birth', 'admission', 'discharge'];
-            const timeKeywords = ['time', 'hour', 'minute', 'second']; // Exclude time
+            // Exclude time-related keywords
+            const timeKeywords = ['time', 'hour', 'minute', 'second'];
             
-            const lowerParamName = paramName.toLowerCase();
-            if (timeKeywords.some(keyword => lowerParamName.includes(keyword))) {
+            // Check if it's a time field first
+            if (timeKeywords.some(keyword => paramName.toLowerCase().includes(keyword))) {
                 return false;
             }
-            return dateKeywords.some(keyword => lowerParamName.includes(keyword));
+            
+            // Then check if it's a date field
+            return dateKeywords.some(keyword => 
+                paramName.toLowerCase().includes(keyword)
+            );
         }
 
-        // Function to handle parameter table changes (for date field detection)
+        // Function to handle parameter table changes
         function handleParameterTableChanges() {
             const parameterTable = document.getElementById('parameter-table');
-            if (!parameterTable) return;
             const tbody = parameterTable.querySelector('tbody');
-            if (!tbody) return;
 
             // Use event delegation for parameter name changes
             tbody.addEventListener('input', function(e) {
-                if (e.target.matches('td:nth-child(2) input.editable')) { // Parameter name input
+                if (e.target.matches('td:nth-child(2) input')) {
                     const row = e.target.closest('tr');
-                    const valueCellInput = row.querySelector('td:nth-child(3) input.editable');
+                    const valueCell = row.querySelector('td:nth-child(3) input');
                     
                     if (isDateParameter(e.target.value)) {
-                        valueCellInput.classList.add('date-field');
-                        valueCellInput.setAttribute('data-date-field', 'true');
-                        valueCellInput.setAttribute('placeholder', 'Click to select date');
+                        valueCell.classList.add('date-field');
+                        valueCell.setAttribute('data-date-field', 'true');
+                        // Add a visual indicator
+                        valueCell.setAttribute('placeholder', 'Click to select date');
                     } else {
-                        valueCellInput.classList.remove('date-field');
-                        valueCellInput.removeAttribute('data-date-field');
-                        valueCellInput.removeAttribute('placeholder');
+                        valueCell.classList.remove('date-field');
+                        valueCell.removeAttribute('data-date-field');
+                        valueCell.removeAttribute('placeholder');
                     }
                 }
             });
 
-            // Use event delegation for value cell clicks (to open calendar)
+            // Use event delegation for value cell clicks
             tbody.addEventListener('click', function(e) {
-                if (e.target.matches('td:nth-child(3) input.editable[data-date-field="true"]')) {
-                    e.preventDefault(); // Prevent typing if it's a date field
+                if (e.target.matches('td:nth-child(3) input[data-date-field="true"]')) {
+                    e.preventDefault();
                     showCalendar(e.target);
                 }
             });
         }
 
-        // Function to check existing parameter rows on load/update
+        // Function to check existing parameter rows
         function checkExistingParameterRows() {
             const parameterTable = document.getElementById('parameter-table');
-            if (!parameterTable) return;
             const rows = parameterTable.querySelectorAll('tbody tr');
             
             rows.forEach(row => {
-                const paramNameInput = row.querySelector('td:nth-child(2) input.editable');
-                const valueInput = row.querySelector('td:nth-child(3) input.editable');
+                const paramNameInput = row.querySelector('td:nth-child(2) input');
+                const valueInput = row.querySelector('td:nth-child(3) input');
                 
-                if (paramNameInput && valueInput && isDateParameter(paramNameInput.value)) {
+                if (isDateParameter(paramNameInput.value)) {
                     valueInput.classList.add('date-field');
                     valueInput.setAttribute('data-date-field', 'true');
                     valueInput.setAttribute('placeholder', 'Click to select date');
@@ -2126,21 +2161,31 @@
         function showCalendar(inputElement) {
             currentDateInput = inputElement;
             const calendarModal = document.getElementById('calendar-modal-overlay');
-            if (calendarModal) calendarModal.style.display = 'flex';
+            calendarModal.style.display = 'flex';
             
+            // Destroy existing instance if any
             if (flatpickrInstance) {
                 flatpickrInstance.destroy();
             }
             
-            flatpickrInstance = flatpickr("#calendar", { // Make sure #calendar div exists
+            // Initialize Flatpickr with more options
+            flatpickrInstance = flatpickr("#calendar", {
                 dateFormat: "d-m-Y",
-                //allowInput: true, // Allow manual input as well
+                allowInput: true,
+                enableTime: false,
+                time_24hr: false,
                 defaultDate: inputElement.value || "today",
-                inline: true, // Show directly in #calendar div
+                locale: "default",
+                monthSelectorType: "static",
+                yearRange: "1900:2100",
+                showMonths: 1,
+                static: true,
+                inline: true,
                 onChange: function(selectedDates, dateStr) {
                     if (currentDateInput) {
                         currentDateInput.value = dateStr;
-                        currentDateInput.dispatchEvent(new Event('input', { bubbles: true })); // Trigger change
+                        // Trigger input event to ensure any listeners are notified
+                        currentDateInput.dispatchEvent(new Event('input'));
                     }
                     closeCalendar();
                 }
@@ -2150,60 +2195,128 @@
         // Function to close calendar
         function closeCalendar() {
             const calendarModal = document.getElementById('calendar-modal-overlay');
-            if (calendarModal) calendarModal.style.display = 'none';
+            calendarModal.style.display = 'none';
             currentDateInput = null;
         }
 
-        // Add click handler for search date field (to open calendar)
-        const searchDateInput = document.getElementById('search-date');
-        if (searchDateInput) {
-            searchDateInput.addEventListener('focus', function(e) {
-                 e.preventDefault(); // Prevent typing, force calendar
-                 showCalendar(this);
-            });
-        }
+        // Add click handler for search date field
+        document.getElementById('search-date').addEventListener('focus', function(e) {
+            showCalendar(this);
+        });
 
-
-        // This is another DOMContentLoaded. Consolidate if possible.
+        // Initialize everything when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             initializeCalendar();
             handleParameterTableChanges();
-            checkExistingParameterRows(); // Check on initial load
+            checkExistingParameterRows();
 
-            // Set up MutationObserver for parameter table to check new rows for date fields
+            // Set up MutationObserver for parameter table
             const parameterTable = document.getElementById('parameter-table');
-            if (parameterTable && parameterTable.querySelector('tbody')) {
-                const observer = new MutationObserver(function(mutations) {
-                    mutations.forEach(function(mutation) {
-                        if (mutation.type === 'childList') {
-                            mutation.addedNodes.forEach(node => {
-                                if (node.nodeType === Node.ELEMENT_NODE && node.matches('tr')) {
-                                    const paramNameInput = node.querySelector('td:nth-child(2) input.editable');
-                                    const valueInput = node.querySelector('td:nth-child(3) input.editable');
-                                     if (paramNameInput && valueInput && isDateParameter(paramNameInput.value)) {
-                                        valueInput.classList.add('date-field');
-                                        valueInput.setAttribute('data-date-field', 'true');
-                                        valueInput.setAttribute('placeholder', 'Click to select date');
-                                    }
-                                }
-                            });
-                        }
-                    });
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        checkExistingParameterRows();
+                    }
                 });
-                observer.observe(parameterTable.querySelector('tbody'), { childList: true });
-            }
+            });
+
+            observer.observe(parameterTable.querySelector('tbody'), {
+                childList: true,
+                subtree: true
+            });
         });
 
         // Add styles for date fields and calendar
-        const calendarStyleElement = document.createElement('style');
-        calendarStyleElement.textContent = `
-            .date-field { background-color: #e6f7ff !important; cursor: pointer !important; }
-            .date-field::placeholder { color: #888; }
-            #calendar { padding: 10px; }
-            /* Basic Flatpickr styling if CDN is slow/blocked, or for overrides */
-            .flatpickr-calendar { background: #fff; box-shadow: 0 3px 13px rgba(0,0,0,0.08); border-radius: 4px; }
+        const style = document.createElement('style');
+        style.textContent = `
+            .date-field {
+                background-color: #f0f8ff !important;
+                cursor: pointer !important;
+            }
+            .date-field:hover {
+                background-color: #e0f0ff !important;
+            }
+            #calendar {
+                width: 100%;
+                padding: 10px;
+            }
+            .flatpickr-calendar {
+                width: 100% !important;
+                max-width: 100% !important;
+                background: #fff;
+                box-shadow: 0 3px 13px rgba(0,0,0,0.08);
+                border-radius: 8px;
+                padding: 10px;
+            }
+            .flatpickr-month {
+                height: 50px !important;
+                background: #f8f9fa;
+                border-radius: 6px;
+                margin-bottom: 10px;
+            }
+            .flatpickr-current-month {
+                padding: 8px 0 !important;
+                font-size: 1.1em;
+            }
+            .flatpickr-weekday {
+                height: 35px !important;
+                line-height: 35px !important;
+                font-weight: 600;
+                color: #333;
+            }
+            .flatpickr-day {
+                height: 40px !important;
+                line-height: 40px !important;
+                border-radius: 4px;
+                margin: 2px;
+            }
+            .flatpickr-day.selected {
+                background: #4a90e2 !important;
+                border-color: #4a90e2 !important;
+            }
+            .flatpickr-day:hover {
+                background: #e0f0ff !important;
+            }
+            .flatpickr-months .flatpickr-month {
+                background: transparent;
+            }
+            .flatpickr-months .flatpickr-prev-month,
+            .flatpickr-months .flatpickr-next-month {
+                top: 8px;
+                padding: 5px;
+            }
+            .flatpickr-months .flatpickr-prev-month svg,
+            .flatpickr-months .flatpickr-next-month svg {
+                width: 16px;
+                height: 16px;
+            }
+            .flatpickr-current-month .flatpickr-monthDropdown-months {
+                appearance: none;
+                -webkit-appearance: none;
+                padding: 5px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background: white;
+                font-size: 1em;
+            }
+            .numInputWrapper {
+                width: 60px;
+            }
+            .numInputWrapper input {
+                padding: 5px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background: white;
+                font-size: 1em;
+            }
+            .flatpickr-calendar.arrowTop:before {
+                border-bottom-color: #f8f9fa;
+            }
+            .flatpickr-calendar.arrowBottom:before {
+                border-top-color: #f8f9fa;
+            }
         `;
-        document.head.appendChild(calendarStyleElement);
+        document.head.appendChild(style);
 
         function generateUUID() {
           return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -2213,23 +2326,35 @@
           });
         }
 
-        // const newUuid = generateUUID(); // This should be called when a *new* entry is made, not globally once.
+        // Replace crypto.randomUUID() with generateUUID()
+        const newUuid = generateUUID();
 
-        // DDI Click Handler
+        // Add a placeholder for handleDDIClick to prevent ReferenceError
+                // Replace the placeholder handleDDIClick function with this:
         function handleDDIClick() {
             const ddiModalOverlay = document.getElementById('ddi-modal-overlay');
             const ddiResultsTableBody = document.querySelector('#ddi-table tbody');
             const ddiErrorDiv = document.getElementById('ddi-error');
-            const mainContainer = document.querySelector('.container');
+            const mainContainer = document.querySelector('.container'); // For blur effect
 
-            if (ddiResultsTableBody) ddiResultsTableBody.innerHTML = '';
-            if (ddiErrorDiv) {
-                ddiErrorDiv.style.display = 'none';
-                ddiErrorDiv.textContent = '';
-            }
+            // Clear previous results and errors
+            ddiResultsTableBody.innerHTML = '';
+            ddiErrorDiv.style.display = 'none';
+            ddiErrorDiv.textContent = '';
+
+            // Apply blur to background
             if (mainContainer) mainContainer.classList.add('modal-blur');
 
-            cleanEmptyRows(); 
+
+            // --- Start: Collect Full Form Data (similar to downloadTextFile) ---
+            // Ensure form is validated before proceeding (optional, but good practice)
+            // if (!validateForm()) {
+            //     if (mainContainer) mainContainer.classList.remove('modal-blur');
+            //     return;
+            // }
+
+            // Clean empty rows before collecting data
+            cleanEmptyRows(); // Assuming this function is globally available
 
             const formData = {
                 Name: document.getElementById('name-to-be-taken').value.trim(),
@@ -2237,7 +2362,7 @@
                 Age_month: document.getElementById('age-months-to-be-taken').value,
                 Sex: document.getElementById('sex-select').value.trim(),
                 uhid: document.getElementById('uuid-input').value.trim(),
-                uuid: generateUUID(), 
+                uuid: generateUUID(), // generateUUID() should be globally available
                 bed_number: document.getElementById('bed-select').value.trim(),
                 Diagnosis: document.getElementById('diagnosis-input').value.trim(),
                 Consultants: document.getElementById('consultants-input').value.trim(),
@@ -2245,6 +2370,7 @@
                 SR: document.getElementById('sr-input').value.trim()
             };
 
+            // Collect parameters from the table
             const parametersTable = document.getElementById('parameter-table');
             const parameterRows = parametersTable.querySelectorAll('tbody tr');
             const parameters = {};
@@ -2253,7 +2379,7 @@
                 const valueInput = row.querySelector('td:nth-child(3) input');
                 const parameterName = nameInput ? nameInput.value.trim() : '';
                 const parameterValue = valueInput ? valueInput.value.trim() : '';
-                if (parameterName || parameterValue) { 
+                if (parameterName || parameterValue) { // Only add if there's some data
                     parameters[`row_${index + 1}`] = {
                         row_header_name: parameterName || ' ',
                         row_header_description: parameterValue || ' '
@@ -2261,35 +2387,53 @@
                 }
             });
 
+            // Collect all medication tables data
             const medicationTablesForDDI = document.querySelectorAll('#medications-container .table-container');
             const entries = {};
             medicationTablesForDDI.forEach((tableContainer, tableIndex) => {
                 const table = tableContainer.querySelector('table');
                 if (!table) return;
+
                 const headerCells = Array.from(table.querySelectorAll('thead th'));
-                let columns = ['content']; 
+                let columns = ['content']; // 'content' is the description column input
+
+                // Determine columns from header (skip first two: number and description title)
+                // Start from headerCells[2] if description title is headerCells[1]
+                // The `determineColumnsToShow` logic or similar might be needed if column names are dynamic
+                // For now, assuming standard columns if they exist.
                 headerCells.forEach((th, idx) => {
-                    if (idx < 2) return; 
+                    if (idx < 2) return; // Skip '#' and description title input
                     const classList = th.classList;
                     if (classList.contains('cell-day')) columns.push('day');
                     else if (classList.contains('cell-dose')) columns.push('dose');
                     else if (classList.contains('cell-volume')) columns.push('volume');
                     else if (classList.contains('cell-rate')) columns.push('rate');
                     else {
+                        // Fallback for custom columns, take text content, make it lowercase
                         const customColName = th.textContent.trim().toLowerCase().replace(/\s+/g, '_');
                         if (customColName) columns.push(customColName);
                     }
                 });
+
+
                 const titleInput = table.querySelector('th.cell-description input.header-editable');
                 const title = titleInput ? titleInput.value.trim() : `Table ${tableIndex + 1}`;
+
                 const rows = table.querySelectorAll('tbody tr');
                 const subtitles = {};
                 rows.forEach((row, rowIndex) => {
                     const cells = row.querySelectorAll('td');
+                    // cells[0] is row number
+                    // cells[1] is description/content input
+                    // cells[2] onwards are other columns (day, dose, etc.)
+
                     const subtitleData = {};
                     let hasDataInRow = false;
+
                     columns.forEach((colKey, colIdx) => {
-                        const cell = cells[colIdx + 1]; 
+                        // colIdx 0 is 'content' (description), colIdx 1 is 'day', etc.
+                        // Corresponding td index is colIdx + 1
+                        const cell = cells[colIdx + 1];
                         if (cell) {
                             const input = cell.querySelector('input.editable');
                             const value = input ? input.value.trim() : '';
@@ -2297,21 +2441,26 @@
                             if (value) hasDataInRow = true;
                         }
                     });
+
                     if (hasDataInRow) {
                         subtitles[`subtitle_${rowIndex + 1}`] = subtitleData;
                     }
                 });
+
                 if (title || Object.keys(subtitles).length > 0) {
                     entries[`entry_${tableIndex + 1}`] = {
                         title: title,
-                        columns: columns.filter(col => col !== 'content'),
+                        columns: columns.filter(col => col !== 'content'), // Store defined columns, excluding 'content' itself as a named column
                         subtitles: subtitles
                     };
                 }
             });
             formData.parameters = parameters;
-            formData.entries = entries; 
+            formData.entries = entries; // This structure becomes 'each_entry_layout' for PDF, and is passed to DDI
+            // --- End: Collect Full Form Data ---
 
+
+            // Check if there are any medications to check
             let hasMedications = false;
             Object.values(formData.entries).forEach(entry => {
                 if (Object.keys(entry.subtitles).length > 0) {
@@ -2324,183 +2473,193 @@
             });
 
             if (!hasMedications) {
-                if(ddiErrorDiv) {
-                    ddiErrorDiv.textContent = 'No medications entered to check for interactions.';
-                    ddiErrorDiv.style.display = 'block';
-                }
-                if(ddiModalOverlay) ddiModalOverlay.style.display = 'flex';
-                // No fetch, but modal is shown, so blur should stay until closed.
+                ddiErrorDiv.textContent = 'No medications entered to check for interactions.';
+                ddiErrorDiv.style.display = 'block';
+                ddiModalOverlay.style.display = 'flex';
+                // No fetch call, so remove blur if it was added for this modal
+                // However, the close button will handle this.
                 return;
             }
 
-            if(ddiResultsTableBody) ddiResultsTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Checking for interactions...</td></tr>';
-            if(ddiModalOverlay) ddiModalOverlay.style.display = 'flex';
 
+            // Show loading state in modal
+            ddiResultsTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Checking for interactions...</td></tr>';
+            ddiModalOverlay.style.display = 'flex';
+
+            // Send data to backend
             fetch('/ddi', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', },
-                body: JSON.stringify(formData)
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData) // Send the full form data
             })
             .then(response => {
                 if (!response.ok) {
+                    // Try to parse error message from server
                     return response.json().then(errData => {
                         let errorMsg = `Error ${response.status}: ${response.statusText}`;
-                        if (errData && errData.error) errorMsg = errData.error;
+                        if (errData && errData.error) {
+                            errorMsg = errData.error; // Use server's specific error message
+                        }
                         throw new Error(errorMsg);
                     });
                 }
                 return response.json();
             })
             .then(data => {
-                if(ddiResultsTableBody) ddiResultsTableBody.innerHTML = ''; 
+                ddiResultsTableBody.innerHTML = ''; // Clear "Checking..." message
                 if (data.error) {
-                    if(ddiErrorDiv) {
-                        ddiErrorDiv.textContent = data.error;
-                        ddiErrorDiv.style.display = 'block';
-                    }
+                    ddiErrorDiv.textContent = data.error;
+                    ddiErrorDiv.style.display = 'block';
                 } else if (data.table && Array.isArray(data.table) && data.table.length > 0) {
                     data.table.forEach(interaction => {
                         const row = ddiResultsTableBody.insertRow();
-                        row.insertCell().textContent = interaction.drug1 || 'N/A';
-                        row.insertCell().textContent = interaction.drug2 || 'N/A';
-                        row.insertCell().textContent = interaction.interaction || 'N/A';
+                        const cell1 = row.insertCell();
+                        const cell2 = row.insertCell();
+                        const cell3 = row.insertCell();
+                        cell1.textContent = interaction.drug1 || 'N/A';
+                        cell2.textContent = interaction.drug2 || 'N/A';
+                        cell3.textContent = interaction.interaction || 'N/A';
                     });
                 } else if (data.table && Array.isArray(data.table) && data.table.length === 0) {
-                     if(ddiResultsTableBody) ddiResultsTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No interactions found.</td></tr>';
-                } else {
-                    if(ddiResultsTableBody) ddiResultsTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No interactions found or unexpected data format.</td></tr>';
+                     ddiResultsTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No interactions found.</td></tr>';
+                }
+                 else {
+                    ddiResultsTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No interactions found or unexpected data format from DDI server.</td></tr>';
                 }
             })
             .catch(error => {
                 console.error('Error fetching DDI:', error);
-                if(ddiResultsTableBody) ddiResultsTableBody.innerHTML = '';
-                if(ddiErrorDiv) {
-                    ddiErrorDiv.textContent = 'Failed to fetch DDI results: ' + error.message;
-                    ddiErrorDiv.style.display = 'block';
-                }
+                ddiResultsTableBody.innerHTML = ''; // Clear "Checking..." message
+                ddiErrorDiv.textContent = 'Failed to fetch DDI results: ' + error.message;
+                ddiErrorDiv.style.display = 'block';
             });
         }
 
+        // Ensure the close button and overlay click for DDI modal also remove the blur
+        document.addEventListener('DOMContentLoaded', function() {
+            const ddiModalOverlay = document.getElementById('ddi-modal-overlay');
+            const closeDdiModal = document.getElementById('close-ddi-modal');
+            const mainContainer = document.querySelector('.container');
 
-        // This is yet another DOMContentLoaded. This should be consolidated.
+            function closeDdi() {
+                ddiModalOverlay.style.display = 'none';
+                if (mainContainer) mainContainer.classList.remove('modal-blur');
+            }
+
+            if (closeDdiModal) {
+                closeDdiModal.addEventListener('click', closeDdi);
+            }
+
+            if (ddiModalOverlay) {
+                ddiModalOverlay.addEventListener('click', function(e) {
+                    if (e.target === ddiModalOverlay) {
+                        closeDdi();
+                    }
+                });
+            }
+
+            // The DDI button listener should already be set up elsewhere in your script
+            // to call the new handleDDIClick function.
+            // Example:
+            // const ddiButton = document.querySelector('.footer-button:nth-child(2)'); // Ensure this selector is correct
+            // if (ddiButton) {
+            //     ddiButton.removeEventListener('click', oldHandleDDIClick); // If there was an old one
+            //     ddiButton.addEventListener('click', handleDDIClick);
+            // }
+        });
+
+        // After all tables are rendered, log the headers of all tables in the medications container
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 const tables = document.querySelectorAll('#medications-container table');
                 tables.forEach((table, idx) => {
-                    const ths = Array.from(table.querySelectorAll('thead th')).map(th => {
-                        const input = th.querySelector('input.header-editable');
-                        return input ? input.value : th.textContent.trim();
-                    });
-                    // console.log('DEBUG: Final rendered table', idx, 'headers:', ths);
+                    const ths = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+                    console.log('DEBUG: Final rendered table', idx, 'headers:', ths);
                 });
-            }, 1000); // Delay to ensure dynamic content is rendered
+            }, 1000);
         });
     </script>
 
     <script>
-    // Global or higher scope variables for settings
     let previousFontSize = 13; // Default fallback
-    // let safeIcuIpAddress = '127.0.0.1'; // Not strictly needed if Safe-ICU button fetches directly
-    // let safeIcuPort = '8000';
-
-    // This is another DOMContentLoaded. This should be consolidated.
     document.addEventListener('DOMContentLoaded', function() {
         const settingsButton = document.getElementById('settings-btn');
         const settingsModalOverlay = document.getElementById('settings-modal-overlay');
         const saveSettingsButton = document.getElementById('save-settings');
         const closeSettingsButton = document.getElementById('close-settings-modal');
-        const fontSizeInput = document.getElementById('font-size-input'); // Ensure this ID exists
-        const ipInput = document.getElementById('ip-input');
-        const portInput = document.getElementById('port-input');
-        const headingInput = document.getElementById('heading-input');
-        const subheadingInput = document.getElementById('subheading-input');
-        const currentLogoPathSpan = document.getElementById('current-logo-path');
-        const currentLogoImg = document.getElementById('current-logo-img');
+        const fontSizeInput = document.getElementById('font-size-input');
 
-
-        if (settingsButton) {
-            settingsButton.addEventListener('click', function() {
-                fetch('/settings')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.ip_settings) {
-                            if(ipInput) ipInput.value = data.ip_settings.host || '';
-                            if(portInput) portInput.value = data.ip_settings.port || '';
-                        }
-                        if (data.logo_upload && currentLogoPathSpan && currentLogoImg) {
-                             currentLogoPathSpan.textContent = data.logo_upload.path || 'RESOURCES/website_logo.png';
-                             currentLogoImg.src = (data.logo_upload.url || '/resources/website_logo.png') + '?' + new Date().getTime();
-                        } else if (currentLogoPathSpan && currentLogoImg) { // Fallback if logo_upload is missing
-                            currentLogoPathSpan.textContent = 'RESOURCES/website_logo.png';
-                            currentLogoImg.src = '/resources/website_logo.png?' + new Date().getTime();
-                        }
-
-                        if(headingInput) headingInput.value = data.heading || '';
-                        if(subheadingInput) subheadingInput.value = data.subheading || '';
-                        if(fontSizeInput) {
-                            fontSizeInput.value = data.font_size || 8;
-                            previousFontSize = data.font_size || 13; // Keep track of previous valid font size
-                        }
-                        if(settingsModalOverlay) settingsModalOverlay.style.display = 'flex';
-                    })
-                    .catch(error => console.error('Error fetching settings:', error));
-            });
-        }
-
-
-        if (saveSettingsButton) {
-            saveSettingsButton.addEventListener('click', function() {
-                const fontSize = parseInt(fontSizeInput.value);
-                if (fontSize > 13) {
-                    alert('Font size cannot be above 13.');
-                    fontSizeInput.value = previousFontSize;
-                    fontSizeInput.focus();
-                    return;
-                }
-                if (fontSize < 1) {
-                    alert('Font size cannot be smaller than 1.');
-                    fontSizeInput.value = previousFontSize;
-                    fontSizeInput.focus();
-                    return;
-                }
-                const newSettings = {
-                    ip_settings: {
-                        host: ipInput ? ipInput.value : '',
-                        port: portInput ? (parseInt(portInput.value) || null) : null
-                    },
-                    logo_upload: {
-                        path: currentLogoPathSpan ? currentLogoPathSpan.textContent : '',
-                        // Send URL without cache buster
-                        url: currentLogoImg ? currentLogoImg.src.split('?')[0] : ''
-                    },
-                    heading: headingInput ? headingInput.value : '',
-                    subheading: subheadingInput ? subheadingInput.value : '',
-                    font_size: fontSize
-                };
-
-                fetch('/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newSettings)
-                })
+        settingsButton.addEventListener('click', function() {
+            fetch('/settings')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.message) {
-                        alert('Settings saved successfully!');
-                        if(settingsModalOverlay) settingsModalOverlay.style.display = 'none';
-                    } else {
-                        alert('Error saving settings: ' + (data.error || 'Unknown error'));
-                    }
+                    document.getElementById('ip-input').value = data.ip_settings.host;
+                    document.getElementById('port-input').value = data.ip_settings.port;
+                    // Update logo path and image source
+                    const logoPath = 'RESOURCES/website_logo.png';
+                    document.getElementById('current-logo-path').textContent = logoPath;
+                    document.getElementById('current-logo-img').src = '/resources/website_logo.png?' + new Date().getTime();
+                    document.getElementById('heading-input').value = data.heading;
+                    document.getElementById('subheading-input').value = data.subheading;
+                    document.getElementById('font-size-input').value = data.font_size;
+                    previousFontSize = data.font_size || 13;
+                    settingsModalOverlay.style.display = 'flex';
                 })
-                .catch(error => console.error('Error saving settings:', error));
-            });
-        }
+                .catch(error => console.error('Error fetching settings:', error));
+        });
 
-        if (closeSettingsButton && settingsModalOverlay) {
-            closeSettingsButton.addEventListener('click', function() {
-                settingsModalOverlay.style.display = 'none';
-            });
-        }
+        saveSettingsButton.addEventListener('click', function() {
+            const fontSize = parseInt(fontSizeInput.value);
+            if (fontSize > 13) {
+                alert('Font size cannot be above 13.');
+                fontSizeInput.value = previousFontSize;
+                fontSizeInput.focus();
+                return;
+            }
+            if (fontSize < 1) {
+                alert('Font size cannot be smaller than 1.');
+                fontSizeInput.value = previousFontSize;
+                fontSizeInput.focus();
+                return;
+            }
+            const newSettings = {
+                ip_settings: {
+                    host: document.getElementById('ip-input').value,
+                    port: parseInt(document.getElementById('port-input').value)
+                },
+                logo_upload: {
+                    path: document.getElementById('current-logo-path').textContent,
+                    url: document.getElementById('current-logo-img').src
+                },
+                heading: document.getElementById('heading-input').value,
+                subheading: document.getElementById('subheading-input').value,
+                font_size: fontSize
+            };
+
+            fetch('/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newSettings)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert('Settings saved successfully!');
+                    settingsModalOverlay.style.display = 'none';
+                } else {
+                    alert('Error saving settings: ' + data.error);
+                }
+            })
+            .catch(error => console.error('Error saving settings:', error));
+        });
+
+        closeSettingsButton.addEventListener('click', function() {
+            settingsModalOverlay.style.display = 'none';
+        });
     });
     </script>
 
@@ -2519,176 +2678,136 @@
     let editLayoutData = null;
     function renderEditLayoutList() {
         const container = document.getElementById('edit-layout-list');
-        if (!container) return;
         container.innerHTML = '';
         if (!editLayoutData || !editLayoutData.each_entry_layout) return;
-
-        Object.entries(editLayoutData.each_entry_layout).forEach(([entryKey, entryData = {}], idx) => {
+        Object.entries(editLayoutData.each_entry_layout).forEach(([entryKey, entryData], idx) => {
             const tableDiv = document.createElement('div');
             tableDiv.className = 'edit-layout-table';
             tableDiv.style = 'border:1px solid #ccc; margin-bottom:12px; padding:10px; border-radius:6px;';
-            
-            const titleLabel = document.createElement('label');
-            titleLabel.textContent = `Table ${idx + 1} Title:`;
-            tableDiv.appendChild(titleLabel);
-
+            // Title
             const titleInput = document.createElement('input');
             titleInput.type = 'text';
             titleInput.value = entryData.title || '';
-            titleInput.className = 'editable'; // Use existing style if appropriate
-            titleInput.style = 'font-weight:bold; font-size:1.1em; width:90%; margin-bottom:6px; display:block;';
-            titleInput.oninput = () => { editLayoutData.each_entry_layout[entryKey].title = titleInput.value; };
+            titleInput.className = 'editable';
+            titleInput.style = 'font-weight:bold; font-size:1.1em; width:60%; margin-bottom:6px;';
             tableDiv.appendChild(titleInput);
-            
-            const columnsLabel = document.createElement('label');
-            columnsLabel.textContent = 'Columns (max 3, e.g., "Dose", "Rate"):';
-            columnsLabel.style = 'display:block; margin-top:8px; margin-bottom:4px;';
-            tableDiv.appendChild(columnsLabel);
-
+            // Columns
             const columnsDiv = document.createElement('div');
-            columnsDiv.style = 'margin-bottom:6px; display:flex; flex-direction:column; gap:4px;';
-            
-            let currentColumns = Array.isArray(entryData.columns) ? [...entryData.columns] : [];
-
-            function renderColumnInputs() {
-                columnsDiv.innerHTML = ''; // Clear current inputs
-                currentColumns.forEach((col, colIdx) => {
-                    const colInputDiv = document.createElement('div');
-                    colInputDiv.style = 'display:flex; align-items:center; gap:5px;';
-                    const colInput = document.createElement('input');
-                    colInput.type = 'text';
-                    colInput.value = col;
-                    colInput.placeholder = `Column ${colIdx + 1}`;
-                    colInput.className = 'editable';
-                    colInput.style = 'flex-grow:1;';
-                    colInput.oninput = () => { currentColumns[colIdx] = colInput.value.trim(); editLayoutData.each_entry_layout[entryKey].columns = currentColumns.filter(c => c); };
-                    colInputDiv.appendChild(colInput);
-
-                    const delColBtn = document.createElement('button');
-                    delColBtn.textContent = '✕';
-                    delColBtn.className = 'button'; // Use existing style
-                    delColBtn.style = 'padding: 2px 5px; font-size:0.8em; margin:0;';
-                    delColBtn.onclick = () => {
-                        currentColumns.splice(colIdx, 1);
-                        editLayoutData.each_entry_layout[entryKey].columns = currentColumns.filter(c => c);
-                        renderColumnInputs(); // Re-render column inputs
-                    };
-                    colInputDiv.appendChild(delColBtn);
-                    columnsDiv.appendChild(colInputDiv);
-                });
-
-                if (currentColumns.length < 3) {
-                    const addColBtn = document.createElement('button');
-                    addColBtn.textContent = '+ Add Column';
-                    addColBtn.className = 'button';
-                    addColBtn.style = 'margin-top:5px; align-self:flex-start;';
-                    addColBtn.onclick = () => {
-                        if (currentColumns.length < 3) {
-                            currentColumns.push('');
-                            // editLayoutData.each_entry_layout[entryKey].columns should be updated by input event
-                            renderColumnInputs(); // Re-render to show new empty input
-                        }
-                    };
-                    columnsDiv.appendChild(addColBtn);
-                }
+            columnsDiv.style = 'margin-bottom:6px;';
+            let columns = Array.isArray(entryData.columns) ? [...entryData.columns] : [];
+            // Render up to 3 columns
+            columns.forEach((col, colIdx) => {
+                const colInput = document.createElement('input');
+                colInput.type = 'text';
+                colInput.value = col;
+                colInput.className = 'editable';
+                colInput.style = 'margin-right:8px; width:110px;';
+                colInput.oninput = () => { columns[colIdx] = colInput.value; entryData.columns = columns.filter(c => c.trim() !== ''); };
+                columnsDiv.appendChild(colInput);
+                // Remove column button
+                const delColBtn = document.createElement('button');
+                delColBtn.textContent = '✕';
+                delColBtn.className = 'button';
+                delColBtn.style = 'margin-right:8px;';
+                delColBtn.onclick = () => {
+                    columns.splice(colIdx, 1);
+                    entryData.columns = columns.filter(c => c.trim() !== '');
+                    renderEditLayoutList();
+                };
+                columnsDiv.appendChild(delColBtn);
+            });
+            // Add column button (max 3)
+            if (columns.length < 3) {
+                const addColBtn = document.createElement('button');
+                addColBtn.textContent = '+ Add Column';
+                addColBtn.className = 'button';
+                addColBtn.onclick = () => {
+                    columns.push('');
+                    entryData.columns = columns; // Do not filter here!
+                    renderEditLayoutList();
+                };
+                columnsDiv.appendChild(addColBtn);
             }
-            renderColumnInputs(); // Initial render of column inputs for this table
             tableDiv.appendChild(columnsDiv);
-
+            // Delete table button
             const delTableBtn = document.createElement('button');
-            delTableBtn.textContent = 'Delete This Table';
+            delTableBtn.textContent = 'Delete Table';
             delTableBtn.className = 'button';
-            delTableBtn.style = 'background:#ffdddd; color:#a00; margin-top:10px;';
+            delTableBtn.style = 'background:#ffdddd; color:#a00;';
             delTableBtn.onclick = () => {
-                if (confirm(`Are you sure you want to delete table "${entryData.title || `entry_${idx+1}`}"?`)) {
-                    delete editLayoutData.each_entry_layout[entryKey];
-                    renderEditLayoutList(); // Re-render the whole list
-                }
+                delete editLayoutData.each_entry_layout[entryKey];
+                renderEditLayoutList();
             };
             tableDiv.appendChild(delTableBtn);
+            // Save changes on input
+            titleInput.oninput = () => { entryData.title = titleInput.value; };
+            entryData.columns = columns.filter(c => c.trim() !== '');
             container.appendChild(tableDiv);
         });
-        
-        const hr = document.createElement('hr');
-        container.appendChild(hr);
-
+        // Add new table button
         const addTableBtn = document.createElement('button');
-        addTableBtn.textContent = '+ Add New Table';
+        addTableBtn.textContent = '+ Add Table';
         addTableBtn.className = 'button';
-        addTableBtn.style = 'margin-top:15px; background-color: #d0f0d0; border-color: #a0c0a0;';
         addTableBtn.onclick = () => {
-            let newEntryIdx = 1;
-            while (editLayoutData.each_entry_layout[`entry_${newEntryIdx}`]) {
-                newEntryIdx++;
-            }
-            const newEntryKey = `entry_${newEntryIdx}`;
-            editLayoutData.each_entry_layout[newEntryKey] = {
-                title: `New Table ${newEntryIdx}`,
-                columns: [], // Start with no extra columns
-                subtitles: { subtitle_1: { content: '' } } // Default first row
+            // Find next available entry key
+            let idx = 1;
+            while (editLayoutData.each_entry_layout[`entry_${idx}`]) idx++;
+            editLayoutData.each_entry_layout[`entry_${idx}`] = {
+                title: 'New Table',
+                columns: [],
+                subtitles: { subtitle_1: { content: '' } }
             };
-            renderEditLayoutList(); // Re-render to include the new table
+            renderEditLayoutList();
         };
         container.appendChild(addTableBtn);
     }
 
-    // This is another DOMContentLoaded. Consolidate.
     document.addEventListener('DOMContentLoaded', function() {
-        // Remove Add Box button if present (ID seems removed from HTML)
-        // const addBoxBtn = document.getElementById('add-box-footer');
-        // if (addBoxBtn) addBoxBtn.remove();
-        
+        // Remove Add Box button if present
+        const addBoxBtn = document.getElementById('add-box-footer');
+        if (addBoxBtn) addBoxBtn.remove();
         // Edit Layout button logic
         const editLayoutBtn = document.getElementById('edit-layout-btn');
         const editLayoutModal = document.getElementById('edit-layout-modal-overlay');
         const closeEditLayoutModal = document.getElementById('close-edit-layout-modal');
         const saveEditLayoutBtn = document.getElementById('save-edit-layout');
-
         if (editLayoutBtn) {
             editLayoutBtn.addEventListener('click', function() {
                 fetch('/default_format')
                     .then(res => res.json())
                     .then(data => {
-                        editLayoutData = JSON.parse(JSON.stringify(data)); // Deep copy
+                        editLayoutData = JSON.parse(JSON.stringify(data));
                         renderEditLayoutList();
-                        if (editLayoutModal) editLayoutModal.style.display = 'flex';
-                    })
-                    .catch(err => console.error("Error fetching default_format for edit layout:", err));
+                        editLayoutModal.style.display = 'flex';
+                    });
             });
         }
-        if (closeEditLayoutModal && editLayoutModal) {
+        if (closeEditLayoutModal) {
             closeEditLayoutModal.addEventListener('click', function() {
                 editLayoutModal.style.display = 'none';
             });
         }
-        if (saveEditLayoutBtn && editLayoutModal) {
+        if (saveEditLayoutBtn) {
             saveEditLayoutBtn.addEventListener('click', function() {
-                // Filter out empty columns from each entry before saving
-                if (editLayoutData && editLayoutData.each_entry_layout) {
-                    Object.values(editLayoutData.each_entry_layout).forEach(entryData => {
-                        if (Array.isArray(entryData.columns)) {
-                            entryData.columns = entryData.columns.filter(c => c && c.trim() !== '');
-                        }
-                    });
-                }
-
+                // Filter out empty columns before saving
+                Object.values(editLayoutData.each_entry_layout).forEach(entryData => {
+                    if (Array.isArray(entryData.columns)) {
+                        entryData.columns = entryData.columns.filter(c => c.trim() !== '');
+                    }
+                });
                 fetch('/default_format', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(editLayoutData)
                 })
-                .then(res => {
-                    if (!res.ok) return res.json().then(err => { throw new Error(err.error || 'Save failed')});
-                    return res.json();
-                })
+                .then(res => res.json())
                 .then(data => {
-                    alert('Layout saved successfully! Page will reload.');
+                    alert('Layout saved!');
                     editLayoutModal.style.display = 'none';
                     window.location.reload();
                 })
                 .catch(err => {
-                    alert('Failed to save layout: ' + err.message);
-                    console.error("Error saving layout:", err);
+                    alert('Failed to save layout: ' + err);
                 });
             });
         }
