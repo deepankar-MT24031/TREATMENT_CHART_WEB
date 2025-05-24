@@ -1,3 +1,22 @@
+Okay, I've updated your `index.html` to include a "Safe-ICU IP Settings" section in the settings modal, mirroring the layout of the "DDI IP Settings". I've also updated the JavaScript to populate these new fields from `settings.json` (assuming a `safe_icu_ip_settings` key) and to include them when saving settings.
+
+**Key Changes:**
+
+1.  **HTML (Settings Modal):**
+    *   Added a new `<div class="category">` for "Safe-ICU IP Settings".
+    *   This new category has input fields with IDs `safe-icu-ip-input` and `safe-icu-port-input`.
+    *   The layout (labels above, fields side-by-side) is replicated.
+
+2.  **JavaScript (Settings Modal Logic):**
+    *   When the settings modal is opened (on `settings-btn` click), the `fetch('/settings')` call will now also try to populate:
+        *   `document.getElementById('safe-icu-ip-input').value` from `data.safe_icu_ip_settings.host`
+        *   `document.getElementById('safe-icu-port-input').value` from `data.safe_icu_ip_settings.port`
+    *   When settings are saved (`save-settings` button click), the `newSettings` object will now include:
+        *   `safe_icu_ip_settings: { host: ..., port: ... }` using values from the new input fields.
+
+**Here's the complete `index.html` with the necessary modifications:**
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -471,7 +490,7 @@
         .settings-modal input[type="number"] {
             width: 100%;
             padding: 6px 8px;
-            margin-bottom: 12px;
+            /* margin-bottom: 12px; */ /* Adjusted for horizontal layout */
             border: 1px solid #ccc;
             border-radius: 4px;
         }
@@ -606,12 +625,10 @@
 </head>
 <body>
     <div class="container">
-        <!-- MODIFIED: settings bar HTML for Safe-ICU and Settings buttons -->
         <div class="settings" style="display: flex; justify-content: space-between; align-items: center; padding: 5px 10px;">
             <button id="safe-icu-btn" class="button" style="font-size: 0.9em; padding: 3px 8px; background-color: #d0e0f0; border-color: #a0b0c0;">Safe-ICU</button>
             <button id="settings-btn" style="background:none;border:none;font-size:1.1em;cursor:pointer;padding:0;color:#333;">⚙️ Settings</button>
         </div>
-        <!-- END MODIFIED settings bar -->
         <div class="tabs">
             <div class="tab active" data-tab="search">Search</div>
             <div class="tab" data-tab="edit">Edit</div>
@@ -903,9 +920,10 @@
         <div class="settings-modal">
             <button class="close-btn" id="close-settings-modal" title="Close">&times;</button>
             <h2>Settings</h2>
+            <!-- DDI IP Settings -->
             <div class="category">
                 <div class="category-title"> DDI IP Settings</div>
-                <div style="display: flex; gap: 16px; align-items: flex-start;"> 
+                <div style="display: flex; gap: 16px; align-items: flex-start; margin-bottom: 12px;"> 
                     <div style="flex: 1;"> 
                         <label for="ip-input" style="display: block; margin-bottom: 4px;">IP Address</label>
                         <input type="text" id="ip-input" placeholder="Enter IP address" style="width: 100%; margin-bottom: 0;">
@@ -916,6 +934,21 @@
                     </div>
                 </div>
             </div>
+            <!-- Safe-ICU IP Settings - NEW -->
+            <div class="category">
+                <div class="category-title">Safe-ICU IP Settings</div>
+                <div style="display: flex; gap: 16px; align-items: flex-start; margin-bottom: 12px;">
+                    <div style="flex: 1;">
+                        <label for="safe-icu-ip-input" style="display: block; margin-bottom: 4px;">IP Address</label>
+                        <input type="text" id="safe-icu-ip-input" placeholder="Enter Safe-ICU IP" style="width: 100%; margin-bottom: 0;">
+                    </div>
+                    <div style="flex: 0 0 120px;">
+                        <label for="safe-icu-port-input" style="display: block; margin-bottom: 4px;">Port</label>
+                        <input type="number" id="safe-icu-port-input" placeholder="Enter Safe-ICU Port" style="width: 100%; margin-bottom: 0;">
+                    </div>
+                </div>
+            </div>
+            <!-- End Safe-ICU IP Settings -->
             <div class="category">
                 <div class="category-title">Logo and Heading</div>
                 <div>
@@ -2406,18 +2439,24 @@
     <script>
     // Global or higher scope variables for settings
     let previousFontSize = 13; // Default fallback
-    // let safeIcuIpAddress = '127.0.0.1'; // Not strictly needed if Safe-ICU button fetches directly
-    // let safeIcuPort = '8000';
 
-    // This is another DOMContentLoaded. This should be consolidated.
+    // CONSOLIDATED DOMContentLoaded for settings and other initializations
     document.addEventListener('DOMContentLoaded', function() {
         const settingsButton = document.getElementById('settings-btn');
         const settingsModalOverlay = document.getElementById('settings-modal-overlay');
         const saveSettingsButton = document.getElementById('save-settings');
         const closeSettingsButton = document.getElementById('close-settings-modal');
-        const fontSizeInput = document.getElementById('font-size-input'); // Ensure this ID exists
-        const ipInput = document.getElementById('ip-input');
-        const portInput = document.getElementById('port-input');
+        
+        // DDI Settings Inputs
+        const ddiIpInput = document.getElementById('ip-input'); // Renamed for clarity if needed, but original ID is fine
+        const ddiPortInput = document.getElementById('port-input');
+        
+        // Safe-ICU Settings Inputs - NEW
+        const safeIcuIpInput = document.getElementById('safe-icu-ip-input');
+        const safeIcuPortInput = document.getElementById('safe-icu-port-input');
+
+        // Other Settings Inputs
+        const fontSizeInput = document.getElementById('font-size-input'); 
         const headingInput = document.getElementById('heading-input');
         const subheadingInput = document.getElementById('subheading-input');
         const currentLogoPathSpan = document.getElementById('current-logo-path');
@@ -2429,14 +2468,25 @@
                 fetch('/settings')
                     .then(response => response.json())
                     .then(data => {
+                        // DDI IP Settings
                         if (data.ip_settings) {
-                            if(ipInput) ipInput.value = data.ip_settings.host || '';
-                            if(portInput) portInput.value = data.ip_settings.port || '';
+                            if(ddiIpInput) ddiIpInput.value = data.ip_settings.host || '';
+                            if(ddiPortInput) ddiPortInput.value = data.ip_settings.port || '';
                         }
+                        // Safe-ICU IP Settings - NEW
+                        if (data.safe_icu_ip_settings) {
+                            if(safeIcuIpInput) safeIcuIpInput.value = data.safe_icu_ip_settings.host || '';
+                            if(safeIcuPortInput) safeIcuPortInput.value = data.safe_icu_ip_settings.port || '';
+                        } else { // Fallback if safe_icu_ip_settings is not in JSON yet
+                            if(safeIcuIpInput) safeIcuIpInput.value = '';
+                            if(safeIcuPortInput) safeIcuPortInput.value = '';
+                        }
+
+                        // Logo and Heading
                         if (data.logo_upload && currentLogoPathSpan && currentLogoImg) {
                              currentLogoPathSpan.textContent = data.logo_upload.path || 'RESOURCES/website_logo.png';
                              currentLogoImg.src = (data.logo_upload.url || '/resources/website_logo.png') + '?' + new Date().getTime();
-                        } else if (currentLogoPathSpan && currentLogoImg) { // Fallback if logo_upload is missing
+                        } else if (currentLogoPathSpan && currentLogoImg) { 
                             currentLogoPathSpan.textContent = 'RESOURCES/website_logo.png';
                             currentLogoImg.src = '/resources/website_logo.png?' + new Date().getTime();
                         }
@@ -2445,7 +2495,7 @@
                         if(subheadingInput) subheadingInput.value = data.subheading || '';
                         if(fontSizeInput) {
                             fontSizeInput.value = data.font_size || 8;
-                            previousFontSize = data.font_size || 13; // Keep track of previous valid font size
+                            previousFontSize = data.font_size || 13; 
                         }
                         if(settingsModalOverlay) settingsModalOverlay.style.display = 'flex';
                     })
@@ -2470,13 +2520,16 @@
                     return;
                 }
                 const newSettings = {
-                    ip_settings: {
-                        host: ipInput ? ipInput.value : '',
-                        port: portInput ? (parseInt(portInput.value) || null) : null
+                    ip_settings: { // For DDI
+                        host: ddiIpInput ? ddiIpInput.value : '',
+                        port: ddiPortInput ? (parseInt(ddiPortInput.value) || null) : null
+                    },
+                    safe_icu_ip_settings: { // For Safe-ICU - NEW
+                        host: safeIcuIpInput ? safeIcuIpInput.value : '',
+                        port: safeIcuPortInput ? (parseInt(safeIcuPortInput.value) || null) : null
                     },
                     logo_upload: {
                         path: currentLogoPathSpan ? currentLogoPathSpan.textContent : '',
-                        // Send URL without cache buster
                         url: currentLogoImg ? currentLogoImg.src.split('?')[0] : ''
                     },
                     heading: headingInput ? headingInput.value : '',
@@ -2703,3 +2756,4 @@
 
 </body>
 </html>
+```
