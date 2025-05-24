@@ -115,8 +115,8 @@ def safe_icu_config():
     try:
         # For now, hardcode the IP and port.
         # In the future, you might fetch this from settings.json or another config
-        hardcoded_ip = "192.168.1.100"  # Example IP, replace with your target
-        hardcoded_port = "8080"        # Example Port, replace with your target
+        hardcoded_ip = "192.168.1.153"  # Example IP, replace with your target
+        hardcoded_port = "5000"        # Example Port, replace with your target
         
         # You can return just IP and port, or the full URL
         # Option 1: Return IP and Port
