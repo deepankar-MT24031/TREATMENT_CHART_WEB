@@ -1,22 +1,4 @@
-Okay, I've updated your `index.html` to include a "Safe-ICU IP Settings" section in the settings modal, mirroring the layout of the "DDI IP Settings". I've also updated the JavaScript to populate these new fields from `settings.json` (assuming a `safe_icu_ip_settings` key) and to include them when saving settings.
 
-**Key Changes:**
-
-1.  **HTML (Settings Modal):**
-    *   Added a new `<div class="category">` for "Safe-ICU IP Settings".
-    *   This new category has input fields with IDs `safe-icu-ip-input` and `safe-icu-port-input`.
-    *   The layout (labels above, fields side-by-side) is replicated.
-
-2.  **JavaScript (Settings Modal Logic):**
-    *   When the settings modal is opened (on `settings-btn` click), the `fetch('/settings')` call will now also try to populate:
-        *   `document.getElementById('safe-icu-ip-input').value` from `data.safe_icu_ip_settings.host`
-        *   `document.getElementById('safe-icu-port-input').value` from `data.safe_icu_ip_settings.port`
-    *   When settings are saved (`save-settings` button click), the `newSettings` object will now include:
-        *   `safe_icu_ip_settings: { host: ..., port: ... }` using values from the new input fields.
-
-**Here's the complete `index.html` with the necessary modifications:**
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2756,4 +2738,3 @@ Okay, I've updated your `index.html` to include a "Safe-ICU IP Settings" section
 
 </body>
 </html>
-```
