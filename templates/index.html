@@ -2327,9 +2327,245 @@
         const newUuid = generateUUID();
 
         // Add a placeholder for handleDDIClick to prevent ReferenceError
+                // Replace the placeholder handleDDIClick function with this:
         function handleDDIClick() {
-            alert('DDI feature is not implemented yet.');
+            const ddiModalOverlay = document.getElementById('ddi-modal-overlay');
+            const ddiResultsTableBody = document.querySelector('#ddi-table tbody');
+            const ddiErrorDiv = document.getElementById('ddi-error');
+            const mainContainer = document.querySelector('.container'); // For blur effect
+
+            // Clear previous results and errors
+            ddiResultsTableBody.innerHTML = '';
+            ddiErrorDiv.style.display = 'none';
+            ddiErrorDiv.textContent = '';
+
+            // Apply blur to background
+            if (mainContainer) mainContainer.classList.add('modal-blur');
+
+
+            // --- Start: Collect Full Form Data (similar to downloadTextFile) ---
+            // Ensure form is validated before proceeding (optional, but good practice)
+            // if (!validateForm()) {
+            //     if (mainContainer) mainContainer.classList.remove('modal-blur');
+            //     return;
+            // }
+
+            // Clean empty rows before collecting data
+            cleanEmptyRows(); // Assuming this function is globally available
+
+            const formData = {
+                Name: document.getElementById('name-to-be-taken').value.trim(),
+                Age_year: document.getElementById('age-years-to-be-taken').value,
+                Age_month: document.getElementById('age-months-to-be-taken').value,
+                Sex: document.getElementById('sex-select').value.trim(),
+                uhid: document.getElementById('uuid-input').value.trim(),
+                uuid: generateUUID(), // generateUUID() should be globally available
+                bed_number: document.getElementById('bed-select').value.trim(),
+                Diagnosis: document.getElementById('diagnosis-input').value.trim(),
+                Consultants: document.getElementById('consultants-input').value.trim(),
+                JR: document.getElementById('jr-input').value.trim(),
+                SR: document.getElementById('sr-input').value.trim()
+            };
+
+            // Collect parameters from the table
+            const parametersTable = document.getElementById('parameter-table');
+            const parameterRows = parametersTable.querySelectorAll('tbody tr');
+            const parameters = {};
+            parameterRows.forEach((row, index) => {
+                const nameInput = row.querySelector('td:nth-child(2) input');
+                const valueInput = row.querySelector('td:nth-child(3) input');
+                const parameterName = nameInput ? nameInput.value.trim() : '';
+                const parameterValue = valueInput ? valueInput.value.trim() : '';
+                if (parameterName || parameterValue) { // Only add if there's some data
+                    parameters[`row_${index + 1}`] = {
+                        row_header_name: parameterName || ' ',
+                        row_header_description: parameterValue || ' '
+                    };
+                }
+            });
+
+            // Collect all medication tables data
+            const medicationTablesForDDI = document.querySelectorAll('#medications-container .table-container');
+            const entries = {};
+            medicationTablesForDDI.forEach((tableContainer, tableIndex) => {
+                const table = tableContainer.querySelector('table');
+                if (!table) return;
+
+                const headerCells = Array.from(table.querySelectorAll('thead th'));
+                let columns = ['content']; // 'content' is the description column input
+
+                // Determine columns from header (skip first two: number and description title)
+                // Start from headerCells[2] if description title is headerCells[1]
+                // The `determineColumnsToShow` logic or similar might be needed if column names are dynamic
+                // For now, assuming standard columns if they exist.
+                headerCells.forEach((th, idx) => {
+                    if (idx < 2) return; // Skip '#' and description title input
+                    const classList = th.classList;
+                    if (classList.contains('cell-day')) columns.push('day');
+                    else if (classList.contains('cell-dose')) columns.push('dose');
+                    else if (classList.contains('cell-volume')) columns.push('volume');
+                    else if (classList.contains('cell-rate')) columns.push('rate');
+                    else {
+                        // Fallback for custom columns, take text content, make it lowercase
+                        const customColName = th.textContent.trim().toLowerCase().replace(/\s+/g, '_');
+                        if (customColName) columns.push(customColName);
+                    }
+                });
+
+
+                const titleInput = table.querySelector('th.cell-description input.header-editable');
+                const title = titleInput ? titleInput.value.trim() : `Table ${tableIndex + 1}`;
+
+                const rows = table.querySelectorAll('tbody tr');
+                const subtitles = {};
+                rows.forEach((row, rowIndex) => {
+                    const cells = row.querySelectorAll('td');
+                    // cells[0] is row number
+                    // cells[1] is description/content input
+                    // cells[2] onwards are other columns (day, dose, etc.)
+
+                    const subtitleData = {};
+                    let hasDataInRow = false;
+
+                    columns.forEach((colKey, colIdx) => {
+                        // colIdx 0 is 'content' (description), colIdx 1 is 'day', etc.
+                        // Corresponding td index is colIdx + 1
+                        const cell = cells[colIdx + 1];
+                        if (cell) {
+                            const input = cell.querySelector('input.editable');
+                            const value = input ? input.value.trim() : '';
+                            subtitleData[colKey] = value;
+                            if (value) hasDataInRow = true;
+                        }
+                    });
+
+                    if (hasDataInRow) {
+                        subtitles[`subtitle_${rowIndex + 1}`] = subtitleData;
+                    }
+                });
+
+                if (title || Object.keys(subtitles).length > 0) {
+                    entries[`entry_${tableIndex + 1}`] = {
+                        title: title,
+                        columns: columns.filter(col => col !== 'content'), // Store defined columns, excluding 'content' itself as a named column
+                        subtitles: subtitles
+                    };
+                }
+            });
+            formData.parameters = parameters;
+            formData.entries = entries; // This structure becomes 'each_entry_layout' for PDF, and is passed to DDI
+            // --- End: Collect Full Form Data ---
+
+
+            // Check if there are any medications to check
+            let hasMedications = false;
+            Object.values(formData.entries).forEach(entry => {
+                if (Object.keys(entry.subtitles).length > 0) {
+                    Object.values(entry.subtitles).forEach(subtitle => {
+                        if (subtitle.content && subtitle.content.trim() !== "") {
+                            hasMedications = true;
+                        }
+                    });
+                }
+            });
+
+            if (!hasMedications) {
+                ddiErrorDiv.textContent = 'No medications entered to check for interactions.';
+                ddiErrorDiv.style.display = 'block';
+                ddiModalOverlay.style.display = 'flex';
+                // No fetch call, so remove blur if it was added for this modal
+                // However, the close button will handle this.
+                return;
+            }
+
+
+            // Show loading state in modal
+            ddiResultsTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Checking for interactions...</td></tr>';
+            ddiModalOverlay.style.display = 'flex';
+
+            // Send data to backend
+            fetch('/ddi', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData) // Send the full form data
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Try to parse error message from server
+                    return response.json().then(errData => {
+                        let errorMsg = `Error ${response.status}: ${response.statusText}`;
+                        if (errData && errData.error) {
+                            errorMsg = errData.error; // Use server's specific error message
+                        }
+                        throw new Error(errorMsg);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                ddiResultsTableBody.innerHTML = ''; // Clear "Checking..." message
+                if (data.error) {
+                    ddiErrorDiv.textContent = data.error;
+                    ddiErrorDiv.style.display = 'block';
+                } else if (data.table && Array.isArray(data.table) && data.table.length > 0) {
+                    data.table.forEach(interaction => {
+                        const row = ddiResultsTableBody.insertRow();
+                        const cell1 = row.insertCell();
+                        const cell2 = row.insertCell();
+                        const cell3 = row.insertCell();
+                        cell1.textContent = interaction.drug1 || 'N/A';
+                        cell2.textContent = interaction.drug2 || 'N/A';
+                        cell3.textContent = interaction.interaction || 'N/A';
+                    });
+                } else if (data.table && Array.isArray(data.table) && data.table.length === 0) {
+                     ddiResultsTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No interactions found.</td></tr>';
+                }
+                 else {
+                    ddiResultsTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No interactions found or unexpected data format from DDI server.</td></tr>';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching DDI:', error);
+                ddiResultsTableBody.innerHTML = ''; // Clear "Checking..." message
+                ddiErrorDiv.textContent = 'Failed to fetch DDI results: ' + error.message;
+                ddiErrorDiv.style.display = 'block';
+            });
         }
+
+        // Ensure the close button and overlay click for DDI modal also remove the blur
+        document.addEventListener('DOMContentLoaded', function() {
+            const ddiModalOverlay = document.getElementById('ddi-modal-overlay');
+            const closeDdiModal = document.getElementById('close-ddi-modal');
+            const mainContainer = document.querySelector('.container');
+
+            function closeDdi() {
+                ddiModalOverlay.style.display = 'none';
+                if (mainContainer) mainContainer.classList.remove('modal-blur');
+            }
+
+            if (closeDdiModal) {
+                closeDdiModal.addEventListener('click', closeDdi);
+            }
+
+            if (ddiModalOverlay) {
+                ddiModalOverlay.addEventListener('click', function(e) {
+                    if (e.target === ddiModalOverlay) {
+                        closeDdi();
+                    }
+                });
+            }
+
+            // The DDI button listener should already be set up elsewhere in your script
+            // to call the new handleDDIClick function.
+            // Example:
+            // const ddiButton = document.querySelector('.footer-button:nth-child(2)'); // Ensure this selector is correct
+            // if (ddiButton) {
+            //     ddiButton.removeEventListener('click', oldHandleDDIClick); // If there was an old one
+            //     ddiButton.addEventListener('click', handleDDIClick);
+            // }
+        });
 
         // After all tables are rendered, log the headers of all tables in the medications container
         document.addEventListener('DOMContentLoaded', function() {
