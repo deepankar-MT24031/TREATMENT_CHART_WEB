@@ -83,6 +83,10 @@ def fetch_ddi_data(json_data=None):
         
         if response.status_code == 200:
             ddi_data = response.json()
+
+            print("/n/n/n/n")
+            print(ddi_data)
+            print("/n/n/n/n")
             table_data = []
             if isinstance(ddi_data, dict):
                 if 'interactions' in ddi_data:
