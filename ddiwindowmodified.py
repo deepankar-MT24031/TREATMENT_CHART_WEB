@@ -92,9 +92,9 @@ def fetch_ddi_data(json_data=None):
                 if 'interactions' in ddi_data:
                     for interaction in ddi_data['interactions']:
                         table_data.append({
-                            'Drug 1': interaction.get('drug_A', ''),
-                            'Drug 2': interaction.get('drug_B', ''),
-                            'Interaction': interaction.get('interaction', '')
+                            'drug 1': interaction.get('drug_A', ''),
+                            'drug 2': interaction.get('drug_B', ''),
+                            'interaction': interaction.get('interaction', '')
                         })
                 elif 'drug_interactions' in ddi_data:
                     for interaction in ddi_data['drug_interactions']:
