@@ -7,6 +7,25 @@
     <title>Contraindicator</title>
     <style>
         /* Existing styles remain the same */
+
+        /* In your <style> block */
+#ddi-table tbody tr.ddi-major td {
+    background-color: #ffcccc; /* Light red */
+}
+#ddi-table tbody tr.ddi-moderate td {
+    background-color: #ffe0b3; /* Light orange */
+}
+#ddi-table tbody tr.ddi-minor td {
+    background-color: #ffffcc; /* Light yellow */
+}
+#ddi-table tbody tr.ddi-unknown td {
+    background-color: #e0e0e0; /* Light gray */
+}
+#ddi-table td {
+    border: 1px solid #ccc;
+    padding: 5px;
+}
+
         html, body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -2402,6 +2421,21 @@
                 } else if (data.table && Array.isArray(data.table) && data.table.length > 0) {
                     data.table.forEach(interaction => {
                         const row = ddiResultsTableBody.insertRow();
+
+                        const interactionText = interaction.interaction ? interaction.interaction.toLowerCase() : ""; // Get text and convert to lowercase
+
+            // NEW: Check interactionText for keywords and add class
+            if (interactionText.includes("major")) {
+                row.classList.add("ddi-major");
+            } else if (interactionText.includes("moderate")) { // You might want to check for "moderately" too
+                row.classList.add("ddi-moderate");
+            } else if (interactionText.includes("minor")) {
+                row.classList.add("ddi-minor");
+            } else if (interactionText.includes("unknown")) { // Or "uncertain", etc.
+                row.classList.add("ddi-unknown");
+            }
+
+            
                         row.insertCell().textContent = interaction.drug1 || 'N/A';
                         row.insertCell().textContent = interaction.drug2 || 'N/A';
                         row.insertCell().textContent = interaction.interaction || 'N/A';
