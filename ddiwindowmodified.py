@@ -23,6 +23,7 @@ def clean_text(text):
     cleaned = re.sub(r'[{}\[\]":\'"\n]', '', str(text))
     # Remove extra whitespaces
     cleaned = ' '.join(cleaned.split())
+    cleaned = cleaned.lower()
     return cleaned
 
 def convert_json_to_docx(json_data, output_path):
