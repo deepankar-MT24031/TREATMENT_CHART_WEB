@@ -80,33 +80,45 @@ def fetch_ddi_data(json_data=None):
         
         # Make API request
         response = requests.post(api_url, files=files)
-        files['file'][1].close()
+        files['file'][1].close() # Close the file after the request is made
         
         if response.status_code == 200:
-            ddi_data = response.json()
+            ddi_api_response = response.json() # Rename for clarity
 
-            print("/n/n/n/n")
-            print(ddi_data)
-            print("/n/n/n/n")
-            table_data = []
-            if isinstance(ddi_data, dict):
-                if 'interactions' in ddi_data:
-                    for interaction in ddi_data['interactions']:
-                        table_data.append({
-                            'drug1': interaction.get('drug_A', ''),
-                            'drug2': interaction.get('drug_B', ''),
-                            'interaction': interaction.get('interaction', '')
-                        })
-                elif 'drug_interactions' in ddi_data:
-                    for interaction in ddi_data['drug_interactions']:
-                        table_data.append({
-                            'Drug 1': interaction.get('drug1', ''),
-                            'Drug 2': interaction.get('drug2', ''),
-                            'Interaction': interaction.get('description', '')
-                        })
-            return {'table': table_data}
+            # Debug print to see what /uploadfile/ actually returns
+            print("\n--- DDI API (/uploadfile/) Response ---")
+            print(json.dumps(ddi_api_response, indent=2))
+            print("-------------------------------------\n")
+
+            table_data_for_frontend = [] # Rename for clarity
+            if isinstance(ddi_api_response, dict) and 'interactions' in ddi_api_response:
+                for interaction_from_api in ddi_api_response['interactions']:
+                    table_data_for_frontend.append({
+                        'drug_A': interaction_from_api.get('drug_A', ''), # Keep as drug_A for frontend
+                        'drug_B': interaction_from_api.get('drug_B', ''), # Keep as drug_B for frontend
+                        'level': interaction_from_api.get('level', '')  # Use 'level' key here
+                    })
+            # Removed the 'elif drug_interactions' block as it's unlikely to be used with your /uploadfile API
+            
+            # Debug print to see what is being sent to the frontend
+            print("\n--- Data being sent to Frontend (/ddi route) ---")
+            final_response_to_frontend = {'table': table_data_for_frontend}
+            print(json.dumps(final_response_to_frontend, indent=2))
+            print("----------------------------------------------\n")
+
+            return final_response_to_frontend
         else:
-            raise requests.exceptions.RequestException(f"Server returned status code {response.status_code}")
+            # Try to get error message from response if possible
+            error_message = f"DDI API Server returned status code {response.status_code}"
+            try:
+                error_detail = response.json()
+                if 'error' in error_detail:
+                    error_message += f". Error: {error_detail['error']}"
+                elif 'detail' in error_detail: # FastAPI often uses 'detail'
+                    error_message += f". Detail: {error_detail['detail']}"
+            except ValueError: # In case response is not JSON
+                error_message += f". Response: {response.text[:200]}" # Show first 200 chars
+            raise requests.exceptions.RequestException(error_message)
             
     except ConnectionRefusedError:
         raise ConnectionRefusedError("Connection refused. Please check if the DDI server is running and the IP/Port settings are correct.")
