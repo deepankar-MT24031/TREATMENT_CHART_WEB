@@ -2422,23 +2422,24 @@
                     data.table.forEach(interaction => {
                         const row = ddiResultsTableBody.insertRow();
 
-                        const interactionText = interaction.interaction ? interaction.interaction.toLowerCase() : ""; // Get text and convert to lowercase
+                                                const interactionLevelFromServer = interaction.level || ""; // Use 'level' (or actual key from backend)
+                        const levelForClass = interactionLevelFromServer.toLowerCase();
 
-            // NEW: Check interactionText for keywords and add class
-            if (interactionText.includes("major")) {
-                row.classList.add("ddi-major");
-            } else if (interactionText.includes("moderate")) { // You might want to check for "moderately" too
-                row.classList.add("ddi-moderate");
-            } else if (interactionText.includes("minor")) {
-                row.classList.add("ddi-minor");
-            } else if (interactionText.includes("unknown")) { // Or "uncertain", etc.
-                row.classList.add("ddi-unknown");
-            }
+                        // Check levelForClass for keywords and add class
+                        if (levelForClass.includes("major")) {
+                            row.classList.add("ddi-major");
+                        } else if (levelForClass.includes("moderate")) {
+                            row.classList.add("ddi-moderate");
+                        } else if (levelForClass.includes("minor")) {
+                            row.classList.add("ddi-minor");
+                        } else if (levelForClass.includes("unknown")) {
+                            row.classList.add("ddi-unknown");
+                        }
 
             
-                        row.insertCell().textContent = interaction.drug1 || 'N/A';
-                        row.insertCell().textContent = interaction.drug2 || 'N/A';
-                        row.insertCell().textContent = interaction.interaction || 'N/A';
+                        row.insertCell().textContent = interaction.drug_A || 'N/A'; // Assuming backend sends drug_A
+                        row.insertCell().textContent = interaction.drug_B || 'N/A'; // Assuming backend sends drug_B
+                        row.insertCell().textContent = interactionLevelFromServer || 'N/A'; // Display actual level
                     });
                 } else if (data.table && Array.isArray(data.table) && data.table.length === 0) {
                      if(ddiResultsTableBody) ddiResultsTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No interactions found.</td></tr>';
