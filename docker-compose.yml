@@ -1,0 +1,47 @@
+version: "3.9"
+services:
+  treatment_chart_web:
+    image: treatment-chart-web:expv2 # <--- IMPORTANT: Change to 'latest' if you want auto-updates
+    container_name: treatment-chart-web
+    # Removed ports - only accessible through nginx
+    environment:
+      - BASE_URL=/treatment
+    volumes:
+      - ./STORAGE/treatment_chart_web/DATABASE:/app/DATABASE
+      - ./STORAGE/treatment_chart_web/GENERATED_PDFS:/app/GENERATED_PDFS
+    networks:
+      - combined_project_network
+    command: sh -c "python -u main.py || true; tail -f /dev/null"
+  
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "5656:80"
+    command: |
+      sh -c "
+      cat > /etc/nginx/nginx.conf << 'EOF'
+      events {}
+      
+      http {
+          server {
+              listen 80;
+              
+              location /treatment/ {
+                  proxy_pass http://treatment_chart_web:5000;
+              }
+          }
+      }
+      EOF
+      nginx -g 'daemon off;'
+      "
+    depends_on:
+      - treatment_chart_web
+    networks:
+      - combined_project_network
+    restart: unless-stopped
+
+networks:
+  combined_project_network:
+    driver: bridge
