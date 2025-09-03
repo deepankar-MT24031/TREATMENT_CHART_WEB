@@ -123,4 +123,3 @@ def create_json_file(val1,val2,val3,format ):
 
 
 # Example usage
-
