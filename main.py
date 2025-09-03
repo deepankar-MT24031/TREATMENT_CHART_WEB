@@ -11,14 +11,16 @@ from reportlab.pdfgen import canvas
 from internal_database_handler import create_entry, return_database_with_history, search_entries, return_database_with_query_is_uuid  # Import the history function and search_entries
 import requests
 import shutil
+BASE_PATH = os.environ.get('BASE_PATH', '')
 
-app = Flask(__name__, static_folder='RESOURCES', static_url_path='/resources')
+app = Flask(__name__, static_folder='RESOURCES', static_url_path=f'{BASE_PATH}/resources')
 
 # Assuming the create_json_file function is already imported
 # from your_module import create_json_file
 
+BASE_PATH = os.environ.get('BASE_PATH', '')
 
-@app.route('/')
+@app.route(f'{BASE_PATH}/')
 def index():
     try:
         # Load default format
@@ -34,11 +36,12 @@ def index():
         # Get database entries for search tab
         database_entries = return_database_with_history()
 
-        return render_template('index.html', 
+        return render_template('index_1.html', 
                              json_files=json_files,
                              default_data=default_data,
                              current_data=default_data,
-                             database_entries=database_entries)  # Pass entries to template
+                             database_entries=database_entries,
+                             base_path=BASE_PATH)  # Pass entries to template
     except Exception as e:
         print(f"Error in index route: {str(e)}")
         return str(e), 500
@@ -102,22 +105,26 @@ def load_settings():
             'font_size': 8,
             'logo_upload': {
                 'path': 'RESOURCES/default_AIIMS_LOGO.png',
-                'url': '/resources/default_AIIMS_LOGO.png'
+                'url': f'{BASE_PATH}/resources/default_AIIMS_LOGO.png'
             }
         }
 
-@app.route('/safe_icu_config', methods=['GET'])
+@app.route(f'{BASE_PATH}/safe_icu_config', methods=['GET'])
 def safe_icu_config():
     """
     Provides configuration for the Safe-ICU button,
     fetching IP and port from settings.json with fallbacks.
     """
-    default_ip = "127.0.0.1"  # Default fallback IP
-    default_port = "8000"     # Default fallback Port
+    default_ip = "safe-icu-app"  # Default fallback IP
+    default_port = "5000"     # Default fallback Port
     protocol = "http"         # Default protocol
 
     current_ip = default_ip
     current_port = default_port
+
+    current_ip = request.host.split(":")[0]
+
+
 
     settings_file_path = 'settings.json'
 
@@ -132,6 +139,8 @@ def safe_icu_config():
             if safe_icu_settings and isinstance(safe_icu_settings, dict):
                 current_ip = safe_icu_settings.get("host", default_ip)
                 current_port = str(safe_icu_settings.get("port", default_port)) # Ensure port is a string
+
+
                 # You could also add a "protocol" field in your safe_icu_ip_settings if needed
                 # protocol = safe_icu_settings.get("protocol", protocol) 
             else:
@@ -150,16 +159,21 @@ def safe_icu_config():
         current_ip = default_ip
     if not current_port:
         current_port = default_port
+
+    
+    current_ip = request.host.split(":")[0]
+
+    print("\nJUST TO MAKE SURE->>>>>",current_ip)
         
     full_url = f"{protocol}://{current_ip}:{current_port}"
     
-    print(f"Safe-ICU config returning URL: {full_url}") # For logging/debugging
+    print(f"OSafe-ICU config returning URL: {full_url}") # For logging/debugging
 
     return jsonify({
         "url": full_url
     })
 
-@app.route('/download', methods=['POST'])
+@app.route(f'{BASE_PATH}/download', methods=['POST'])
 def download_pdf():
     try:
         print("\n=== Starting PDF Download Process ===")
@@ -213,6 +227,7 @@ def download_pdf():
             # Update db.json with print information
             try:
                 print("\n=== Updating db.json ===")
+                #print("\n=== SKIPPING Updating db.json ===")
                 # Get the UUID from the JSON data
                 uuid = json_data.get('uuid')
                 print(f"UUID from JSON data: {uuid}")
@@ -315,7 +330,7 @@ def download_pdf():
         return str(e), 500
 
 
-@app.route('/get_entries')
+@app.route(f'{BASE_PATH}/get_entries')
 def get_entries():
     try:
         entries = return_database_with_history()
@@ -325,7 +340,7 @@ def get_entries():
         return jsonify([]), 500
 
 
-@app.route('/search', methods=['POST'])
+@app.route(f'{BASE_PATH}/search', methods=['POST'])
 def search():
     data = request.get_json()
     name = data.get('name', '').strip()
@@ -356,7 +371,7 @@ def search():
     return jsonify(filtered_entries)
 
 
-@app.route('/get_entry/<uuid>')
+@app.route(f'{BASE_PATH}/get_entry/<uuid>')
 def get_entry(uuid):
     try:
         print(f"Received request for UUID: {uuid}")  # Debug log
@@ -376,7 +391,7 @@ def get_entry(uuid):
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/settings', methods=['GET', 'POST'])
+@app.route(f'{BASE_PATH}/settings', methods=['GET', 'POST'])
 def settings():
     if request.method == 'GET':
         try:
@@ -387,7 +402,7 @@ def settings():
                 logo_path = settings_data['logo_upload']['path']
                 # Convert the file path to a URL path
                 logo_filename = os.path.basename(logo_path)
-                settings_data['logo_upload']['url'] = f'/resources/{logo_filename}'
+                settings_data['logo_upload']['url'] = f'{BASE_PATH}/resources/{logo_filename}'
             return jsonify(settings_data)
         except Exception as e:
             print(f"Error reading settings: {str(e)}")
@@ -403,7 +418,7 @@ def settings():
             return jsonify({'error': str(e)}), 500
 
 
-@app.route('/upload_logo', methods=['POST'])
+@app.route(f'{BASE_PATH}/upload_logo', methods=['POST'])
 def upload_logo():
     try:
         if 'file' not in request.files:
@@ -423,7 +438,7 @@ def upload_logo():
             
             settings_data['logo_upload'] = {
                 'path': 'RESOURCES/website_logo.png',
-                'url': '/resources/website_logo.png'
+                'url': f'{BASE_PATH}/resources/website_logo.png'
             }
             
             with open('settings.json', 'w') as f:
@@ -438,7 +453,7 @@ def upload_logo():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/ddi', methods=['POST'])
+@app.route(f'{BASE_PATH}/ddi', methods=['POST'])
 def ddi():
     try:
         # Get the JSON data from the request
@@ -479,13 +494,13 @@ def ddi():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/resources/<path:filename>')
+@app.route(f'{BASE_PATH}/resources/<path:filename>')
 def serve_resource(filename):
     return send_from_directory('RESOURCES', filename)
 
 
 # Step 1: Add endpoints for editing default layout
-@app.route('/default_format', methods=['GET'])
+@app.route(f'{BASE_PATH}/default_format', methods=['GET'])
 def get_default_format():
     try:
         with open('RESOURCES/default_format.json', 'r', encoding='utf-8') as f:
@@ -494,7 +509,7 @@ def get_default_format():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/default_format', methods=['POST'])
+@app.route(f'{BASE_PATH}/default_format', methods=['POST'])
 def save_default_format():
     try:
         data = request.get_json()
