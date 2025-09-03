@@ -180,6 +180,8 @@ def generate_picu_treatment_chart(heading, subheading, json_data, font_size=9):
         font_size=font_size
     )
 
+    print("______________STEP1____________")
+
     if pdf_path and os.path.exists(pdf_path):
         print(f"\n=== PDF Generation Successful ===")
         print(f"PDF generated at: {pdf_path}")
@@ -604,20 +606,22 @@ def generate_pdf_from_latex(heading, subheading, patient_info, treatment_tables,
 
             # Print compilation output for debugging
             print("\n=== pdflatex Output ===")
-            print(result.stdout)
+            print("\n\n_______STEP2__________")
+            
+            """ print(result.stdout)
             if result.stderr:
                 print("\n=== pdflatex Errors ===")
                 print(result.stderr)
 
             if result.returncode != 0:
                 print(f"ERROR: pdflatex compilation failed with return code {result.returncode}")
-                return None
+                return None """
 
             # Check if PDF was generated
             if not os.path.exists(pdf_file_path):
                 print(f"ERROR: PDF file not found at {pdf_file_path}")
                 return None
-
+            print("\n\n_______STEP3___________")
             print(f"PDF generated successfully at: {pdf_file_path}")
             return pdf_file_path
 
